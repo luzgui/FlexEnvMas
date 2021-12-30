@@ -1,6 +1,6 @@
 import gym
 import flexenv as flex
-import TradingEnv as trad
+
 import auxfunctions as fun
 
 import stable_baselines3
