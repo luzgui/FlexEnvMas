@@ -41,7 +41,6 @@ class FlexEnv(gym.Env):
         self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.2)+1))
         
         
-        
         self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(9,),dtype='float32')
         
         # 0-->t : time slot
@@ -194,7 +193,6 @@ class FlexEnv(gym.Env):
             # print(self.n_episodes)
             return self.reset(), 0,done, {}
         
-       
         
         self.t+=1
         # print(self.t)
@@ -212,10 +210,7 @@ class FlexEnv(gym.Env):
             self.sc=(self.l+action_)/self.g
         else:
             self.sc=0
-        
-        
-        
-        
+                
         reward=self.get_reward(action)
         # print(reward)
         self.R+=reward
@@ -230,8 +225,6 @@ class FlexEnv(gym.Env):
         return observation, reward, done, info
 
 
-    
-
     def reset(self):
         """
         Reset the environment state and returns an initial observation
@@ -243,8 +236,7 @@ class FlexEnv(gym.Env):
         """
         
         done=False
-        
-    
+            
         self.t=0 # start at t=0
         # self.t = rnd.randrange(0, 46, 2) # a random initial state
         self.g=self.data[0,0]
@@ -264,8 +256,7 @@ class FlexEnv(gym.Env):
         
         return observation
 
-                
-                 
+                                 
     def render(self, mode='human', close=False):
         """
     
@@ -275,8 +266,7 @@ class FlexEnv(gym.Env):
         return
 
     
-    
-    
+        
 def makeplot(T,soc,sol,gen,load,env):
         
     fig, ax = plt.subplots()
@@ -294,7 +284,8 @@ def makeplot(T,soc,sol,gen,load,env):
            title='Schedulling battery solution')
     plt.show()    
     time.sleep(0.1)
-      
+
+    
 def reward_plot(R):
     
     fig, ax = plt.subplots()
@@ -307,6 +298,7 @@ def reward_plot(R):
     # fig.savefig("test.png")
     plt.show()
 
+    
 def get_actions(action_track,env):
     actions=env.actions
     action_vector=[]
