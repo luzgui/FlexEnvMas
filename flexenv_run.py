@@ -30,8 +30,8 @@ import time
 import random as rnd
 
 
-# import Algorithms_FA as algofa
-# import ploting as plots
+#%% Data and Environment preparation
+
 
 #Data
 cwd=os.getcwd()
@@ -42,16 +42,21 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 
 
 #make and check the environment
+# Select the number of timesteps to consider
 # timestesps=141
 timestesps=47
 
+#Create environment
 env=fun.make_env(env_data, load_num=4, timestep=timestesps, soc_max=5, eta=0.95, charge_lim=3)
 
+#%% Stable Baselines ALGORITHMS
+
+# Uncomment the algorithm
 
 
 
-#DQN 
-# parameters
+##DQN
+## parameters
 gamma=0.99
 learning_rate=1e-3
 buffer_size=1e6
@@ -81,27 +86,29 @@ seed=None
 
 
 
-#Train model
+## Train model
 # model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=verbose,batch_size=batch_size,exploration_fraction=exploration_fraction)
-
-
 # model.learn(total_timesteps=int(3e5))
 
 
 
+
+
+##Proximal Policy Optimization
+model = PPO("MlpPolicy", env, verbose=0)
+model.learn(total_timesteps=3e5)
+
+
+## Other algorithms
 #SAC
 # model = SAC('MlpPolicy', env, verbose=2).learn(total_timesteps=1e5)
-
 
 #A2C
 # model = A2C(MlpPolicy, env, verbose=1)
 # model.learn(total_timesteps=25000)
 
-#PPO
-# model = PPO("MlpPolicy", env, verbose=0)
-# model.learn(total_timesteps=3e5)
-
-
+#%% Load a trained model from the 
+## (saved model files must be in .zip )
 
 
 #Load + Save Model
@@ -113,18 +120,20 @@ seed=None
 # model_trained = DQN.load(filename, env=env) #
 
 
-filename='ppo_1day'
-model_trained = PPO.load(filename, env=env) #
+# filename='ppo_1day'
+# model_trained = PPO.load(filename, env=env) #
 
 
-model=model_trained
+# model=model_trained
 
 # model_trained = DQN.load('flexenv_dqn', env=env)
 
-# # Evaluate the agent
+
+#%% Evaluate the agent
+
 mean_reward, std_reward = evaluate_policy(model,env, n_eval_episodes=10)
 
-# Enjoy trained agent
+## Enjoy trained agent
 action_track=[]
 state_track=[]
 obs = env.reset()
@@ -137,70 +146,15 @@ for i in range(timestesps):
     env.render()
 
 state_track=np.array(state_track)
+
 #translate actions into charging power
 action_track=[env.get_load(k) for k in action_track]
 
+
+#Make plots
 
 # sol=flex.get_actions(action_track,env)
 flex.makeplot(48,state_track[:,3],action_track,env.data[:,0],env.data[:,1],env)
 
 flex.reward_plot(env.R_Total)
-
-    
-#boiler plate
-
-# MAX_NUM_EPISODES = 5
-
-# cost_per_epi=[]
-# action_track=[]  
-
-
-# for episode in range(MAX_NUM_EPISODES):
-#     action_track=[]  
-#     done = False
-#     obs = env.reset()
-    
-#     total_reward = 0.0 # To keep track of the total reward obtained in each episode
-#     step = 0
-#     while not done:
-#         env.render()
-#         action = env.action_space.sample()# Sample random action. This will be replaced by our agent's action when we start developing the agent algorithms
-#         next_state, reward, done, info = env.step(action) # Send the action to the environment and receive the next_state, reward and whether done or not
-#         # print(next_state)
-#         total_reward += reward
-#         # print(total_reward)
-        
-#         action_track.append(action)
-#         step += 1
-#         obs = next_state
-        
-#     cost_per_epi.append(total_reward)  
- 
-#     print("\n Episode #{} ended in {} steps.total_reward={}".format(episode, step+1, total_reward))
-#     env.close() 
-
-
-
-#check spaces
-# env.action_space
-# env.observation_space
-
-# a=env.action_space.sample()
-
-# s=env.observation_space.sample()
-# print(s)
-
-
-# observation = env.reset()
-# for t in range(100):
-#         env.render()
-#         print(observation)
-#         action = env.action_space.sample()
-#         observation, reward, done, info = env.step(action)
-#         print (observation, reward, done, info)
-#         if done:
-#             print("Finished after {} timesteps".format(t+1))
-#             break
-
-
 

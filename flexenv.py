@@ -7,22 +7,28 @@ import time
 
 class FlexEnv(gym.Env):
     """
-    A template to implement custom OpenAI Gym environments
+    A custom OpenAI Gym environment for managing a electrical battery
 
     """
-
-    metadata = {'render.modes': ['human']}
     
     def __init__(self, data,soc_max,eta,charge_lim):
+        
+        """
+        data: a pandas dataframe with number of columns N=# of houses or loads and time-horizon T=Total number of timesteps 
+        soc_max: maximum battery state-of-charge
+        eta: Charging efficiêncy
+        charge_lim: maximum charging power
+        """
         
         self.soc_max=soc_max
         self.eta=eta
         self.data=data #we need to import the unflexible load and PV production. 
         # data is an array with load in column 0 and pv profucition in column 1
-        self.T=len(self.data)
-        self.dh=30*(1/60)
+        self.T=len(self.data) #Time horizon 
+        self.dh=30*(1/60) #Convertion factor energy-power
         self.R_Total=[]
         self.n_episodes=0
+        
         
         self.__version__ = "0.0.1"
         # Modify the observation space, low, high and shape values according to your custom environment's needs
@@ -38,12 +44,12 @@ class FlexEnv(gym.Env):
         self.charge_lim=charge_lim
         self.discharge_lim=-charge_lim
         
-        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.2)+1))
         
-        
-        
+        #State/observation definition
         self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(9,),dtype='float32')
         
+        """
+        State definition
         # 0-->t : time slot
         # 1-->gen : PV generation at timeslot t
         # 2-->load : Load at timeslot t
@@ -54,8 +60,15 @@ class FlexEnv(gym.Env):
         # 7 --> sc: self-consumption
         # 8 --> r :reward
         
-        # Modify the action space, and dimension according to your custom environment's needs
+        """
+        
+        #Actions
+        # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
+        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.2)+1)) #definition of actions
         self.action_space = gym.spaces.Discrete(len(self.charge_steps)-1)
+
+        #TODO: Battery can only charge but we want it to be abble to also discharge. that way we can increase the number of days considered. Define actions so that discharging to feed the load is possible 
+
 
     def get_load(self,action):
         #translates the actionm number into a charging power in charge_steps
@@ -65,56 +78,11 @@ class FlexEnv(gym.Env):
     def get_reward(self,action):
         
         action_=self.get_load(action)
-    
-        # if self.Etc < self.E_max:
-        #     reward=-1
+        """
+        The objective of the battery is to maximize self-consumption, i.e charge the battery when there is PV production available. 
+        """
         
-        # if self.Ec==self.E_max and self.l+self.load < self.g:
-        #     reward=1
-            
-        # else:
-        #     reward=0
-            
-        #reward
-        # reward=-np.float((self.l+action_-self.g)*self.dh*self.tar)
-        # reward=float((action+self.l-self.g)*self.tar)
-    
-        # if self.l+action_-self.g == 0:
-        #     reward=1
-        # else:
-        #     reward=-1*action_
-        
-        
-        # else:
-        #     reward=0
-        # reward=self.g*action
-        
-        
-        ## best so far
-        # if self.g>self.l:
-        #     reward=float(np.minimum((self.l+action_),self.g)/self.g)
-        
-        # elif self.g<=self.l:
-        #     reward=-1*action_
-        
-        
-        
-        # ## best so far
-        # if self.g>=self.l:
-        #     sc=(self.l+action_)/self.g
-        #     eps_max=1.1
-        #     eps_min=0.9
-        #     # print(sc)
-        #     if (sc <= eps_max and sc >= eps_min):
-        #         reward=np.float(1)
-        #     elif (sc > eps_max or sc < eps_min):
-        #         # reward=-np.float(action_)
-        #         reward=-action_
-        # else:
-        #         # reward=-np.float(action_)
-        #         reward=-action_
-           
-        # return reward
+        # TODO: define a new reward based on total energy cost
     
         # reward=0
         if self.g!=0:
@@ -122,43 +90,18 @@ class FlexEnv(gym.Env):
             eps_soc=1
             sc_opt=1
             
-        
-            # if ((self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <= ((1+eps_soc)*self.soc_max and self.sc >= (1-eps_soc)*self.soc_max))) :
-            #     reward=np.float(1)
-            
+            #If charging translates into a greater SC then r=1
             if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <=self.soc_max):
                 reward=np.float(1)
-                # reward=action_
-                
-            # if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt):
-                    # reward=np.float(1)
-                
-            # elif self.soc <=self.soc_max:
-            #     reward=np.float(2)
-                
-                
-            # if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt):
-            #         reward=np.float(10)
             
-            # if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt):
-            #     reward=np.float(1)
-                
-            # elif (self.sc > ((1+eps_sc)*sc_opt and self.sc < (1-eps_sc)*sc_opt)):
-            #     reward=-np.float(action_)
-                # reward=-action_
             else:
-            # reward=-np.float(action_)
                 reward=-action_
         else:
             reward=-action_
         
         return reward
             
-            
-        # if self.Ec==0 and self.g > 0:
-        #     reward=self.g
-        # else:
-        #     reward=0
+
         
         
     
@@ -203,11 +146,12 @@ class FlexEnv(gym.Env):
         self.l=self.data[self.t][1]
         self.soc1=self.soc
         # print(action)
-        self.soc+=self.eta*action_*self.dh #multiplied by energy-power convert and efficiency 
+        self.soc+=self.eta*action_*self.dh #Next SOC is multiplied by energy-power convert and efficiency (action in kW, soc in kWh) 
         # print(self.soc)
-        self.tar=0.17
+        self.tar=0.17 # grid tariff in €/kWh
         
-        # self consumption
+        # self consumption (it should be 0<SC<1 but it is possible to have SC>1)
+        #TODO: Think about how to maintain 0<SC<1
         if self.g!=0:
             self.sc=(self.l+action_)/self.g
         else:
@@ -244,9 +188,12 @@ class FlexEnv(gym.Env):
         
         done=False
         
-    
+        
+        # We can choose to reset to a ransom state or to t=0
         self.t=0 # start at t=0
         # self.t = rnd.randrange(0, 46, 2) # a random initial state
+        
+        
         self.g=self.data[0,0]
         self.l=self.data[0,1]
         self.soc=0
@@ -259,8 +206,6 @@ class FlexEnv(gym.Env):
         self.sc=0
         
         observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r),dtype='float32')
-        
-        # observation=[self.t,self.g,self.l,self.Ec,self.Etc,self.tar]
         
         return observation
 
@@ -283,8 +228,8 @@ def makeplot(T,soc,sol,gen,load,env):
     # t=np.arange(0,T,1)
     ax.plot(load,label='load')
     
-    ax.plot(sol+load,label='load+sol')
-    ax.plot(sol,label='sol')
+    ax.plot(sol+load,label='load+bat_charge')
+    ax.plot(sol,label='bat_charge')
     ax.plot(soc,label='soc')
     
     ax.plot(gen,label='gen')
@@ -296,7 +241,7 @@ def makeplot(T,soc,sol,gen,load,env):
     time.sleep(0.1)
       
 def reward_plot(R):
-    
+    """Creates a plot with the evolution of rewards along episodes"""
     fig, ax = plt.subplots()
     ax.plot(R)
     
@@ -304,7 +249,7 @@ def reward_plot(R):
            title='evolution of rewards with the number of episodes')
     ax.grid()
     
-    # fig.savefig("test.png")
+    # fig.savefig("test.png") # uncomment to save figures
     plt.show()
 
 def get_actions(action_track,env):
