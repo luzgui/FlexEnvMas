@@ -33,6 +33,8 @@ import numpy.random as rnd
 import time
 import random as rnd
 
+from time import perf_counter
+
 
 # # Data and Environment preparation
 
@@ -52,7 +54,7 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 timesteps=47
 
 #Create environment. Based on the aux functions code.
-env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=2, eta=0.95, charge_lim=3)
+env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=3, eta=0.95, charge_lim=3)
 
 
 # In[4]:
@@ -261,7 +263,7 @@ prioritized_replay_beta_iters=None
 prioritized_replay_eps=1e-06
 param_noise=True
 n_cpu_tf_sess=None
-verbose=0 
+verbose=1 
 tensorboard_log=None
 _init_setup_model=True
 policy_kwargs=None
@@ -269,9 +271,15 @@ full_tensorboard_log=False
 seed=None
 # Policy='LnMlpPolicy'
 
+t1_start = perf_counter()
+
 ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=1,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(5e6))
+model.learn(total_timesteps=int(10e5))
+
+t1_stop = perf_counter()
+print("\nElapsed time:", t1_stop, t1_start)
+print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 
 ##Proximal Policy Optimization
 # model = PPO("MlpPolicy", env, verbose=1)
@@ -340,15 +348,13 @@ state_track=np.array(state_track)
 action_track=[env.get_load(k) for k in action_track]
 
 
-# # Modificação António do Evaluate Agent
-
-# In[ ]:
-
+## Modificação António do Evaluate Agent
 
 ## Enjoy trained agent
 action_track=[]
 state_track=[]
 obs = env.reset()
+rewards_track = []
 
 for i in range(timesteps):
     action, states = model.predict(obs)
@@ -359,6 +365,7 @@ for i in range(timesteps):
     action_track.append(int(action))
     state_track.append(obs)
     obs, rewards, done, info = env.step(action)
+    rewards_track.append(rewards)
     
     env.render()
 
@@ -394,6 +401,11 @@ action_track
         # 6-->R  : total reward per episode
         # 7 --> sc: self-consumption
         # 8 --> r :reward
+        
+# In[ ]:        
+rewards_track
+plt.plot(rewards_track)
+plt.grid()
 
 
 # # Plots

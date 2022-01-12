@@ -98,6 +98,10 @@ class FlexEnv(gym.Env):
         """
         #get charge load form action
         action_=self.get_load(action)
+        
+        ## Modification António
+        # if self.g == 0:
+        #     action_ = 0
 
         # self.t=self.t
 
@@ -135,6 +139,10 @@ class FlexEnv(gym.Env):
         # print(action)
         
         self.soc+=self.eta*action_*self.dh
+        
+        ## Modification Antonio
+        # (It goes bad as the actions can go in the wrong way but as self.g is 0, it doesn't affect the SOC)
+        # self.soc += self.eta*action_*self.dh*self.g #TODO: Em vez de concentrar nos SOC's concentro-me nas actions
         
         ## Modification (Antonio) - Trying to maintain 0<SC<SOC_max
         # if self.soc < self.soc_max:
@@ -184,17 +192,18 @@ class FlexEnv(gym.Env):
 
             #If charging translates into a greater SC then r=1
             if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <=self.soc_max):
-                reward=np.float(1)
+                reward1=np.float(1)
             else:
-                reward=-action_
+                reward1=-action_
         else:
-            reward=-action_
+            reward1=-action_
         
         # Modification (António)
         if self.soc > self.soc_max: # If the SOC becomes bigger then the SOC_max the reward is really negative (Probably more useful when the battery can discharge)
             # reward = -300    
-            reward = -300*(self.soc-self.soc_max) # The bigger the difference from the SOC_max, the worse
-            
+            reward2 = -300*(self.soc-self.soc_max) # The bigger the difference from the SOC_max, the worse
+        else:
+            reward2 =0
         # if self.soc == self.soc_max:
         #     reward = 60
         
@@ -205,34 +214,54 @@ class FlexEnv(gym.Env):
         
         if self.soc >= self.soc_max and self.soc > self.soc1: # If the battery charges but the SOC is already at its max (or bigger, which is not feasible in real life), the reward is really negative
             # reward = -300*action                  # Doesn't make much sense to punish accordingly to the action, it should be awful to charge when the SOC is at SOC_max
-            reward = -800
-        # Tested and it went well with 5e5 steps
+            reward3 = -800
+        else:
+            reward3 = 0
+        # Tested but probably not going well
         
         # If the battery charges whwn there is no generation, the reward is negative.
         # The battery charges when the current SOC is bigger then the previous one 
         if self.g <=0 and self.soc > self.soc1: 
-            reward = -4000
+            reward4 = -4000
+        else:
+            reward4= 0 
         # Tested and it went well
             
         # If the battery charges when there is generation, the reward is positive.
         # The battery charges when the current SOC is bigger then the previous one 
         # It can't be too positive otherwise it will charge every instant there is generation, which is not good
+        # (This doesn't make much sense)
         # if self.g > 0 and self.soc > self.soc1: 
         #     reward = 200*self.g # Trying to put the emphasis where there is more generation
         
         # The objective is to go as fast as possible to the self.soc_max when there is generation.
         # As such, for each instant that generation is available, the bigger the difference between SOC and SOC_max, the worse it is
         if self.g > 0 and self.soc < self.soc_max: 
-            reward = -200*(self.soc_max-self.soc)
+            reward5 = -500*(self.soc_max-self.soc)
+        else:
+            reward5 =0
             
         # Every instant the SOC is between 0 and the SOC, it gets a positive reward
         if 0 <= self.soc <= self.soc_max:
-            reward = 300
+            reward6 = 300
+        else:
+            reward6 =0
         # Tested and it went well
             
         # If the SOC is already at SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward     
-        if self.soc == self.soc_max and self.soc == self.soc1 and self.g>0:
-            reward = 1000
+        # if self.soc == self.soc_max and self.soc == self.soc1 and self.g>0:
+        #     reward7 = 1000
+        # else:
+        #     reward7 = 0
+            
+        # If the SOC is already close to the SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward
+        # 0.2 is the minimum steo it can increase charging, so if it is less than the minimal charge away from the optimal value, it gets a positive reward
+        if self.soc_max-0.2 <=self.soc < self.soc_max and self.soc == self.soc1 and self.g>0:
+            reward7 = 1000
+        else:
+            reward7 = 0
+        
+        reward = reward1+reward2+reward3+reward4+reward5+reward6+reward7 
             
         return reward
 
