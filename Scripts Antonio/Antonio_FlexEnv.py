@@ -10,7 +10,7 @@ class FlexEnv(gym.Env):
     A custom OpenAI Gym environment for managing a electrical battery
     """
 
-    def __init__(self, data,soc_max,eta,charge_lim):
+    def __init__(self, data,soc_max,eta,charge_lim,min_charge_step):
         """
         data: a pandas dataframe with number of columns N=# of houses or loads and time-horizon T=Total number of timesteps
         soc_max: maximum battery state-of-charge
@@ -69,14 +69,15 @@ class FlexEnv(gym.Env):
         # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
         
         # The charge steps are defined: 0 is the min, self.charge_lim is the max and there's 
-        # (self.charge_lim/0.2)+1) numbers in the array. Basically it increases 0.2 each number
-        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.2)+1)) #definition of actions
+        # (self.charge_lim/minimum_charge_step)+1) numbers in the array. Basically it increases the minimum charge step each number
+        self.minimum_charge_step =min_charge_step
+        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of actions
         self.action_space = gym.spaces.Discrete(len(self.charge_steps)-1)
 
         #TODO: Battery can only charge but we want it to be abble to also discharge. that way we can increase the number of days considered. Define actions so that discharging to feed the load is possible
 
 
-    def get_load(self,action):
+    def get_charge(self,action):
         #translates the action number into a charging power in charge_steps
         return self.charge_steps[action]
 
@@ -97,7 +98,7 @@ class FlexEnv(gym.Env):
                 a dictionary containing additional information about the previous action
         """
         #get charge load form action
-        action_=self.get_load(action)
+        action_=self.get_charge(action)
         
         ## Modification António
         # if self.g == 0:
@@ -141,6 +142,10 @@ class FlexEnv(gym.Env):
         self.soc+=self.eta*action_*self.dh
         
         ## Modification Antonio
+        if self.soc > self.l:
+            self.soc-=self.l
+        
+        ## Modification Antonio
         # (It goes bad as the actions can go in the wrong way but as self.g is 0, it doesn't affect the SOC)
         # self.soc += self.eta*action_*self.dh*self.g #TODO: Em vez de concentrar nos SOC's concentro-me nas actions
         
@@ -164,6 +169,8 @@ class FlexEnv(gym.Env):
         # print(reward)
         self.R+=reward
         self.r=reward
+        
+        # load = self.l
 
         info={}
 
@@ -176,7 +183,7 @@ class FlexEnv(gym.Env):
     
     def get_reward(self,action):
 
-        action_=self.get_load(action)
+        action_=self.get_charge(action)
         """
         The objective of the battery is to maximize self-consumption, 
         i.e charge the battery when there is PV production available.
@@ -255,8 +262,8 @@ class FlexEnv(gym.Env):
         #     reward7 = 0
             
         # If the SOC is already close to the SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward
-        # 0.2 is the minimum steo it can increase charging, so if it is less than the minimal charge away from the optimal value, it gets a positive reward
-        if self.soc_max-0.2 <=self.soc < self.soc_max and self.soc == self.soc1 and self.g>0:
+        # 0.2 is the minimum step it can increase charging, so if it is less than the minimal charge away from the optimal value, it gets a positive reward
+        if self.soc_max-self.minimum_charge_step <=self.soc < self.soc_max and self.soc == self.soc1 and self.g>0:
             reward7 = 1000
         else:
             reward7 = 0

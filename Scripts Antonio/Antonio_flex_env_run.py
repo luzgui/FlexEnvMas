@@ -2,6 +2,9 @@
 # coding: utf-8
 
 
+# In[2]:
+
+
 import gym
 import Antonio_FlexEnv as flex
 
@@ -54,7 +57,7 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 timesteps=47
 
 #Create environment. Based on the aux functions code.
-env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=3, eta=0.95, charge_lim=3)
+env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=2, eta=0.95, charge_lim=3, min_charge_step=0.2)
 
 
 # In[4]:
@@ -238,7 +241,7 @@ df_generation[df_generation['Generation']==0]['Hour'].value_counts()
 # 
 # Uncomment the algorithm
 
-# In[ ]:
+# In[29]:
 
 
 ##DQN
@@ -263,7 +266,7 @@ prioritized_replay_beta_iters=None
 prioritized_replay_eps=1e-06
 param_noise=True
 n_cpu_tf_sess=None
-verbose=1 
+verbose=0 
 tensorboard_log=None
 _init_setup_model=True
 policy_kwargs=None
@@ -275,7 +278,7 @@ t1_start = perf_counter()
 
 ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=1,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(10e5))
+model.learn(total_timesteps=int(5e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
@@ -299,7 +302,7 @@ print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 # (saved model files must be in .zip )
 # 
 
-# In[ ]:
+# In[30]:
 
 
 #Load + Save Model
@@ -324,7 +327,7 @@ print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 
 # # Evaluate the agent
 
-# In[ ]:
+# In[33]:
 
 
 mean_reward, std_reward = evaluate_policy(model,env, n_eval_episodes=5)
@@ -345,16 +348,20 @@ for i in range(timesteps):
 state_track=np.array(state_track)
 
 #translate actions into charging power
-action_track=[env.get_load(k) for k in action_track]
+action_track=[env.get_charge(k) for k in action_track]
 
 
-## Modificação António do Evaluate Agent
+# # Modificação António do Evaluate Agent
+
+# In[34]:
+
 
 ## Enjoy trained agent
 action_track=[]
 state_track=[]
 obs = env.reset()
 rewards_track = []
+load_track = []
 
 for i in range(timesteps):
     action, states = model.predict(obs)
@@ -366,6 +373,7 @@ for i in range(timesteps):
     state_track.append(obs)
     obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
+    load_track.append(load)
     
     env.render()
 
@@ -373,22 +381,22 @@ state_track=np.array(state_track)
 
 #translate actions into charging power
 action_numbers = action_track
-action_track=[env.get_load(k) for k in action_track]
+action_track=[env.get_charge(k) for k in action_track]
 
 
-# In[ ]:
+# In[35]:
 
 
 action_numbers
 
 
-# In[ ]:
+# In[36]:
 
 
 action_track
 
 
-# In[ ]:
+# In[37]:
 
 
 # State definition
@@ -401,29 +409,42 @@ action_track
         # 6-->R  : total reward per episode
         # 7 --> sc: self-consumption
         # 8 --> r :reward
-        
-# In[ ]:        
+
+
+# In[38]:
+
+
 rewards_track
-plt.plot(rewards_track)
-plt.grid()
+
+
+# In[39]:
+
+
+sum(rewards_track)
+
+
+# In[40]:
+
+
+# load_track
 
 
 # # Plots
 
-# In[ ]:
+# In[41]:
 
 
 flex.makeplot(48,state_track[:,3],action_track,env.data[:,0],env.data[:,1],env) # O Tempo e o Env não estão a fazer nada
 # makeplot(T,soc,sol,gen,load,env): Tempo, SOC, Bat_Charge, Generation, load, env
 
 
-# In[ ]:
+# In[42]:
 
 
 flex.reward_plot(env.R_Total)
 
 
-# In[ ]:
+# In[43]:
 
 
 evaluate_policy(model,env, n_eval_episodes=10)
@@ -431,7 +452,7 @@ evaluate_policy(model,env, n_eval_episodes=10)
 
 # # Studying the battery
 
-# In[ ]:
+# In[44]:
 
 
 SOC = state_track[:,3]
@@ -440,13 +461,13 @@ gen = env.data[:,0]
 load = env.data[:,1]
 
 
-# In[ ]:
+# In[45]:
 
 
 state_track
 
 
-# In[ ]:
+# In[46]:
 
 
 def myplot(x):
@@ -454,43 +475,54 @@ def myplot(x):
     plt.plot(x)
 
 
-# In[ ]:
+# In[47]:
 
 
 env.data
 
 
-# In[ ]:
+# In[48]:
 
 
 myplot(gen)
+plt.ylabel('gen')
 
 
-# In[ ]:
+# In[49]:
 
 
 gen
 
 
-# In[ ]:
+# In[50]:
 
 
 myplot(load)
+plt.ylabel('load')
 
 
-# In[ ]:
+# In[51]:
 
 
 myplot(SOC)
+plt.ylabel('SOC')
 
 
-# In[ ]:
+# In[52]:
 
 
 myplot(bat_charge)
+plt.ylabel('Battery Charge')
 
 
-# In[ ]:
+# In[53]:
+
+
+myplot(rewards_track)
+plt.ylabel('Rewards track')
+
+
+# In[54]:
 
 
 plt.figure(figsize=(10,7))
@@ -501,26 +533,26 @@ plt.legend()
 plt.show()
 
 
-# In[ ]:
+# In[55]:
 
 
 eta = 0.95
 dh=30*(1/60)
 
 
-# In[ ]:
+# In[56]:
 
 
 SOC
 
 
-# In[ ]:
+# In[57]:
 
 
 gen
 
 
-# In[ ]:
+# In[58]:
 
 
 C=np.array(bat_charge)*eta*dh
@@ -532,19 +564,19 @@ for i in range(len(np.array(bat_charge)*eta*dh)):
 Sum
 
 
-# In[ ]:
+# In[59]:
 
 
 SOC
 
 
-# In[ ]:
+# In[60]:
 
 
 # bat_charge
 
 
-# In[ ]:
+# In[61]:
 
 
 # self.charge_lim=3
