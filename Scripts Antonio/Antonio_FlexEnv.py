@@ -72,14 +72,23 @@ class FlexEnv(gym.Env):
         # (self.charge_lim/minimum_charge_step)+1) numbers in the array. Basically it increases the minimum charge step each number
         self.minimum_charge_step =min_charge_step
         self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of actions
-        self.action_space = gym.spaces.Discrete(len(self.charge_steps)-1)
+        self.action_space = gym.spaces.Discrete(len(self.charge_steps))
+        
+        # Modification António
+        # self.discharge_steps=np.linspace(-charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of actions
+        # self.action_space2 = gym.spaces.Discrete(len(self.discharge_steps)-1)
 
         #TODO: Battery can only charge but we want it to be abble to also discharge. that way we can increase the number of days considered. Define actions so that discharging to feed the load is possible
 
 
     def get_charge(self,action):
         #translates the action number into a charging power in charge_steps
-        return self.charge_steps[action]
+        return self.charge_steps[action-1]
+    
+    # Modification António
+    # def get_discharge(self,action):
+    #     #translates the action number into a charging power in charge_steps
+    #     return self.discharge_steps[action]
 
 
     def step(self, action):
