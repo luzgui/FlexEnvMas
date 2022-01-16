@@ -49,6 +49,12 @@ timestesps=47
 #Create environment
 env=fun.make_env(env_data, load_num=4, timestep=timestesps, soc_max=5, eta=0.95, charge_lim=3)
 
+env.action_space
+
+env.charge_steps
+
+
+
 #%% Stable Baselines ALGORITHMS
 
 # Uncomment the algorithm
