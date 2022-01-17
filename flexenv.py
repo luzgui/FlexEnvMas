@@ -64,6 +64,9 @@ class FlexEnv(gym.Env):
         # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
 
         self.charge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/0.1)+1)) #definition of actions
+        
+        # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.1)+1)) #definition of actions
+        
         self.action_space = gym.spaces.Discrete(len(self.charge_steps)-1)
 
         #TODO: Battery can only charge but we want it to be abble to also discharge. that way we can increase the number of days considered. Define actions so that discharging to feed the load is possible
@@ -90,13 +93,24 @@ class FlexEnv(gym.Env):
             sc_opt=1
 
             #If charging translates into a greater SC then r=1
-            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <=self.soc_max):
+            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (0.1*self.soc_max <= self.soc <=self.soc_max):
                 reward=np.float(1)
+                # print('oi')
 
             else:
-                reward=-action_
+                reward=-abs(action_)
+                # print('oi2')
+        elif self.g == 0:
+            if (action_ < 0) and ((-action_-self.l)**2 <=0.1 ) and  (0.1*self.soc_max <= self.soc <=self.soc_max):
+                reward=np.float(1)
+                # print('oi3')
+            
+            else:
+                reward=-abs(action_)
+                # print('oi4')
         else:
-            reward=-action_
+             reward=-abs(action_)
+             # print('oi4')
 
         return reward
 
@@ -143,7 +157,7 @@ class FlexEnv(gym.Env):
         self.g=self.data[self.t][0]
         self.l=self.data[self.t][1]
         self.soc1=self.soc
-        # print(action)
+        
         self.soc+=self.eta*action_*self.dh #Next SOC is multiplied by energy-power convert and efficiency (action in kW, soc in kWh)
         # print(self.soc)
         self.tar=0.17 # grid tariff in €/kWh
@@ -163,6 +177,8 @@ class FlexEnv(gym.Env):
         info={}
 
         observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R, self.sc,self.r),dtype='float32')
+        
+        # print(action_)
         # print(observation)
         # print(observation,reward,done)
 
@@ -189,7 +205,7 @@ class FlexEnv(gym.Env):
 
         self.g=self.data[0,0]
         self.l=self.data[0,1]
-        self.soc=0
+        self.soc=0.2*self.soc_max #batteru start with some energy in the beggining of the day
         self.soc1=0
         self.tar=0.17
         self.R=0

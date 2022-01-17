@@ -43,7 +43,7 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 
 #make and check the environment
 # Select the number of timesteps to consider
-# timestesps=141
+# timestesps=96
 timestesps=47
 
 #Create environment
@@ -102,7 +102,7 @@ seed=None
 
 ##Proximal Policy Optimization
 model = PPO("MlpPolicy", env, verbose=0)
-model.learn(total_timesteps=3e5)
+model.learn(total_timesteps=1e5)
 
 
 ## Other algorithms
