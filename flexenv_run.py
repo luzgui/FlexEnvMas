@@ -18,7 +18,8 @@ from stable_baselines3 import DDPG
 from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 
-from stable_baselines3.ddpg.policies import MlpPolicy
+from stable_baselines3.ddpg.policies import Policy
+
 
 
 import numpy as np
@@ -43,11 +44,17 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 
 #make and check the environment
 # Select the number of timesteps to consider
-# timestesps=141
-timestesps=47
+timestesps=96
+# timestesps=47
 
 #Create environment
 env=fun.make_env(env_data, load_num=4, timestep=timestesps, soc_max=5, eta=0.95, charge_lim=3)
+
+env.action_space
+
+env.charge_steps
+
+
 
 #%% Stable Baselines ALGORITHMS
 
@@ -87,16 +94,16 @@ seed=None
 
 
 ## Train model
-# model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=verbose,batch_size=batch_size,exploration_fraction=exploration_fraction)
-# model.learn(total_timesteps=int(3e5))
+model = DQN('LnMlpPolicy', env, learning_rate=learning_rate, verbose=verbose,batch_size=batch_size,exploration_fraction=exploration_fraction)
+model.learn(total_timesteps=int(3e5))
 
 
 
 
 
 ##Proximal Policy Optimization
-model = PPO("MlpPolicy", env, verbose=0)
-model.learn(total_timesteps=3e5)
+# model = PPO("MlpPolicy", env, verbose=0)
+# model.learn(total_timesteps=3e5)
 
 
 ## Other algorithms
@@ -140,8 +147,8 @@ obs = env.reset()
 for i in range(timestesps):
     action, _states = model.predict(obs, deterministic=True)
     action_track.append(action)
-    state_track.append(obs)
     obs, rewards, dones, info = env.step(action)
+    state_track.append(obs)
     
     env.render()
 
@@ -150,6 +157,7 @@ state_track=np.array(state_track)
 #translate actions into charging power
 action_track=[env.get_load(k) for k in action_track]
 
+# state_Action=np.hstack((state_track,action_track))
 
 #Make plots
 

@@ -28,6 +28,8 @@ class FlexEnv(gym.Env):
         self.dh=30*(1/60) #Convertion factor energy-power
         self.R_Total=[]
         self.n_episodes=0
+        self.c_Total=[]
+        
 
 
         self.__version__ = "0.0.1"
@@ -36,18 +38,15 @@ class FlexEnv(gym.Env):
 
         #limits on states
 
-        highlim=np.array([self.T, 10,10,self.soc_max,self.soc_max,1,100,1,100])
-        lowlim=np.array([0,0,0,0,0,0,-100,0,-100])
+        highlim=np.array([self.T, 10,10,self.soc_max,self.soc_max,1,100,1,100,100,100,100,100,100])
+        lowlim=np.array([0,0,0,0,0,0,-100,0,-100,-100,-100,-100,-100,-100])
 
 
         # limits on batery
         self.charge_lim=charge_lim
         self.discharge_lim=-charge_lim
 
-        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.2)+1))
-
-
-        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(9,),dtype='float32')
+        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(14,),dtype='float32')
 
         """
         State definition
@@ -60,12 +59,24 @@ class FlexEnv(gym.Env):
         # 6-->R  : total reward per episode
         # 7 --> sc: self-consumption
         # 8 --> r :reward
+        
+        # 9 --> delta: energy defict/super-avit
+        # 10 --> grid import/export: 
+        # 11 --> Energy Balance 
+        # 12 --> energy cost
+        # 13 --> Total energy cost
+
+
 
         """
 
         #Actions
         # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
-        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.2)+1)) #definition of actions
+
+        self.charge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/0.1)+1)) #definition of actions
+        
+        # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.1)+1)) #definition of actions
+        
         self.action_space = gym.spaces.Discrete(len(self.charge_steps)-1)
 
         #TODO: Battery can only charge but we want it to be abble to also discharge. that way we can increase the number of days considered. Define actions so that discharging to feed the load is possible
@@ -82,7 +93,7 @@ class FlexEnv(gym.Env):
         """
         The objective of the battery is to maximize self-consumption, i.e charge the battery when there is PV production available.
         """
-
+        # reward=0
         # TODO: define a new reward based on total energy cost
 
         # reward=0
@@ -92,19 +103,33 @@ class FlexEnv(gym.Env):
             sc_opt=1
 
             #If charging translates into a greater SC then r=1
-            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <=self.soc_max):
-                reward=np.float(1)
+            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (0.1*self.soc_max <= self.soc <=self.soc_max):
+                reward=-self.c*+1
+
+                # print('oi')
 
             else:
-                reward=-action_
+                reward=-abs(action_)
+                # print('oi2')
+        elif self.g == 0:
+            if (action_ < 0) and ((-action_-self.l)**2 <=0.1 ) and  (0.1*self.soc_max <= self.soc <=self.soc_max):
+                reward=np.float(1)
+                # print('oi3')
+            
+            else:
+                reward=-abs(action_)
+                # print('oi4')
         else:
-            reward=-action_
+              reward=-abs(action_)
+              # print('oi4')
 
+        # return reward
+        
+
+        
         return reward
 
-
-
-
+        
 
 
 
@@ -132,6 +157,7 @@ class FlexEnv(gym.Env):
         if self.t==len(self.data)-1:
             done=True
             self.R_Total.append(self.R)
+            self.c_Total.append(self.Totc)
             print(self.R)
 
             self.n_episodes+=1
@@ -145,7 +171,7 @@ class FlexEnv(gym.Env):
         self.g=self.data[self.t][0]
         self.l=self.data[self.t][1]
         self.soc1=self.soc
-        # print(action)
+        
         self.soc+=self.eta*action_*self.dh #Next SOC is multiplied by energy-power convert and efficiency (action in kW, soc in kWh)
         # print(self.soc)
         self.tar=0.17 # grid tariff in €/kWh
@@ -161,10 +187,33 @@ class FlexEnv(gym.Env):
         # print(reward)
         self.R+=reward
         self.r=reward
-
+        
+        
+        
+        
+        # energy defict/super-avit
+        self.delta=self.g-self.l
+        
+        # grid import/export:
+        self.grid=action_-self.delta
+        
+        # Energy Balance 
+        self.bal=self.grid-action_+self.delta
+        
+        #energy cost
+        
+        if self.grid>=0: #import is a cost
+            self.c=self.tar*self.grid*self.dh
+        elif self.grid<0: #export is a revenue
+            self.c=-(0.1*self.tar)*abs(self.grid)*self.dh # export its payed at 10% of the import cost
+        
+        self.Totc+=self.c
+        
         info={}
 
-        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R, self.sc,self.r),dtype='float32')
+        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R, self.sc,self.r,self.delta,self.grid,self.bal,self.c, self.Totc),dtype='float32')
+        
+        # print(action_)
         # print(observation)
         # print(observation,reward,done)
 
@@ -191,16 +240,26 @@ class FlexEnv(gym.Env):
 
         self.g=self.data[0,0]
         self.l=self.data[0,1]
+        # self.soc=0.2*self.soc_max #batteru start with some energy in the beggining of the day
         self.soc=0
         self.soc1=0
         self.tar=0.17
         self.R=0
         self.r=0
+        
+        self.delta=self.g-self.l
+        self.grid=0
+        
+        self.bal=0
+        self.c=0
+        self.Totc=0
+        
+        
         # self consumption
         #we are starting at t=0 with sc=0 because there is no sun. the initial state depends on the action and we cannot have actions on reset()
         self.sc=0
 
-        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r),dtype='float32')
+        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.delta,self.grid,self.bal,self.c,self.Totc),dtype='float32')
 
         return observation
 
