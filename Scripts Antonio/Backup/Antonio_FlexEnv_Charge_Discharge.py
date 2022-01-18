@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import random as rnd
 
 import matplotlib.pyplot as plt
 import time
@@ -70,13 +71,9 @@ class FlexEnv(gym.Env):
         # The charge steps are defined: 0 is the min, self.charge_lim is the max and there's 
         # (self.charge_lim/minimum_charge_step)+1) numbers in the array. Basically it increases the minimum charge step each number
         self.minimum_charge_step =min_charge_step
-        # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
-        # self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
-        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge and discharge actions
-        
-        # Inserting a zero in the middle of the actions vector
-        self.chargedischarge_steps = np.insert(self.chargedischarge_steps, int(len(self.chargedischarge_steps)/2), 0) 
-        self.action_space = gym.spaces.Discrete((len(self.chargedischarge_steps)))
+        self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
+        self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
+        self.action_space = gym.spaces.Discrete((len(self.charge_steps))*(len(self.discharge_steps)))
         
         # Modification António
         # self.discharge_steps=np.linspace(-charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of actions
@@ -85,19 +82,15 @@ class FlexEnv(gym.Env):
         #TODO: Battery can only charge but we want it to be abble to also discharge. that way we can increase the number of days considered. Define actions so that discharging to feed the load is possible
 
 
-    # Modification António
-    # def get_charge(self,action):
-    #     #translates the action number into a charging power in charge_steps
-    #     return self.charge_steps[int((action-1)/len(self.charge_steps))] 
+    def get_charge(self,action):
+        #translates the action number into a charging power in charge_steps
+        return self.charge_steps[int((action-1)/len(self.charge_steps))] 
     
-    # def get_discharge(self,action):
-    #     #translates the action number into a charging power in discharge_steps
-    #     return self.discharge_steps[int(action-1-int((action-1)/len(self.charge_steps))*len(self.charge_steps))]
-    
-    def get_charge_discharge(self,action):
+    def get_discharge(self,action):
         #translates the action number into a charging power in discharge_steps
-        return self.chargedischarge_steps[action-1]
+        return self.discharge_steps[int(action-1-int((action-1)/len(self.charge_steps))*len(self.charge_steps))]
     
+    # Modification António
     # def get_discharge(self,action):
     #     #translates the action number into a charging power in charge_steps
     #     return self.discharge_steps[action]
@@ -120,10 +113,8 @@ class FlexEnv(gym.Env):
         """
         #get charge load form action
         #Mofification António
-        # action_charge=self.get_charge(action)
-        # action_discharge=self.get_discharge(action)
-        
-        action_=self.get_charge_discharge(action)
+        action_charge=self.get_charge(action)
+        action_discharge=self.get_discharge(action)
         
         
         ## Modification António
@@ -165,7 +156,7 @@ class FlexEnv(gym.Env):
         self.soc1 = self.soc
         # print(action)
         
-        self.soc+=self.eta*(action_)*self.dh
+        self.soc+=self.eta*(action_charge+action_discharge)*self.dh
         
         ## Modification Antonio
         if self.soc > self.l:
@@ -187,7 +178,7 @@ class FlexEnv(gym.Env):
         #TODO: Think about how to maintain 0<SC<1
         
         if self.g!=0:
-            self.sc=(self.l+action_)/self.g
+            self.sc=(self.l+action_charge)/self.g
         else:
             self.sc=0
 
@@ -210,10 +201,8 @@ class FlexEnv(gym.Env):
     def get_reward(self,action):
 
         # Modification Antonio
-        # action_charge=self.get_charge(action)       
-        # action_discharge=self.get_discharge(action)
-        
-        action_=self.get_charge_discharge(action)
+        action_charge=self.get_charge(action)       
+        action_discharge=self.get_discharge(action)
         """
         The objective of the battery is to maximize self-consumption, 
         i.e charge the battery when there is PV production available.
@@ -231,14 +220,14 @@ class FlexEnv(gym.Env):
             if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <=self.soc_max):
                 reward1=np.float(1)
             else:
-                reward1=-abs(action_)
+                reward1=-action_charge
         else:
-            reward1=-abs(action_)
+            reward1=-action_charge
         
         # Modification (António)
         if self.soc > self.soc_max: # If the SOC becomes bigger then the SOC_max the reward is really negative (Probably more useful when the battery can discharge)
             # reward = -300    
-            reward2 = -3000*(self.soc-self.soc_max) # The bigger the difference from the SOC_max, the worse
+            reward2 = -300*(self.soc-self.soc_max) # The bigger the difference from the SOC_max, the worse
         else:
             reward2 =0
         # if self.soc == self.soc_max:
@@ -273,11 +262,10 @@ class FlexEnv(gym.Env):
         
         # The objective is to go as fast as possible to the self.soc_max when there is generation.
         # As such, for each instant that generation is available, the bigger the difference between SOC and SOC_max, the worse it is
-        # (This influences the code)
-        # if self.g > 0 and self.soc < self.soc_max: 
-        #     reward5 = -500*(self.soc_max-self.soc)
-        # else:
-        #     reward5 =0
+        if self.g > 0 and self.soc < self.soc_max: 
+            reward5 = -500*(self.soc_max-self.soc)
+        else:
+            reward5 =0
             
         # Every instant the SOC is between 0 and the SOC, it gets a positive reward
         if 0 <= self.soc <= self.soc_max:
@@ -302,17 +290,16 @@ class FlexEnv(gym.Env):
         # Modification (António)
         
         # A way to prevent the discharge to be bigger than the load at each instant
-        if action_<0 and abs(action_)>self.l:
-            reward8 = -50*((abs(action_)-self.l))
+        if abs(action_discharge)>self.l:
+            reward8 = -50*((abs(action_discharge)-self.l))
         else:
             reward8=0
         
-        # A way to prevent the discharge to be smaller than the load at each instant
-        # (This nfluences the actions, not desirable)
-        # if action_<0 and self.l>0 and abs(action_)<self.l:
-        #     reward9 = -50*((self.l-abs(action_)))
-        # else:
-        #     reward9 = 0
+        # A way to prevent the discharge to be smaller than the load at each instant     
+        if self.l>0 and abs(action_discharge)<self.l:
+            reward9 = -50*((self.l-abs(action_discharge)))
+        else:
+            reward9 = 0
             
         # A way to prevent the SOC beocming less than 0
         if self.soc<0:
@@ -321,31 +308,31 @@ class FlexEnv(gym.Env):
             reward10 = 0
         
         # A way to punish if the SOC is smaller or equal to zero and the action is to take some load            
-        if self.soc<=0 and action_<0:
-            reward11= -2000
+        if self.soc<=0 and action_discharge<0:
+            reward11= -700
         else:
             reward11=0
        
         # A way to reward if the SOC is bigger than zero and the action is to take some load         
-        # if self.soc>0 and action_discharge<0:
-        #     reward12 = 50
-        # else:
-        #     reward12 = 0
+        if self.soc>0 and action_discharge<0:
+            reward12 = 50
+        else:
+            reward12 = 0
         
         # If the action is to take an amount close to the load it is good.
         # The self.l-minimum step is the nearest the action can be to the load
-        # if self.l-self.minimum_charge_step<action_<self.l+self.minimum_charge_step:
-        #     reward13=200
-        # else:
-        #     reward13=0
+        if self.l-self.minimum_charge_step<action_discharge<self.l+self.minimum_charge_step:
+            reward13=200
+        else:
+            reward13=0
             
         # If the load is bigger than 0 but there is no SOC than the action should be 0    
-        # if self.l>0 and self.soc<=0 and action_==0:
-        #     reward14=700
-        # else:
-        #     reward14 = 0
+        if self.l>0 and self.soc<=0 and action_discharge==0:
+            reward14=700
+        else:
+            reward14 = 0
         
-        reward = reward1+reward2+reward3+reward4+reward6+reward7 + reward8+reward10+reward11 
+        reward = reward1+reward2+reward3+reward4+reward5+reward6+reward7 + reward8+reward9+reward10+reward11+reward12+reward13+reward14 
             
         return reward
 

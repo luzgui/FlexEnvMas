@@ -54,7 +54,7 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 #make and check the environment
 # Select the number of timesteps to consider
 # timesteps=141
-timesteps=47*4 # 4 days
+timesteps=47
 
 #Create environment. Based on the aux functions code.
 env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=2, eta=0.95, charge_lim=2, min_charge_step=0.5)
@@ -325,6 +325,32 @@ print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 # model=model_trained
 
 
+# # Evaluate the agent
+
+# In[33]:
+
+
+mean_reward, std_reward = evaluate_policy(model,env, n_eval_episodes=5)
+
+## Enjoy trained agent
+action_track=[]
+state_track=[]
+obs = env.reset()
+
+for i in range(timesteps):
+    action, _states = model.predict(obs, deterministic=True)
+    action_track.append(action)
+    state_track.append(obs)
+    obs, rewards, dones, info = env.step(action)
+    
+    env.render()
+
+state_track=np.array(state_track)
+
+#translate actions into charging power
+action_track=[env.get_charge(k) for k in action_track]
+
+
 # # Modificação António do Evaluate Agent
 
 # In[34]:
@@ -347,7 +373,7 @@ for i in range(timesteps):
     state_track.append(obs)
     obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
-    load_track.append(obs[2])
+    load_track.append(load)
     
     env.render()
 
@@ -355,7 +381,7 @@ state_track=np.array(state_track)
 
 #translate actions into charging power
 action_numbers = action_track
-action_track=[env.get_charge_discharge(k) for k in action_track]
+action_track=[env.get_charge(k) for k in action_track]
 
 
 # In[35]:
