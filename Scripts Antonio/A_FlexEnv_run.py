@@ -39,15 +39,13 @@ import random as rnd
 from time import perf_counter
 
 
-# # Data and Environment preparation
-
-# In[3]:
+## Data and Environment preparation
 
 
 #Data
-cwd=os.getcwd()
-datafolder=cwd + '/Data'
-
+# cwd=os.getcwd()
+# datafolder=cwd + '/Data'
+datafolder='/home/omega/Documents/FCUL/Projects/FlexEnv/Data'
 #impor the data csv
 env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 
@@ -60,37 +58,19 @@ timesteps=47*4 # 4 days
 env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=3, eta=0.95, charge_lim=2, min_charge_step=0.2)
 
 
-# In[4]:
 
+# %% Commands
 
 env.observation_space
 
-
-# In[5]:
-
-
 env.observation_space.high[3]
-
-
-# In[6]:
-
 
 env.action_space
 
 
-# In[7]:
+# %%
 
 
-# help(env.action_space)
-
-
-# In[8]:
-
-
-# charge_steps
-
-
-# In[9]:
 
 
 data=env_data
@@ -104,137 +84,104 @@ gen=abs(env_data1[0:timestep,1])
 data1=np.vstack((0.5*gen,6*load)).T
 
 
-# In[10]:
+# %% Commands
 
+# env_data
 
-env_data
 
 
-# In[11]:
+# env_data1.shape # 1a coluna é a data, 2a é a geração, 3a a 12a são colunas de gastos energéticos
 
+# env_data1
 
-env_data[4]
+# load.shape
 
+# env_data1[0:timestep,4] # É só um dia de dados 
 
-# In[12]:
+# data1 # # Duas colunas, a primeira retrata a geração, a segunda representa os gastos energéticos da casa 
 
+# data1.shape
 
-env_data1.shape # 1a coluna é a data, 2a é a geração, 3a a 12a são colunas de gastos energéticos
+# np.vstack((1.5*gen,6*load))
 
 
-# In[13]:
+# # # Generation values
+# # Data analysis to understand the data of the PV's
 
+# # In[19]:
 
-env_data1
 
+# # Values of generation
+# env_data[1].value_counts()
 
-# In[14]:
 
+# # In[20]:
 
-load.shape
 
+# env_data[env_data[1] ==1.764][0] # Dias e horas para as quais a geração de energia é maior
 
-# In[15]:
 
+# # In[21]:
 
-env_data1[0:timestep,4] # É só um dia de dados 
 
+# df_generation = 0
 
-# In[16]:
 
+# # In[22]:
 
-data1 # # Duas colunas, a primeira retrata a geração, a segunda representa os gastos energéticos da casa 
 
+# # pd.options.mode.chained_assignment = None 
 
-# In[17]:
+# df_generation = env_data[[0,1]]
+# df_generation.columns = ['Date','Generation']
 
 
-data1.shape
+# # In[23]:
 
 
-# In[18]:
+# df_generation['Date'] = pd.to_datetime(df_generation['Date'])
 
 
-np.vstack((1.5*gen,6*load))
+# # In[24]:
 
 
-# # Generation values
-# Data analysis to understand the data of the PV's
+# df_generation['Year'] = df_generation['Date'].apply(lambda time: time.year)
+# df_generation['Month'] = df_generation['Date'].apply(lambda time: time.month)
+# dmap = {1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
+# df_generation['Month'] = df_generation['Month'].map(dmap)
+# df_generation['Day'] = df_generation['Date'].apply(lambda time: time.day)
+# df_generation['Day of Week'] = df_generation['Date'].apply(lambda time: time.dayofweek)
+# dmap1 = {0:'Mon',1:'Tue',2:'Wed',3:'Thu',4:'Fri',5:'Sat',6:'Sun'}
+# df_generation['Day of Week'] = df_generation['Day of Week'].map(dmap1)
+# df_generation['Hour'] = df_generation['Date'].apply(lambda time: time.hour)
+# df_generation['Minutes'] = df_generation['Date'].apply(lambda time: time.minute)
 
-# In[19]:
 
+# # In[25]:
 
-# Values of generation
-env_data[1].value_counts()
 
+# df_generation
 
-# In[20]:
 
+# # In[26]:
 
-env_data[env_data[1] ==1.764][0] # Dias e horas para as quais a geração de energia é maior
 
+# df_generation[df_generation['Generation']==1.764]['Hour'].value_counts()
+# # Determining the hours at which the generation is the biggest
 
-# In[21]:
 
+# # In[27]:
 
-df_generation = 0
 
+# df_generation[df_generation['Generation']==1.764]['Month'].value_counts()
+# # Determining the months at which the generation is the biggest
 
-# In[22]:
 
+# # In[28]:
 
-# pd.options.mode.chained_assignment = None 
 
-df_generation = env_data[[0,1]]
-df_generation.columns = ['Date','Generation']
-
-
-# In[23]:
-
-
-df_generation['Date'] = pd.to_datetime(df_generation['Date'])
-
-
-# In[24]:
-
-
-df_generation['Year'] = df_generation['Date'].apply(lambda time: time.year)
-df_generation['Month'] = df_generation['Date'].apply(lambda time: time.month)
-dmap = {1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
-df_generation['Month'] = df_generation['Month'].map(dmap)
-df_generation['Day'] = df_generation['Date'].apply(lambda time: time.day)
-df_generation['Day of Week'] = df_generation['Date'].apply(lambda time: time.dayofweek)
-dmap1 = {0:'Mon',1:'Tue',2:'Wed',3:'Thu',4:'Fri',5:'Sat',6:'Sun'}
-df_generation['Day of Week'] = df_generation['Day of Week'].map(dmap1)
-df_generation['Hour'] = df_generation['Date'].apply(lambda time: time.hour)
-df_generation['Minutes'] = df_generation['Date'].apply(lambda time: time.minute)
-
-
-# In[25]:
-
-
-df_generation
-
-
-# In[26]:
-
-
-df_generation[df_generation['Generation']==1.764]['Hour'].value_counts()
-# Determining the hours at which the generation is the biggest
-
-
-# In[27]:
-
-
-df_generation[df_generation['Generation']==1.764]['Month'].value_counts()
-# Determining the months at which the generation is the biggest
-
-
-# In[28]:
-
-
-df_generation[df_generation['Generation']==0]['Hour'].value_counts()
-# Determining the hours at which the generation is non existential
+# df_generation[df_generation['Generation']==0]['Hour'].value_counts()
+# # Determining the hours at which the generation is non existential
 
 
 # # Stable Baselines ALGORITHMS
@@ -250,7 +197,7 @@ gamma=0.99
 learning_rate=1e-3
 buffer_size=1e6
 
-exploration_fraction=0.01
+exploration_fraction=0.001
 exploration_final_eps=0.02 
 exploration_initial_eps=1.0
 train_freq=1
@@ -277,8 +224,8 @@ seed=None
 t1_start = perf_counter()
 
 ## Train model
-model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=1,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(5e6))
+model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=0,batch_size=batch_size,exploration_fraction=exploration_fraction,)
+model.learn(total_timesteps=int(3e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
@@ -287,7 +234,7 @@ print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 ModelTime = t1_stop-t1_start
 
 ##Proximal Policy Optimization
-# model = PPO("MlpPolicy", env, verbose=1)
+# model = PPO("MlpPolicy", env, verbose=0)
 # model.learn(total_timesteps=4e5)
 
 
@@ -309,10 +256,10 @@ ModelTime = t1_stop-t1_start
 
 #Load + Save Model
 # Save model
-model.save('DQN_4days_Charge_Discharge_Observations_9672seconds')
+# model.save('DQN_4days_Charge_Discharge_Observations_9672seconds')
 
 #Load Model
-filename = 'DQN_4days_Charge_Discharge_Observations_9672seconds'
+# filename = 'DQN_4days_Charge_Discharge_Observations_9672seconds'
 # model_trained = DQN.load(filename, env=env) 
 
 # filename='ppo_1day_5e6steps_7910seconds' # Na verdade bastam bastante menos steps mas este dá sempre 10 de reward
@@ -346,8 +293,8 @@ for i in range(timesteps):
     print('')
 #     print(states)
     action_track.append(int(action))
-    state_track.append(obs)
     obs, rewards, done, info = env.step(action)
+    state_track.append(obs)
     rewards_track.append(rewards)
     load_track.append(obs[2])
     grid_track.append(obs[9])

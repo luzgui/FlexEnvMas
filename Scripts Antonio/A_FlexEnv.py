@@ -24,6 +24,7 @@ class FlexEnv(gym.Env):
         self.T=len(self.data) # Time horizon
         self.dh=30*(1/60) # Conversion factor energy-power
         self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained
+        self.c_Total=[]
         self.n_episodes=0
         # Modificação António
         self.soc=0
@@ -35,8 +36,8 @@ class FlexEnv(gym.Env):
         # Modify the observation space, low, high and shape values according to your custom environment's needs
 
         #limits on states
-        highlim=np.array([self.T, 10,10,self.soc_max,self.soc_max,1,100,1,100,1000,1000])
-        lowlim=np.array([0,0,0,0,0,0,-100,0,-100,0,0])
+        highlim=np.array([self.T, 10,10,self.soc_max,self.soc_max,1,100,1,100,1000,1000,1000,1000,1000,1000,1000])
+        lowlim=np.array([0,0,0,0,0,0,-100,0,-100,0,0,0,0,0,0,0])
         
 #         high = np.array([self.x_threshold * 2,
 #                          np.finfo(np.float32).max, # Infinito
@@ -50,7 +51,7 @@ class FlexEnv(gym.Env):
         self.discharge_lim=-charge_lim # The battery discharges charge_lim when it discharges
 
         # Observation space
-        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(11,), dtype='float32')
+        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(16,), dtype='float32')
 
         """
         State definition
@@ -66,6 +67,13 @@ class FlexEnv(gym.Env):
         # 9 --> grid: grid energy
         # 10 --> PV: Energy used from the battery
 
+        # 11 --> delta: energy defict/super-avit
+        # 12 --> grid import/export: 
+        # 13 --> Energy Balance 
+        # 14 --> energy cost
+        # 15 --> Total energy cost
+
+
         """
 
         #Actions
@@ -76,11 +84,13 @@ class FlexEnv(gym.Env):
         self.minimum_charge_step =min_charge_step
         # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
         # self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
-        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge and discharge actions
+        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step*4)+1)) #definition of charge and discharge actions
         
         # Inserting a zero in the middle of the actions vector
         self.chargedischarge_steps = np.insert(self.chargedischarge_steps, int(len(self.chargedischarge_steps)/2), 0) 
         self.action_space = gym.spaces.Discrete((len(self.chargedischarge_steps)))
+        
+
         
         # Modification António
         # self.discharge_steps=np.linspace(-charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of actions
@@ -136,10 +146,11 @@ class FlexEnv(gym.Env):
 
         # self.t=self.t
 
-        # if self.t>=len(self.data)-1 or self.soc >= self.soc_max:
-        if self.t==len(self.data)-1:
+        if self.t>=len(self.data)-1 or (0.05*self.soc_max > self.soc > self.soc_max):
+        # if self.t==len(self.data)-1:
             done=True
             self.R_Total.append(self.R)
+            self.c_Total.append(self.Totc)
             print(self.R)
 
             self.n_episodes+=1
@@ -172,8 +183,8 @@ class FlexEnv(gym.Env):
         self.soc+=self.eta*(action_)*self.dh
         
         ## Modification Antonio
-        if self.soc > self.l:
-            self.soc-=self.l
+        # if self.soc > self.l:
+        #     self.soc-=self.l
         
         ## Modification Antonio
         # (It goes bad as the actions can go in the wrong way but as self.g is 0, it doesn't affect the SOC)
@@ -215,10 +226,31 @@ class FlexEnv(gym.Env):
         self.r=reward
         
         # load = self.l
+        
+        # energy defict/super-avit
+        self.delta=self.g-self.l
+        
+        # grid import/export:
+        self.grid_2=action_-self.delta
+        
+        # Energy Balance 
+        self.bal=self.grid_2-action_+self.delta
+        
+        #energy cost
+        
+        # if self.grid>=0: #import is a cost
+        #     self.c=self.tar*self.grid*self.dh
+        # elif self.grid<0: #export is a revenue
+        #     self.c=-(0.1*self.tar)*abs(self.grid)*self.dh # export its payed at 10% of the import cost
+        
+        self.c=self.tar*self.grid_2*self.dh
+        self.Totc+=self.c
+        
+        
 
         info={}
 
-        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV),dtype='float32')
+        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
         # print(observation)
         # print(observation,reward,done)
 
@@ -246,126 +278,128 @@ class FlexEnv(gym.Env):
             sc_opt=1
 
             #If charging translates into a greater SC then r=1
-            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (self.soc <=self.soc_max):
+            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (0 < self.soc <=self.soc_max) and (-0.05 < self.grid_2 < self.l ):
                 reward1=np.float(1)
             else:
                 reward1=-abs(action_)
         else:
             reward1=-abs(action_)
+            
+        reward=reward1
         
         # Modification (António)
-        if self.soc > self.soc_max: # If the SOC becomes bigger then the SOC_max the reward is really negative (Probably more useful when the battery can discharge)
-            # reward = -300    
-            reward2 = -3000*(self.soc-self.soc_max) # The bigger the difference from the SOC_max, the worse
-        else:
-            reward2 =0
-        # if self.soc == self.soc_max:
-        #     reward = 60
-        
-        # if self.soc >= self.soc_max and action>=0: # If the battery charges but the SOC is already at its max (or bigger, which is not feasible in real life), the reward is really negative
-        #     # reward = -300*action                  # Doesn't make much sense to punish accordingly to the action, it should be awful to charge when the SOC is at SOC_max
-        #     reward = -600
-        # Tested and it went well with 5e5 steps
-        
-        if self.soc >= self.soc_max and self.soc > self.soc1: # If the battery charges but the SOC is already at its max (or bigger, which is not feasible in real life), the reward is really negative
-            # reward = -300*action                  # Doesn't make much sense to punish accordingly to the action, it should be awful to charge when the SOC is at SOC_max
-            reward3 = -800
-        else:
-            reward3 = 0
-        # Tested but probably not going well
-        
-        # If the battery charges whwn there is no generation, the reward is negative.
-        # The battery charges when the current SOC is bigger then the previous one 
-        if self.g <=0 and self.soc > self.soc1: 
-            reward4 = -4000
-        else:
-            reward4= 0 
-        # Tested and it went well
-            
-        # If the battery charges when there is generation, the reward is positive.
-        # The battery charges when the current SOC is bigger then the previous one 
-        # It can't be too positive otherwise it will charge every instant there is generation, which is not good
-        # (This doesn't make much sense)
-        # if self.g > 0 and self.soc > self.soc1: 
-        #     reward = 200*self.g # Trying to put the emphasis where there is more generation
-        
-        # The objective is to go as fast as possible to the self.soc_max when there is generation.
-        # As such, for each instant that generation is available, the bigger the difference between SOC and SOC_max, the worse it is
-        # (This influences the code)
-        # if self.g > 0 and self.soc < self.soc_max: 
-        #     reward5 = -500*(self.soc_max-self.soc)
+        # if self.soc > self.soc_max: # If the SOC becomes bigger then the SOC_max the reward is really negative (Probably more useful when the battery can discharge)
+        #     # reward = -300    
+        #     reward2 = -3000*(self.soc-self.soc_max) # The bigger the difference from the SOC_max, the worse
         # else:
-        #     reward5 =0
+        #     reward2 =0
+        # # if self.soc == self.soc_max:
+        # #     reward = 60
+        
+        # # if self.soc >= self.soc_max and action>=0: # If the battery charges but the SOC is already at its max (or bigger, which is not feasible in real life), the reward is really negative
+        # #     # reward = -300*action                  # Doesn't make much sense to punish accordingly to the action, it should be awful to charge when the SOC is at SOC_max
+        # #     reward = -600
+        # # Tested and it went well with 5e5 steps
+        
+        # if self.soc >= self.soc_max and self.soc > self.soc1: # If the battery charges but the SOC is already at its max (or bigger, which is not feasible in real life), the reward is really negative
+        #     # reward = -300*action                  # Doesn't make much sense to punish accordingly to the action, it should be awful to charge when the SOC is at SOC_max
+        #     reward3 = -800
+        # else:
+        #     reward3 = 0
+        # # Tested but probably not going well
+        
+        # # If the battery charges whwn there is no generation, the reward is negative.
+        # # The battery charges when the current SOC is bigger then the previous one 
+        # if self.g <=0 and self.soc > self.soc1: 
+        #     reward4 = -4000
+        # else:
+        #     reward4= 0 
+        # # Tested and it went well
             
-        # Every instant the SOC is between 0 and the SOC, it gets a positive reward
-        if 0 <= self.soc <= self.soc_max:
-            reward6 = 300
-        else:
-            reward6 =0
-        # Tested and it went well
+        # # If the battery charges when there is generation, the reward is positive.
+        # # The battery charges when the current SOC is bigger then the previous one 
+        # # It can't be too positive otherwise it will charge every instant there is generation, which is not good
+        # # (This doesn't make much sense)
+        # # if self.g > 0 and self.soc > self.soc1: 
+        # #     reward = 200*self.g # Trying to put the emphasis where there is more generation
+        
+        # # The objective is to go as fast as possible to the self.soc_max when there is generation.
+        # # As such, for each instant that generation is available, the bigger the difference between SOC and SOC_max, the worse it is
+        # # (This influences the code)
+        # # if self.g > 0 and self.soc < self.soc_max: 
+        # #     reward5 = -500*(self.soc_max-self.soc)
+        # # else:
+        # #     reward5 =0
             
-        # If the SOC is already at SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward     
-        # if self.soc == self.soc_max and self.soc == self.soc1 and self.g>0:
+        # # Every instant the SOC is between 0 and the SOC, it gets a positive reward
+        # if 0 <= self.soc <= self.soc_max:
+        #     reward6 = 300
+        # else:
+        #     reward6 =0
+        # # Tested and it went well
+            
+        # # If the SOC is already at SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward     
+        # # if self.soc == self.soc_max and self.soc == self.soc1 and self.g>0:
+        # #     reward7 = 1000
+        # # else:
+        # #     reward7 = 0
+            
+        # # If the SOC is already close to the SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward
+        # # 0.2 is the minimum step it can increase charging, so if it is less than the minimal charge away from the optimal value, it gets a positive reward
+        # if self.soc_max-self.minimum_charge_step <=self.soc < self.soc_max and self.soc == self.soc1 and self.g>0:
         #     reward7 = 1000
         # else:
         #     reward7 = 0
-            
-        # If the SOC is already close to the SOC_max and there is generation in that instant but the battery doesn't charge, it gets a positive reward
-        # 0.2 is the minimum step it can increase charging, so if it is less than the minimal charge away from the optimal value, it gets a positive reward
-        if self.soc_max-self.minimum_charge_step <=self.soc < self.soc_max and self.soc == self.soc1 and self.g>0:
-            reward7 = 1000
-        else:
-            reward7 = 0
         
-        # Modification (António)
+        # # Modification (António)
         
-        # A way to prevent the discharge to be bigger than the load at each instant
-        if action_<0 and abs(action_)>self.l:
-            reward8 = -50*((abs(action_)-self.l))
-        else:
-            reward8=0
-        
-        # A way to prevent the discharge to be smaller than the load at each instant
-        # (This nfluences the actions, not desirable)
-        # if action_<0 and self.l>0 and abs(action_)<self.l:
-        #     reward9 = -50*((self.l-abs(action_)))
+        # # A way to prevent the discharge to be bigger than the load at each instant
+        # if action_<0 and abs(action_)>self.l:
+        #     reward8 = -50*((abs(action_)-self.l))
         # else:
-        #     reward9 = 0
-            
-        # A way to prevent the SOC beocming less than 0
-        if self.soc<0:
-            reward10 = -1000
-        else:
-            reward10 = 0
+        #     reward8=0
         
-        # A way to punish if the SOC is smaller or equal to zero and the action is to take some load            
-        if self.soc<=0 and action_<0:
-            reward11= -2000
-        else:
-            reward11=0
+        # # A way to prevent the discharge to be smaller than the load at each instant
+        # # (This nfluences the actions, not desirable)
+        # # if action_<0 and self.l>0 and abs(action_)<self.l:
+        # #     reward9 = -50*((self.l-abs(action_)))
+        # # else:
+        # #     reward9 = 0
+            
+        # # A way to prevent the SOC beocming less than 0
+        # if self.soc<0:
+        #     reward10 = -1000
+        # else:
+        #     reward10 = 0
+        
+        # # A way to punish if the SOC is smaller or equal to zero and the action is to take some load            
+        # if self.soc<=0 and action_<0:
+        #     reward11= -2000
+        # else:
+        #     reward11=0
        
-        # A way to reward if the SOC is bigger than zero and the action is to take some load         
-        # if self.soc>0 and action_discharge<0:
-        #     reward12 = 50
-        # else:
-        #     reward12 = 0
+        # # A way to reward if the SOC is bigger than zero and the action is to take some load         
+        # # if self.soc>0 and action_discharge<0:
+        # #     reward12 = 50
+        # # else:
+        # #     reward12 = 0
         
-        # If the action is to take an amount close to the load it is good.
-        # The self.l-minimum step is the nearest the action can be to the load
-        # if self.l-self.minimum_charge_step<action_<self.l+self.minimum_charge_step:
-        #     reward13=200
-        # else:
-        #     reward13=0
+        # # If the action is to take an amount close to the load it is good.
+        # # The self.l-minimum step is the nearest the action can be to the load
+        # # if self.l-self.minimum_charge_step<action_<self.l+self.minimum_charge_step:
+        # #     reward13=200
+        # # else:
+        # #     reward13=0
             
-        # If the load is bigger than 0 but there is no SOC than the action should be 0    
-        # if self.l>0 and self.soc<=0 and action_==0:
-        #     reward14=700
-        # else:
-        #     reward14 = 0
+        # # If the load is bigger than 0 but there is no SOC than the action should be 0    
+        # # if self.l>0 and self.soc<=0 and action_==0:
+        # #     reward14=700
+        # # else:
+        # #     reward14 = 0
         
-        reward15 = -self.grid*50
+        # reward15 = -self.grid*50
         
-        reward = reward1+reward2+reward3+reward4+reward6+reward7 + reward8+reward10+reward11 +reward15
+        # reward = reward1+reward2+reward3+reward4+reward6+reward7 + reward8+reward10+reward11 +reward15
             
         return reward
 
@@ -398,8 +432,15 @@ class FlexEnv(gym.Env):
         self.sc=0
         self.grid=0
         self.PV=0
+        
+        self.delta=self.g-self.l
+        self.grid_2=0
+        
+        self.bal=0
+        self.c=0
+        self.Totc=0
 
-        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV),dtype='float32')
+        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
 
         return observation
 
