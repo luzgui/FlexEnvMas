@@ -75,6 +75,7 @@ class FlexEnv(gym.Env):
 
 
         """
+        self.varnames=('time','gen','load','soc','soc_1','tar','R','sc','r','grid','PV_used','delta','I/E','bal','c','Tc')
 
         #Actions
         # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
@@ -84,10 +85,11 @@ class FlexEnv(gym.Env):
         self.minimum_charge_step =min_charge_step
         # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
         # self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
-        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step*4)+1)) #definition of charge and discharge actions
+        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge and discharge actions
         
         # Inserting a zero in the middle of the actions vector
         self.chargedischarge_steps = np.insert(self.chargedischarge_steps, int(len(self.chargedischarge_steps)/2), 0) 
+        
         self.action_space = gym.spaces.Discrete((len(self.chargedischarge_steps)))
         
 
@@ -110,7 +112,7 @@ class FlexEnv(gym.Env):
     
     def get_charge_discharge(self,action):
         #translates the action number into a charging power in discharge_steps
-        return self.chargedischarge_steps[action-1]
+        return self.chargedischarge_steps[action]
     
     # def get_discharge(self,action):
     #     #translates the action number into a charging power in charge_steps
@@ -146,12 +148,13 @@ class FlexEnv(gym.Env):
 
         # self.t=self.t
 
-        if self.t>=len(self.data)-1 or (0.05*self.soc_max > self.soc > self.soc_max):
-        # if self.t==len(self.data)-1:
+        # if self.t>=len(self.data)-1 or self.soc > self.soc_max or self.soc <= 0:
+        if self.t==len(self.data)-1:
             done=True
             self.R_Total.append(self.R)
             self.c_Total.append(self.Totc)
             print(self.R)
+            # print('abort')
 
             self.n_episodes+=1
             # print(self.n_episodes)
@@ -268,24 +271,55 @@ class FlexEnv(gym.Env):
         The objective of the battery is to maximize self-consumption, 
         i.e charge the battery when there is PV production available.
         """
-
+        
+        #Defined in this way rewards are greater if actions are equal to delta 
+        if self.soc <= self.soc_max and self.soc >= 0:
+            r=1/((action_-self.delta))
+        else:
+            r=-abs(action_)
+     
+        
         # TODO: define a new reward based on total energy cost
 
         # reward=0
-        if self.g!=0:
-            eps_sc=0.3 #allowed variation percentage
-            eps_soc=1
-            sc_opt=1
+        # if self.g>0:
+        # if self.delta > 0:
+        #     eps_sc=0.3 #allowed variation percentage
+        #     eps_soc=1
+        #     sc_opt=1
 
-            #If charging translates into a greater SC then r=1
-            if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (0 < self.soc <=self.soc_max) and (-0.05 < self.grid_2 < self.l ):
-                reward1=np.float(1)
-            else:
-                reward1=-abs(action_)
-        else:
-            reward1=-abs(action_)
+        #     #If charging translates into a greater SC then r=1
+        #     # if (self.sc <= (1+eps_sc)*sc_opt and self.sc >= (1-eps_sc)*sc_opt) and (0 < self.soc <=self.soc_max) and (-0.05 < self.grid_2 < self.l ):
+        #     #     reward1=np.float(1)
+        #     # else:
+        #     #     reward1=-abs(action_)
+                
+        #     if self.soc <= self.soc_max and self.soc >= 0:
+        #         r=1/((action_-self.delta)+0.001)
+        #         # r=1/((abs(action_)-abs(self.delta)+0.001))
+        #         # r=(min((self.l+action_),self.g)/self.g)+(self.soc/self.soc_max)
+        #     else:
+        #         r=-abs(action_)
+        # # elif self.g==0:
+        # elif self.delta < 0:
+        #     if self.soc <= self.soc_max and self.soc >= 0:
+        #     # r=min(min(action_,0),self.l)/self.l
+        #         r=1/((action_-self.delta)+0.001)
+        #         # r=1/((abs(action_)-abs(self.delta)+0.001))
             
-        reward=reward1
+        #     else:
+        #             r=-abs(action_)    
+        # else:
+        #     r=-abs(action_)
+                
+        # elif self.g==0 and action_>0:
+            # r=-abs(action_)
+            
+        # else:
+        #     r=-abs(action_)
+            
+        reward=r
+        
         
         # Modification (António)
         # if self.soc > self.soc_max: # If the SOC becomes bigger then the SOC_max the reward is really negative (Probably more useful when the battery can discharge)
@@ -412,6 +446,9 @@ class FlexEnv(gym.Env):
         -------
         observation (object): The initial observation for the new episode after reset
         :return:
+        
+        we are assuming that the agnet takes no action at t=0    
+        
         """
 
         done=False
@@ -426,19 +463,22 @@ class FlexEnv(gym.Env):
         self.soc1=0
         self.tar=0.17
         self.R=0
-        self.r=0
+        
         # self consumption
         #we are starting at t=0 with sc=0 because there is no sun. the initial state depends on the action and we cannot have actions on reset()
         self.sc=0
-        self.grid=0
+        
         self.PV=0
         
         self.delta=self.g-self.l
-        self.grid_2=0
+        self.r=1/((0-abs(self.delta)+0.001))
+        
+        self.grid=-self.delta
+        self.grid_2=-self.delta
         
         self.bal=0
-        self.c=0
-        self.Totc=0
+        self.c=self.tar*self.grid_2*self.dh
+        self.Totc=self.c
 
         observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
 

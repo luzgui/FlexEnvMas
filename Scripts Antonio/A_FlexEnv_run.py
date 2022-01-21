@@ -52,26 +52,14 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 #make and check the environment
 # Select the number of timesteps to consider
 # timesteps=141
-timesteps=47*4 # 4 days
+timesteps=47*1 # 4 days
 
 #Create environment. Based on the aux functions code.
-env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=3, eta=0.95, charge_lim=2, min_charge_step=0.2)
+env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.2)
 
 
 
-# %% Commands
-
-env.observation_space
-
-env.observation_space.high[3]
-
-env.action_space
-
-
-# %%
-
-
-
+#Data
 
 data=env_data
 load_num=4
@@ -225,17 +213,17 @@ t1_start = perf_counter()
 
 ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=0,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(3e5))
+model.learn(total_timesteps=int(1e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
 print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 
-ModelTime = t1_stop-t1_start
+# ModelTime = t1_stop-t1_start
 
-##Proximal Policy Optimization
+#Proximal Policy Optimization
 # model = PPO("MlpPolicy", env, verbose=0)
-# model.learn(total_timesteps=4e5)
+# model.learn(total_timesteps=1e3)
 
 
 ## Other algorithms
@@ -287,19 +275,21 @@ grid_track = []
 PV_track = []
 
 for i in range(timesteps):
-    action, states = model.predict(obs)
+    
+    
+    action, states = model.predict(obs, deterministic=True)
     print(obs)
     print(action)
     print('')
 #     print(states)
     action_track.append(int(action))
-    obs, rewards, done, info = env.step(action)
     state_track.append(obs)
+    obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
     load_track.append(obs[2])
     grid_track.append(obs[9])
     PV_track.append(obs[10])
-
+    
     
     env.render()
 
@@ -310,67 +300,13 @@ action_numbers = action_track
 action_track=[env.get_charge_discharge(k) for k in action_track]
 
 
-# In[35]:
+#Create dataframe state_action
+state_action_track=np.concatenate((state_track,np.reshape(action_track,(len(action_track),1))),axis=1)
+state_action_track=pd.DataFrame(state_action_track, columns=env.varnames+('actions',))
 
 
-action_numbers
 
-
-# In[36]:
-
-
-action_track
-
-
-# In[37]:
-
-
-# State definition
-        # 0-->t : time slot
-        # 1-->gen : PV generation at timeslot t
-        # 2-->load : Load at timeslot t
-        # 3--> SOC : State of charge
-        # 4-->SOC_1 : State of charge t-1
-        # 5-->tar : Electricity tariff at timeslot t
-        # 6-->R  : total reward per episode
-        # 7 --> sc: self-consumption
-        # 8 --> r :reward
-
-
-# In[38]:
-
-
-rewards_track
-
-
-# In[39]:
-
-
-sum(rewards_track)
-
-
-# In[40]:
-
-
-load_track
-
-
-# In[38]:
-
-
-grid_track
-
-
-# In[38]:
-
-
-PV_track
-
-
-# # Plots
-
-# In[41]:
-
+#Plot
 
 flex.makeplot(48,state_track[:,3],action_track,env.data[:,0],env.data[:,1],env) # O Tempo e o Env não estão a fazer nada
 # makeplot(T,soc,sol,gen,load,env): Tempo, SOC, Bat_Charge, Generation, load, env
