@@ -273,6 +273,10 @@ class FlexEnv(gym.Env):
         """
         
         #Defined in this way rewards are greater if actions are equal to delta 
+        
+        # when delta < 0 (delta > 0) we want a<0 (a>0)
+        # This function increases if this beahvior is verified
+        
         if self.soc <= self.soc_max and self.soc >= 0:
             r=1/((action_-self.delta))
         else:
