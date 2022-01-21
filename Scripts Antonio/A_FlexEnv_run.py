@@ -43,9 +43,10 @@ from time import perf_counter
 
 
 #Data
-# cwd=os.getcwd()
-# datafolder=cwd + '/Data'
-datafolder='/home/omega/Documents/FCUL/Projects/FlexEnv/Data'
+cwd=os.getcwd()
+datafolder=os.path.dirname(cwd) + '/Data' #one level up
+
+
 #impor the data csv
 env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 
