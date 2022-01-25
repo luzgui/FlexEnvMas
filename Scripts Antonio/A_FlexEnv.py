@@ -281,7 +281,7 @@ class FlexEnv(gym.Env):
             r=1/((action_-self.delta))
         else:
             r=-abs(action_)
-     
+            
         
         # TODO: define a new reward based on total energy cost
 

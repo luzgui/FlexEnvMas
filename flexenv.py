@@ -73,7 +73,7 @@ class FlexEnv(gym.Env):
         #Actions
         # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
 
-        self.charge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/0.1)+1)) #definition of actions
+        self.charge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/0.2)+1)) #definition of actions
         
         # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/0.1)+1)) #definition of actions
         
