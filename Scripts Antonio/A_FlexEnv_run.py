@@ -190,12 +190,12 @@ exploration_fraction=0.001
 exploration_final_eps=0.02 
 exploration_initial_eps=1.0
 train_freq=1
-batch_size=32
+batch_size=64
 double_q=True
 learning_starts=1000
 target_network_update_freq=500
 
-prioritized_replay=False
+prioritized_replay=True
 prioritized_replay_alpha=0.6
 prioritized_replay_beta0=0.4
 prioritized_replay_beta_iters=None
@@ -214,7 +214,7 @@ t1_start = perf_counter()
 
 ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=0,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(1e5))
+model.learn(total_timesteps=int(3e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
@@ -224,7 +224,7 @@ print("Elapsed time during the whole program in seconds:", t1_stop-t1_start)
 
 #Proximal Policy Optimization
 # model = PPO("MlpPolicy", env, verbose=0)
-# model.learn(total_timesteps=1e3)
+# model.learn(total_timesteps=1e5)
 
 
 ## Other algorithms

@@ -36,8 +36,9 @@ class FlexEnv(gym.Env):
         # Modify the observation space, low, high and shape values according to your custom environment's needs
 
         #limits on states
-        highlim=np.array([self.T, 10,10,self.soc_max,self.soc_max,1,100,1,100,1000,1000,1000,1000,1000,1000,1000])
-        lowlim=np.array([0,0,0,0,0,0,-100,0,-100,0,0,0,0,0,0,0])
+        highlim=np.array([self.T, 10,10,self.soc_max,self.soc_max,1,100,1,100,1000,1000,1000,1000,1000])
+        
+        lowlim=np.array([0,0,0,0,0,0,-100,0,-100,0,0,0,0,0])
         
 #         high = np.array([self.x_threshold * 2,
 #                          np.finfo(np.float32).max, # Infinito
@@ -51,7 +52,7 @@ class FlexEnv(gym.Env):
         self.discharge_lim=-charge_lim # The battery discharges charge_lim when it discharges
 
         # Observation space
-        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(16,), dtype='float32')
+        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(14,), dtype='float32')
 
         """
         State definition
@@ -64,18 +65,16 @@ class FlexEnv(gym.Env):
         # 6-->R  : total reward per episode
         # 7 --> sc: self-consumption
         # 8 --> r :reward
-        # 9 --> grid: grid energy
-        # 10 --> PV: Energy used from the battery
-
-        # 11 --> delta: energy defict/super-avit
-        # 12 --> grid import/export: 
-        # 13 --> Energy Balance 
-        # 14 --> energy cost
-        # 15 --> Total energy cost
+        
+        # 09 --> delta: energy defict/super-avit
+        # 10 --> grid import/export: 
+        # 11 --> Energy Balance 
+        # 12 --> energy cost
+        # 13 --> Total energy cost
 
 
         """
-        self.varnames=('time','gen','load','soc','soc_1','tar','R','sc','r','grid','PV_used','delta','I/E','bal','c','Tc')
+        self.varnames=('time','gen','load','soc','soc_1','tar','R','sc','r','delta','I/E','bal','c','Tc')
 
         #Actions
         # The battery actions are the selection of charging power but these are discretized between zero and charge_lim
@@ -150,15 +149,16 @@ class FlexEnv(gym.Env):
 
         # if self.t>=len(self.data)-1 or self.soc > self.soc_max or self.soc <= 0:
         if self.t==len(self.data)-1:
-            done=True
+            
             self.R_Total.append(self.R)
             self.c_Total.append(self.Totc)
             print(self.R)
             # print('abort')
 
             self.n_episodes+=1
+            done=True
             # print(self.n_episodes)
-            return self.reset(), 0,done, {}
+            return np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32'), 0,done, {}
         
         ## Modification (António) - If needed self.g1 represents the previous generation
         # if self.t > 0:
@@ -203,17 +203,17 @@ class FlexEnv(gym.Env):
         
         # If the action is to discharge, then the self.grid is the difference between the discharge amount and the load needed
         # If the action is to charge the battery or do nothing to the battery, then the self.grid is the load needed for that instant 
-        if action_<0:
-            if abs(action_)<=self.l:
-                self.grid =self.l+action_
-            else:
-                self.grid=0
-        else:
-            self.grid =self.l
+        # if action_<0:
+        #     if abs(action_)<=self.l:
+        #         self.grid =self.l+action_
+        #     else:
+        #         self.grid=0
+        # else:
+        #     self.grid =self.l
             
         # If the action is to discharge, the amount the battery discharges is the amount of energy used because of the PV    
-        if action_<0:
-            self.PV+=abs(action_)
+        # if action_<0:
+        #     self.PV+=abs(action_)
 
         # self consumption (it should be 0<SC<1 but it is possible to have SC>1)
         #TODO: Think about how to maintain 0<SC<1
@@ -253,7 +253,7 @@ class FlexEnv(gym.Env):
 
         info={}
 
-        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
+        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
         # print(observation)
         # print(observation,reward,done)
 
@@ -278,7 +278,7 @@ class FlexEnv(gym.Env):
         # This function increases if this beahvior is verified
         
         if self.soc <= self.soc_max and self.soc >= 0:
-            r=1/((action_-self.delta))
+            r=10/((action_-self.delta))
         else:
             r=-abs(action_)
             
@@ -472,19 +472,19 @@ class FlexEnv(gym.Env):
         #we are starting at t=0 with sc=0 because there is no sun. the initial state depends on the action and we cannot have actions on reset()
         self.sc=0
         
-        self.PV=0
+        # self.PV=0
         
         self.delta=self.g-self.l
         self.r=1/((0-abs(self.delta)+0.001))
         
-        self.grid=-self.delta
+        # self.grid=-self.delta
         self.grid_2=-self.delta
         
         self.bal=0
         self.c=self.tar*self.grid_2*self.dh
         self.Totc=self.c
 
-        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.grid,self.PV,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
+        observation=np.array((self.t,self.g,self.l,self.soc,self.soc1,self.tar,self.R,self.sc,self.r,self.delta,self.grid_2,self.bal,self.c, self.Totc),dtype='float32')
 
         return observation
 
