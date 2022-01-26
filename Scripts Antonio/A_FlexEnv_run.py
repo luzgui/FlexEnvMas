@@ -53,11 +53,17 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 #make and check the environment
 # Select the number of timesteps to consider
 # timesteps=141
-timesteps=47*1 # 4 days
+timesteps=47*1# 4 days
 
 #Create environment. Based on the aux functions code.
-env=fun.make_env(env_data, load_num=4, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.2)
+env=fun.make_env(env_data, load_num=6, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.2)
 
+plt.figure(figsize=(10,7))
+plt.legend
+plt.plot(env.data[:,0],label='gen')
+plt.plot(env.data[:,1],label='load')
+plt.legend()
+plt.show()
 
 
 #Data
@@ -195,7 +201,7 @@ double_q=True
 learning_starts=1000
 target_network_update_freq=500
 
-prioritized_replay=True
+prioritized_replay=False
 prioritized_replay_alpha=0.6
 prioritized_replay_beta0=0.4
 prioritized_replay_beta_iters=None
@@ -348,6 +354,7 @@ state_track
 def myplot(x):
     plt.figure(figsize=(10,6))
     plt.plot(x)
+    plt.grid()
 
 
 # In[47]:

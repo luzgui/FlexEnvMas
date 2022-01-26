@@ -84,7 +84,7 @@ class FlexEnv(gym.Env):
         self.minimum_charge_step =min_charge_step
         # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
         # self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
-        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge and discharge actions
+        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((4*self.charge_lim/self.minimum_charge_step)+1)) #definition of charge and discharge actions
         
         # Inserting a zero in the middle of the actions vector
         self.chargedischarge_steps = np.insert(self.chargedischarge_steps, int(len(self.chargedischarge_steps)/2), 0) 
@@ -277,12 +277,25 @@ class FlexEnv(gym.Env):
         # when delta < 0 (delta > 0) we want a<0 (a>0)
         # This function increases if this beahvior is verified
         
-        if self.soc <= self.soc_max and self.soc >= 0:
-            r=10/((action_-self.delta))
-        else:
-            r=-abs(action_)
+        # if self.soc <= self.soc_max and self.soc >= 0:
+        #     r=10/((action_-self.delta))
+        #     # r=10
+        # else:
+        #     r=-10*abs(action_)
             
+
+        if self.soc <= self.soc_max and self.soc >= 0:
+            if (action_-self.delta) >= 0:
+                r=-0.2*np.exp((action_-self.delta)/0.4)+3
+            
+            elif (action_-self.delta) <= 0:
+                r=-0.2*np.exp(-(action_-self.delta)/0.4)+3
+                
+            else:
+                r=-10*abs(action_)
         
+        else:
+            r=-10*abs(action_)
         # TODO: define a new reward based on total energy cost
 
         # reward=0

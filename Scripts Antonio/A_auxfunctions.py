@@ -31,7 +31,7 @@ def make_env(data,load_num,timestep,soc_max,eta,charge_lim,min_charge_step):
     load=env_data[0:timestep,load_num] # Escolhe timestep (um número) valores da coluna load_num, que representa os gastos uma casa
     gen=abs(env_data[0:timestep,1]) # Primeira coluna da data
     # Modification (António) - Multiply the gen by 0.5 to make it smaller generation values
-    data=np.vstack((gen*2,6*load)).T # Duas colunas, a primeira retrata a geração, a segunda representa os gastos energéticos da casa
+    data=np.vstack((gen*1,1*load)).T # Duas colunas, a primeira retrata a geração, a segunda representa os gastos energéticos da casa
     
     #make the environment
     env=flex.FlexEnv(data,soc_max,eta,charge_lim,min_charge_step)
