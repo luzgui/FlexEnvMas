@@ -220,7 +220,7 @@ t1_start = perf_counter()
 
 # ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=0,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(2e5))
+model.learn(total_timesteps=int(3e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
@@ -283,19 +283,18 @@ PV_track = []
 
 for i in range(timesteps):
     
-    
+    state_track.append(obs)
     action, states = model.predict(obs, deterministic=True)
     print(obs)
     print(action)
     print('')
 #     print(states)
     action_track.append(int(action))
-    state_track.append(obs)
     obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
-    load_track.append(obs[2])
-    grid_track.append(obs[9])
-    PV_track.append(obs[10])
+    load_track.append(obs[1])
+    grid_track.append(obs[6])
+    PV_track.append(obs[0])
     
     
     env.render()
