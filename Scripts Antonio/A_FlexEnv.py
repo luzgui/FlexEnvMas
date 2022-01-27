@@ -286,7 +286,7 @@ class FlexEnv(gym.Env):
 
         if self.soc <= self.soc_max and self.soc >= 0:
             if (action_-self.delta) >= 0:
-                r=-0.2*np.exp((action_-self.delta)/0.4)+3
+                r=-0.2*np.exp((action_-self.delta)/0.3)+3
             
             elif (action_-self.delta) <= 0:
                 r=-0.2*np.exp(-(action_-self.delta)/0.4)+3
@@ -476,7 +476,11 @@ class FlexEnv(gym.Env):
 
         self.g=self.data[0,0]
         self.l=self.data[0,1]
-        self.soc=0
+        
+        # self.soc=0
+        self.soc=0.2*self.soc_max
+        
+        
         self.soc1=0
         self.tar=0.17
         self.R=0
