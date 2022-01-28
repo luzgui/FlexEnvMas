@@ -285,15 +285,15 @@ for i in range(timesteps):
     
     state_track.append(obs)
     action, states = model.predict(obs, deterministic=True)
-    print(obs)
-    print(action)
-    print('')
+    # print(obs)
+    # print(action)
+    # print('')
 #     print(states)
     action_track.append(int(action))
     obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
     load_track.append(obs[1])
-    grid_track.append(obs[6])
+    # grid_track.append(obs[6])
     PV_track.append(obs[0])
     
     
@@ -307,8 +307,12 @@ action_track=[env.get_charge_discharge(k) for k in action_track]
 
 
 #Create dataframe state_action
-state_action_track=np.concatenate((state_track,np.reshape(action_track,(len(action_track),1))),axis=1)
-state_action_track=pd.DataFrame(state_action_track, columns=env.varnames+('actions',))
+
+state_action_track=(state_track,np.reshape(action_track,((len(action_track)), 1)), np.reshape(np.array(rewards_track),((len(action_track)), 1)))
+
+
+state_action_track=np.concatenate(state_action_track, axis=1)
+state_action_track=pd.DataFrame(state_action_track, columns=env.varnames+('actions','rewards'))
 
 
 

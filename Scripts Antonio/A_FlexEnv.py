@@ -37,11 +37,11 @@ class FlexEnv(gym.Env):
 
         #limits on states
         
-        highlim=np.array([10,10,self.soc_max,self.soc_max,10,10,10])
-        lowlim=np.array([0,0,0,0,-10,-10,-10])
+        highlim=np.array([10,10,self.soc_max,self.soc_max,10])
+        lowlim=np.array([0,0,0,0,-10])
         
         #Names of variables
-        self.varnames=('gen','load','soc','soc_1','r','delta','I/E')
+        self.varnames=('gen','load','soc','soc_1','delta')
         
         #Number of variables
         self.var_dim=len(self.varnames)
@@ -134,7 +134,7 @@ class FlexEnv(gym.Env):
             self.n_episodes+=1
             done=True
             # print(self.n_episodes)
-            return np.array((self.g,self.l,self.soc,self.soc1,self.r,self.delta,self.grid),dtype='float32'),0,done, {}
+            return np.array((self.g,self.l,self.soc,self.soc1,self.delta),dtype='float32'),0,done, {}
         
         
         self.t+=1
@@ -147,7 +147,14 @@ class FlexEnv(gym.Env):
 
         self.soc1 = self.soc #State of Charge at t-1
         
-        self.soc+=self.eta*(action_)*self.dh # New State of Charge
+        # Charging discharging dynamics
+        
+        if action_ > 0: #charging
+            self.soc+=self.eta*(action_)*self.dh # New State of Charge
+        elif action_ < 0: #discharging
+            self.soc+=((action_)/self.eta)*self.dh
+        elif action_ == 0: #do nothing
+            self.soc = self.soc
         
         self.tar=0.17 # grid tariff in €/kWh #Electricity tariff
         
@@ -182,7 +189,7 @@ class FlexEnv(gym.Env):
 
         info={}
 
-        observation=np.array((self.g,self.l,self.soc,self.soc1,self.r,self.delta,self.grid),dtype='float32')
+        observation=np.array((self.g,self.l,self.soc,self.soc1,self.delta),dtype='float32')
         # print(observation)
         # print(observation,reward,done)
 
@@ -221,7 +228,7 @@ class FlexEnv(gym.Env):
         #Hipotese 2        
         
         if self.soc <= self.soc_max and self.soc >= 0:
-            r=np.exp(-(action_-self.delta)**2/0.1) # Gaussian function that approximates a tep function
+            r=np.exp(-(action_-self.delta)**2/0.01) # Gaussian function that approximates a tep function
         
         else:
             r=0
@@ -267,7 +274,7 @@ class FlexEnv(gym.Env):
         # self.PV=0
         
         self.delta=self.g-self.l
-        self.r=1/((0-abs(self.delta)+0.001))
+        self.r=0
         
         # self.grid=-self.delta
         self.grid_2=-self.delta
@@ -276,7 +283,7 @@ class FlexEnv(gym.Env):
         self.c=self.tar*self.grid_2*self.dh
         self.Totc=self.c
 
-        observation=np.array((self.g,self.l,self.soc,self.soc1,self.r,self.delta,self.grid),dtype='float32')
+        observation=np.array((self.g,self.l,self.soc,self.soc1,self.delta),dtype='float32')
 
         return observation
 
