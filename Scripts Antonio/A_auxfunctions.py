@@ -12,7 +12,7 @@ import time
 import random as rnd
 
 
-def make_env(data,load_num,timestep,soc_max,eta,charge_lim,min_charge_step):
+def make_env(data,load_num,timestep,soc_max,eta,charge_lim,min_charge_step,reward_type):
     #prepare the data
     """
     Load and PV production data are loaded into the environment and we must choose the length of the trainning data
@@ -34,7 +34,7 @@ def make_env(data,load_num,timestep,soc_max,eta,charge_lim,min_charge_step):
     data=np.vstack((gen*1,1*load)).T # Duas colunas, a primeira retrata a geração, a segunda representa os gastos energéticos da casa
     
     #make the environment
-    env=flex.FlexEnv(data,soc_max,eta,charge_lim,min_charge_step)
+    env=flex.FlexEnv(data,soc_max,eta,charge_lim,min_charge_step, reward_type)
     # Modification António:
     # O check env estava a dar erros de observation space quando não era sequer algo mudado. Comentei e já corre tudo bem
 #     check_env(env,warn=True, skip_render_check=False) 

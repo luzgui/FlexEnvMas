@@ -56,7 +56,7 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 timesteps=47*4# 4 days
 
 #Create environment. Based on the aux functions code.
-env=fun.make_env(env_data, load_num=6, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.2)
+env=fun.make_env(env_data, load_num=2, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.02, reward_type=1)
 
 plt.figure(figsize=(10,7))
 plt.legend
@@ -76,7 +76,7 @@ env_data
 env_data1=data.to_numpy()
 load=env_data1[0:timestep,load_num]
 gen=abs(env_data1[0:timestep,1])
-data1=np.vstack((0.5*gen,6*load)).T
+data1=np.vstack((gen,load)).T
 
 
 # %% Commands
@@ -220,7 +220,7 @@ t1_start = perf_counter()
 
 # ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=0,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(3e5))
+model.learn(total_timesteps=int(1e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
@@ -280,6 +280,7 @@ rewards_track = []
 load_track = []
 grid_track = []
 PV_track = []
+delta_track=[]
 
 for i in range(timesteps):
     
@@ -293,8 +294,7 @@ for i in range(timesteps):
     obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
     load_track.append(obs[1])
-    # grid_track.append(obs[6])
-    PV_track.append(obs[0])
+    delta_track.append(obs[5])
     
     
     env.render()
@@ -318,7 +318,7 @@ state_action_track=pd.DataFrame(state_action_track, columns=env.varnames+('actio
 
 #Plot
 
-flex.makeplot(48,state_track[:,3],action_track,env.data[:,0],env.data[:,1],env) # O Tempo e o Env não estão a fazer nada
+flex.makeplot(48,state_track[:,3],action_track,env.data[:,0],env.data[:,1],delta_track,env) # O Tempo e o Env não estão a fazer nada
 # makeplot(T,soc,sol,gen,load,env): Tempo, SOC, Bat_Charge, Generation, load, env
 
 
