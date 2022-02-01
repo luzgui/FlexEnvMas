@@ -56,7 +56,7 @@ env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 timesteps=47*4# 4 days
 
 #Create environment. Based on the aux functions code.
-env=fun.make_env(env_data, load_num=2, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.02, reward_type=1)
+env=fun.make_env(env_data, load_num=2, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.02, reward_type=2)
 
 plt.figure(figsize=(10,7))
 plt.legend
@@ -79,111 +79,7 @@ gen=abs(env_data1[0:timestep,1])
 data1=np.vstack((gen,load)).T
 
 
-# %% Commands
-
-# env_data
-
-
-
-# env_data1.shape # 1a coluna é a data, 2a é a geração, 3a a 12a são colunas de gastos energéticos
-
-# env_data1
-
-# load.shape
-
-# env_data1[0:timestep,4] # É só um dia de dados 
-
-# data1 # # Duas colunas, a primeira retrata a geração, a segunda representa os gastos energéticos da casa 
-
-# data1.shape
-
-# np.vstack((1.5*gen,6*load))
-
-
-# # # Generation values
-# # Data analysis to understand the data of the PV's
-
-# # In[19]:
-
-
-# # Values of generation
-# env_data[1].value_counts()
-
-
-# # In[20]:
-
-
-# env_data[env_data[1] ==1.764][0] # Dias e horas para as quais a geração de energia é maior
-
-
-# # In[21]:
-
-
-# df_generation = 0
-
-
-# # In[22]:
-
-
-# # pd.options.mode.chained_assignment = None 
-
-# df_generation = env_data[[0,1]]
-# df_generation.columns = ['Date','Generation']
-
-
-# # In[23]:
-
-
-# df_generation['Date'] = pd.to_datetime(df_generation['Date'])
-
-
-# # In[24]:
-
-
-# df_generation['Year'] = df_generation['Date'].apply(lambda time: time.year)
-# df_generation['Month'] = df_generation['Date'].apply(lambda time: time.month)
-# dmap = {1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
-# df_generation['Month'] = df_generation['Month'].map(dmap)
-# df_generation['Day'] = df_generation['Date'].apply(lambda time: time.day)
-# df_generation['Day of Week'] = df_generation['Date'].apply(lambda time: time.dayofweek)
-# dmap1 = {0:'Mon',1:'Tue',2:'Wed',3:'Thu',4:'Fri',5:'Sat',6:'Sun'}
-# df_generation['Day of Week'] = df_generation['Day of Week'].map(dmap1)
-# df_generation['Hour'] = df_generation['Date'].apply(lambda time: time.hour)
-# df_generation['Minutes'] = df_generation['Date'].apply(lambda time: time.minute)
-
-
-# # In[25]:
-
-
-# df_generation
-
-
-# # In[26]:
-
-
-# df_generation[df_generation['Generation']==1.764]['Hour'].value_counts()
-# # Determining the hours at which the generation is the biggest
-
-
-# # In[27]:
-
-
-# df_generation[df_generation['Generation']==1.764]['Month'].value_counts()
-# # Determining the months at which the generation is the biggest
-
-
-# # In[28]:
-
-
-# df_generation[df_generation['Generation']==0]['Hour'].value_counts()
-# # Determining the hours at which the generation is non existential
-
-
-# # Stable Baselines ALGORITHMS
-# 
-# Uncomment the algorithm
-
-# In[29]:
+# %% Training
 
 
 ##DQN
@@ -196,7 +92,7 @@ exploration_fraction=0.001
 exploration_final_eps=0.02 
 exploration_initial_eps=1.0
 train_freq=1
-batch_size=64
+batch_size=512
 double_q=True
 learning_starts=1000
 target_network_update_freq=500
@@ -220,7 +116,7 @@ t1_start = perf_counter()
 
 # ## Train model
 model = DQN('MlpPolicy', env, learning_rate=learning_rate, verbose=0,batch_size=batch_size,exploration_fraction=exploration_fraction,)
-model.learn(total_timesteps=int(1e5))
+model.learn(total_timesteps=int(3e5))
 
 t1_stop = perf_counter()
 print("\nElapsed time:", t1_stop, t1_start)
@@ -286,11 +182,11 @@ for i in range(timesteps):
     
     state_track.append(obs)
     action, states = model.predict(obs, deterministic=True)
-    # print(obs)
-    # print(action)
-    # print('')
-#     print(states)
+    print(obs)
+    print(int(action))
+    # print(rewards)
     action_track.append(int(action))
+    
     obs, rewards, done, info = env.step(action)
     rewards_track.append(rewards)
     load_track.append(obs[1])
@@ -348,7 +244,7 @@ load = env.data[:,1]
 # In[45]:
 
 
-state_track
+# state_track
 
 
 # In[46]:
@@ -363,62 +259,62 @@ def myplot(x):
 # In[47]:
 
 
-env.data
+# env.data
 
 
 # In[48]:
 
 
-myplot(gen)
-plt.ylabel('gen')
+# myplot(gen)
+# plt.ylabel('gen')
 
 
 # In[49]:
 
 
-gen
+# gen
 
 
 # In[50]:
 
 
-myplot(load)
-plt.ylabel('load')
+# myplot(load)
+# plt.ylabel('load')
 
 
 # In[51]:
 
 
-myplot(SOC)
-plt.ylabel('SOC')
+# myplot(SOC)
+# plt.ylabel('SOC')
 
 
 # In[52]:
 
 
-myplot(bat_charge)
-plt.ylabel('Battery Charge')
+# myplot(bat_charge)
+# plt.ylabel('Battery Charge')
 
 
 # In[53]:
 
 
-myplot(rewards_track)
-plt.ylabel('Rewards track')
+# myplot(rewards_track)
+# plt.ylabel('Rewards track')
 
 
 # In[53]:
 
 
-myplot(grid_track)
-plt.ylabel('Energy taken from the grid')
-
+# myplot(grid_track)
+# plt.ylabel('Energy taken from the grid')
+# 
 
 # In[53]:
 
 
-myplot(PV_track)
-plt.ylabel('Energy used from PV track')
+# myplot(PV_track)
+# plt.ylabel('Energy used from PV track')
 
 
 # In[54]:
@@ -442,13 +338,13 @@ dh=30*(1/60)
 # In[56]:
 
 
-SOC
+# SOC
 
 
 # In[57]:
 
 
-gen
+# gen
 
 
 # In[58]:
@@ -466,7 +362,7 @@ Sum
 # In[59]:
 
 
-SOC
+# SOC
 
 
 # In[60]:

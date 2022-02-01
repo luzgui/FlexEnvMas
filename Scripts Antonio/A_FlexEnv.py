@@ -124,6 +124,9 @@ class FlexEnv(gym.Env):
         action_=self.get_charge_discharge(action)
         
         
+    
+        reward=self.get_reward(action, reward_type=self.reward_type)
+        
         # if self.t>=len(self.data)-1 or self.soc >= self.soc_max:
         if self.t==len(self.data)-1:
             # done=True
@@ -189,8 +192,9 @@ class FlexEnv(gym.Env):
         else:
             self.sc=0
 
-        reward=self.get_reward(action, reward_type=self.reward_type)
+        
         # print(reward)
+        # reward=self.get_reward(action, reward_type=self.reward_type)
         self.R+=reward
         self.r=reward
         
