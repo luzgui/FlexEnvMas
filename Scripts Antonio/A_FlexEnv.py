@@ -50,7 +50,7 @@ class FlexEnv(gym.Env):
 
     
         # Observation space
-        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(self.var_dim,), dtype='float32')
+        self.observation_space = gym.spaces.Box(low=np.float32(lowlim), high=np.float32(highlim), shape=(self.var_dim,), dtype=np.dtype(np.float32))
 
         """
         Variables definitions (not all are being used)
@@ -91,6 +91,7 @@ class FlexEnv(gym.Env):
         
         # Inserting a zero in the middle of the actions vector
         self.chargedischarge_steps = np.insert(self.chargedischarge_steps, int(len(self.chargedischarge_steps)/2), 0)
+        
         self.action_space = gym.spaces.Discrete((len(self.chargedischarge_steps)))
         
 
@@ -136,7 +137,7 @@ class FlexEnv(gym.Env):
             self.n_episodes+=1
             done = True
 
-            return np.array((self.g,self.l,self.soc,self.soc1,self.delta,self.grid,self.I_E),dtype='float32'),0,done, {}
+            return np.array(([self.g,self.l,self.soc,self.soc1,self.delta,self.grid,self.I_E]),dtype=np.dtype(np.float32)),0,done, {}
         else:
             done = False
 
@@ -204,7 +205,7 @@ class FlexEnv(gym.Env):
 
         info={}
 
-        observation=np.array((self.g,self.l,self.soc,self.soc1,self.delta,self.grid,self.I_E),dtype='float32')
+        observation=np.array(([self.g,self.l,self.soc,self.soc1,self.delta,self.grid,self.I_E]),dtype=np.dtype(np.float32))
         # print(observation)
         # print(observation,reward,done)
 
@@ -327,7 +328,7 @@ class FlexEnv(gym.Env):
 
     
 
-        observation=np.array((self.g,self.l,self.soc,self.soc1,self.delta,self.grid,self.I_E),dtype='float32')
+        observation=np.array(([self.g,self.l,self.soc,self.soc1,self.delta,self.grid,self.I_E]),dtype=np.dtype(np.float32))
 
         return observation
 

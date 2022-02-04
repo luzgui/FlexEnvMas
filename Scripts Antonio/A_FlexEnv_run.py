@@ -150,8 +150,8 @@ ModelTime = t1_stop-t1_start
 # model.save('DQN_4days_Charge_Discharge_Observations_9672seconds')
 
 #Load Model
-# filename = 'DQN_4days_Charge_Discharge_Observations_9672seconds'
-# model_trained = DQN.load(filename, env=env) 
+filename = 'DQN_4Days_Final_antonio'
+model_trained = DQN.load(filename, env=env) 
 
 # filename='ppo_1day_5e6steps_7910seconds' # Na verdade bastam bastante menos steps mas este dá sempre 10 de reward
 # model_trained = PPO.load(filename, env=env) #
