@@ -108,7 +108,7 @@ eval_env = tf_py_environment.TFPyEnvironment(flexenv_tf)
 
 #Hyperparameters
 
-num_iterations = 1 # @param {type:"integer"}
+num_iterations = 100 # @param {type:"integer"}
 
 initial_collect_steps = 100  # @param {type:"integer"}
 collect_steps_per_iteration =   1# @param {type:"integer"}
@@ -261,7 +261,7 @@ replay_buffer = reverb_replay_buffer.ReverbReplayBuffer(
 rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
   replay_buffer.py_client,
   table_name,
-  sequence_length=2)
+  sequence_length=1000)
 
 # For most agents, `collect_data_spec` is a named tuple called `Trajectory`, containing the specs for observations, actions, rewards, and other items.
 
@@ -283,7 +283,7 @@ rb_observer = reverb_utils.ReverbAddTrajectoryObserver(
 # The replay buffer is now a collection of Trajectories.
 
 driver = dynamic_episode_driver.DynamicEpisodeDriver(
-    train_env, agent.policy, [rb_observer], num_episodes=2)
+    train_env, agent.collect_policy, [rb_observer], num_episodes=100)
 
 
 
@@ -363,7 +363,7 @@ for _ in range(num_iterations):
   # Collect a few steps and save to the replay buffer.
   # time_step, _ = collect_driver.run(time_step)
   time_step, _ = collect_driver.run(time_step)
-
+  print(time_step)
   # Sample a batch of data from the buffer and update the agent's network.
   experience, unused_info = next(iterator)
   train_loss = agent.train(experience).loss
