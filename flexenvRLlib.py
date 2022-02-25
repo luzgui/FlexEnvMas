@@ -1,35 +1,17 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Feb 25 11:31:14 2022
+
+@author: omega
+"""
 import gym
-from ray.rllib.agents.ppo import PPOTrainer
-
-
-from ray.rllib.agents.dqn import DQNTrainer
-
-from ray.rllib.env.env_context import EnvContext
-
-
-import pandas as pd
-
-import os
-import sys
-
+import gym
 import numpy as np
-
-import matplotlib.pyplot as plt
+import random as rnd
 import time
 
-cwd=os.getcwd()
-datafolder=cwd + '/Data'
 
-sys.path.append(cwd+ '/Scripts Antonio')
-import A_auxfunctions as fun
-# import A_FlexEnv as flex
-
-from A_FlexEnv import FlexEnv
-
-#Add this folder to path
-
-
-# %%
 
 class FlexEnv(gym.Env):
     
@@ -114,7 +96,7 @@ class FlexEnv(gym.Env):
         # (self.charge_lim/minimum_charge_step)+1) numbers in the array. Basically it increases the minimum charge step each number
         # limits on batery
         self.charge_lim=config["charge_lim"] # The battery has a limit of charging of charge_lim
-        self.discharge_lim=-charge_lim # The battery has a limit of discharging of charge_lim
+        self.discharge_lim=-self.charge_lim # The battery has a limit of discharging of charge_lim
         self.minimum_charge_step =config["min_charge_step"]
         # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
         # self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
@@ -370,82 +352,3 @@ class FlexEnv(gym.Env):
         :return:
         """
         return
-
-
-
-#%% Create the environment
-
-#impor the data csv
-env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
-
-
-#make and check the environment
-# Select the number of timesteps to consider
-# timestesps=141
-timesteps=47
-
-#Create environmentn from Gym
-# flexenv=fun.make_env(env_data, load_num=2, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.02, reward_type=2)
-
-
-# Create an RLlib Trainer instance to learn how to act in the above
-# environment.
-load_num=2 
-timestep=timesteps
-
-
-
-data=env_data
-soc_max=4.0
-eta=0.95
-charge_lim=2.0
-min_charge_step=0.02
-reward_type=2
-
-timestep=47
-load_num=2
-
-env_data=data.to_numpy()
-load=env_data[0:timestep,load_num] # Escolhe timestep (um número) valores da coluna load_num, que representa os gastos uma casa
-gen=abs(env_data[0:timestep,1]) # Primeira coluna da data
-# Modification (António) - Multiply the gen by 0.5 to make it smaller generation values
-data=np.vstack((gen*1,1*load)).T # Duas colunas, a primeira retrata
-
-
-
-config={"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2}
-
-# flexenv=FlexEnv(config)
-
-
-
-
-# trainer=DQNTrainer(env=FlexEnv(data,soc_max,eta,charge_lim,min_charge_step, reward_type), config={"framework": "tf2"}) 
-
-
-
-trainer = PPOTrainer(
-    config={
-        # Env class to use (here: our gym.Env sub-class from above).
-        "env": FlexEnv,
-        # Config dict to be passed to our custom env's constructor.
-        "env_config":{"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2},
-        # },
-        # Parallelize environment rollouts.
-        "num_workers": 2,
-    })
-
-# Train for n iterations and report results (mean episode rewards).
-# Since we have to guess 10 times and the optimal reward is 0.0
-# (exact match between observation and action value),
-# we can expect to reach an optimal episode reward of 0.0.
-for i in range(10):
-    results = trainer.train()
-    print(f"Iter: {i}; avg. reward={results['episode_reward_mean']}")
-    
-    
-    
-
-
-    
-    
