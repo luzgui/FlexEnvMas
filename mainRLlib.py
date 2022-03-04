@@ -1,6 +1,11 @@
 import gym
 
+import ray
+from ray import tune
+
+from ray.rllib.agents import ppo
 from ray.rllib.agents.ppo import PPOTrainer
+
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.env.env_context import EnvContext
 
@@ -17,7 +22,7 @@ import sys
 import time
 
 #Custom functions
-from flexenv_rllib import FlexEnv
+from flexenvRLlib import FlexEnv
 from plotutils import makeplot
 
 cwd=os.getcwd()
@@ -76,30 +81,117 @@ flexenv=FlexEnv(config)
 # trainer=DQNTrainer(env=FlexEnv(data,soc_max,eta,charge_lim,min_charge_step, reward_type), config={"framework": "tf2"}) 
 
 
+config=ppo.DEFAULT_CONFIG.copy()
 
-trainer = DQNTrainer(
-    config={
-        # Env class to use (here: our gym.Env sub-class from above).
-        "env": FlexEnv,
-        # Config dict to be passed to our custom env's constructor.
-        "env_config":{"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2},
-        # },
-        # Parallelize environment rollouts.
-        "num_workers": 2,
-        "log_level": "WARN",
-        "framework": 'tf',
-        "eager_tracing": True
-    })
+# config={
+#       # Env class to use (here: our gym.Env sub-class from above).
+#       "env": FlexEnv,
+#       # Config dict to be passed to our custom env's constructor.
+#       "env_config":{"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2},
+#       # },
+#       # Parallelize environment rollouts.
+#       "num_workers": 2,
+#       "log_level": "WARN",
+#       "framework": 'tf',
+#       "eager_tracing": True,
+#       "train-iterations": 10
+      
+#   }
 
-# Train for n iterations and report results (mean episode rewards).
-for i in range(100):
-    results = trainer.train()
-    print(f"Iter: {i}; avg. reward={results['episode_reward_mean']}")
+config["train-iterations"]=10
+config["env"]=FlexEnv
+config["env_config"]={"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2}
+
+
+def experiment(config):
+    iterations = config.pop("train-iterations")
+    train_agent = PPOTrainer(config=config)
+    checkpoint = None
+    train_results = {}
+
+    # Train
+    for i in range(iterations):
+        train_results = train_agent.train()
+        if i % 2 == 0 or i == iterations - 1:
+            checkpoint = train_agent.save(tune.get_trial_dir())
+        tune.report(**train_results)
+    train_agent.stop()
+
+    # Manual Eval
+    config["num_workers"] = 0
+    eval_agent = PPOTrainer(config=config)
+    eval_agent.restore(checkpoint)
+    env = eval_agent.workers.local_worker().env
+
+    obs = env.reset()
+    done = False
+    eval_results = {"eval_reward": 0, "eval_eps_length": 0}
+    while not done:
+        action = eval_agent.compute_single_action(obs)
+        next_obs, reward, done, info = env.step(action)
+        eval_results["eval_reward"] += reward
+        eval_results["eval_eps_length"] += 1
+    results = {**train_results, **eval_results}
+    tune.report(results)
+
+
+
+# if __name__ == "__main__":
+
+
+# ray.init(num_cpus=3)
+
+
+
+
+tuneobject=tune.run(
+    experiment,
+    config=config,
+    resources_per_trial=PPOTrainer.default_resource_request(config),
+    local_dir='/home/omega/Downloads/Exp1',
+    name='ExperimentalDeathNoise',
+    num_samples=2,
+    checkpoint_at_end=True,
+)
+    
+    
+Results=tuneobject.results_df
+
+
+bestrial=tuneobject.get_best_trial(metric="episode_reward_mean", mode="max")
+path=tuneobject.get_best_checkpoint(bestrial,mode="max")
+
+
+
+Agent=PPOTrainer().restore(path)
+
+
+
+trainer=best.trainable_name
+
+# trainer = DQNTrainer(
+#     config={
+#         # Env class to use (here: our gym.Env sub-class from above).
+#         "env": FlexEnv,
+#         # Config dict to be passed to our custom env's constructor.
+#         "env_config":{"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2},
+#         # },
+#         # Parallelize environment rollouts.
+#         "num_workers": 2,
+#         "log_level": "WARN",
+#         "framework": 'tf',
+#         "eager_tracing": True
+#     })
+
+# # Train for n iterations and report results (mean episode rewards).
+# for i in range(100):
+#     results = trainer.train()
+#     print(f"Iter: {i}; avg. reward={results['episode_reward_mean']}")
     
     
 
 # Get policy
-policy=trainer.get_policy()
+# policy=trainer.get_policy()
 
 
 # PLot Solutions

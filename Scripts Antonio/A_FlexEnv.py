@@ -132,7 +132,7 @@ class FlexEnv(gym.Env):
         if self.t==len(self.data)-1:
             # done=True
             self.R_Total.append(self.R)
-            print(self.R)
+            # print(self.R)
 
             self.n_episodes+=1
             done = True
