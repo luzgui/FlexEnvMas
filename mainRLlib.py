@@ -6,6 +6,7 @@ from ray import tune
 from ray.rllib.agents import ppo
 from ray.rllib.agents.ppo import PPOTrainer
 
+from ray.rllib.agents import dqn
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.env.env_context import EnvContext
 
@@ -28,6 +29,7 @@ from plotutils import makeplot
 cwd=os.getcwd()
 datafolder=cwd + '/Data'
 
+raylog=cwd + '/raylog'
 #Add this folder to path
 
 
@@ -71,127 +73,67 @@ data=np.vstack((gen*1,1*load)).T # Duas colunas, a primeira retrata
 
 
 
-config={"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2}
+env_config={"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2}
 
-flexenv=FlexEnv(config)
-
-
+flexenv=FlexEnv(env_config)
 
 
-# trainer=DQNTrainer(env=FlexEnv(data,soc_max,eta,charge_lim,min_charge_step, reward_type), config={"framework": "tf2"}) 
 
+#Tune esperiments
 
-config=ppo.DEFAULT_CONFIG.copy()
-
-# config={
-#       # Env class to use (here: our gym.Env sub-class from above).
-#       "env": FlexEnv,
-#       # Config dict to be passed to our custom env's constructor.
-#       "env_config":{"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2},
-#       # },
-#       # Parallelize environment rollouts.
-#       "num_workers": 2,
-#       "log_level": "WARN",
-#       "framework": 'tf',
-#       "eager_tracing": True,
-#       "train-iterations": 10
-      
-#   }
-
-config["train-iterations"]=10
+# experiment(config)
+config=dqn.DEFAULT_CONFIG.copy()
 config["env"]=FlexEnv
-config["env_config"]={"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2}
-
-
-def experiment(config):
-    iterations = config.pop("train-iterations")
-    train_agent = PPOTrainer(config=config)
-    checkpoint = None
-    train_results = {}
-
-    # Train
-    for i in range(iterations):
-        train_results = train_agent.train()
-        if i % 2 == 0 or i == iterations - 1:
-            checkpoint = train_agent.save(tune.get_trial_dir())
-        tune.report(**train_results)
-    train_agent.stop()
-
-    # Manual Eval
-    config["num_workers"] = 0
-    eval_agent = PPOTrainer(config=config)
-    eval_agent.restore(checkpoint)
-    env = eval_agent.workers.local_worker().env
-
-    obs = env.reset()
-    done = False
-    eval_results = {"eval_reward": 0, "eval_eps_length": 0}
-    while not done:
-        action = eval_agent.compute_single_action(obs)
-        next_obs, reward, done, info = env.step(action)
-        eval_results["eval_reward"] += reward
-        eval_results["eval_eps_length"] += 1
-    results = {**train_results, **eval_results}
-    tune.report(results)
-
-
-
-# if __name__ == "__main__":
-
-
-# ray.init(num_cpus=3)
-
-
-
+config["env_config"]=env_config
+config["observation_space"]=flexenv.observation_space
+config["action_space"]=flexenv.action_space
+config["double_q"]=False
+config["dueling"]=False
+config["lr"]=tune.grid_search([1e-5, 1e-4])
 
 tuneobject=tune.run(
-    experiment,
+    DQNTrainer,
     config=config,
-    resources_per_trial=PPOTrainer.default_resource_request(config),
-    local_dir='/home/omega/Downloads/Exp1',
-    name='ExperimentalDeathNoise',
-    num_samples=2,
+    # resources_per_trial=DQNTrainer.default_resource_request(config),
+    local_dir=raylog,
+    # num_samples=4,
+    stop={'training_iteration': 1 },
     checkpoint_at_end=True,
+    checkpoint_freq=10,
+    name='Exp-DQN',
+    # keep_checkpoints_num=10, 
+    checkpoint_score_attr="episode_reward_mean"
 )
-    
-    
+
 Results=tuneobject.results_df
 
 
-bestrial=tuneobject.get_best_trial(metric="episode_reward_mean", mode="max")
-path=tuneobject.get_best_checkpoint(bestrial,mode="max")
+#%% Recover checkpoints
 
+#instantiate the tester agent
+# tester=DQNTrainer(test_config)
 
+# we must eliminate some parameters otw 
+# TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
 
-Agent=PPOTrainer().restore(path)
+del config["lr"]
+tester=DQNTrainer(config, env=FlexEnv)
 
+#define the metric and the mode criteria for identifying the best checkpoint
+metric='episode_reward_mean'
+mode='max'
 
+#identify the dir where is the best checkpoint according to metric and mode
+bestdir=tuneobject.get_best_logdir(metric,mode)
 
-trainer=best.trainable_name
+#get the best trial checkpoint
+trial=tuneobject.get_best_checkpoint(bestdir,metric,mode)
+#get the string
+checkpoint=trial.local_path
 
-# trainer = DQNTrainer(
-#     config={
-#         # Env class to use (here: our gym.Env sub-class from above).
-#         "env": FlexEnv,
-#         # Config dict to be passed to our custom env's constructor.
-#         "env_config":{"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2},
-#         # },
-#         # Parallelize environment rollouts.
-#         "num_workers": 2,
-#         "log_level": "WARN",
-#         "framework": 'tf',
-#         "eager_tracing": True
-#     })
+#recover best agent for testing
+tester.restore(checkpoint)
 
-# # Train for n iterations and report results (mean episode rewards).
-# for i in range(100):
-#     results = trainer.train()
-#     print(f"Iter: {i}; avg. reward={results['episode_reward_mean']}")
-    
-    
-
-# Get policy
-# policy=trainer.get_policy()
 
 
 # PLot Solutions
@@ -207,7 +149,7 @@ for i in range(timesteps):
     
     state_track.append(obs)
     
-    action = trainer.compute_single_action(obs)
+    action = tester.compute_single_action(obs)
     obs, reward, done, info = flexenv.step(action)
     episode_reward += reward
     
@@ -243,8 +185,3 @@ state_action_track=pd.DataFrame(state_action_track, columns=flexenv.varnames+('a
 makeplot(48,state_action_track['soc'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],flexenv) # O Tempo e o Env
     
   
-
-
-
-    
-    
