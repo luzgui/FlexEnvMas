@@ -82,25 +82,33 @@ flexenv=FlexEnv(env_config)
 #Tune esperiments
 
 # experiment(config)
-config=dqn.DEFAULT_CONFIG.copy()
+config=ppo.DEFAULT_CONFIG.copy()
 config["env"]=FlexEnv
 config["env_config"]=env_config
 config["observation_space"]=flexenv.observation_space
 config["action_space"]=flexenv.action_space
-config["double_q"]=False
-config["dueling"]=False
-config["lr"]=tune.grid_search([1e-5, 1e-4])
+# config["double_q"]=True
+# config["dueling"]=True
+# config["lr"]=tune.grid_search([1e-5, 1e-4])
+config["lr"]=1e-4
+# config["framework"]='tf2'
+# config["explore"]=False
+# config["exploration_config"]={
+#     "type": "EpsilonGreedy",
+#     "initial_epsilon": 1.0,
+#     "final_epsilon": 0.09,
+#     "epsilon_timesteps": 10000}
 
 tuneobject=tune.run(
-    DQNTrainer,
+    PPOTrainer,
     config=config,
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 1 },
+    stop={'training_iteration': 100 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
-    name='Exp-DQN',
+    name='Exp-PPO',
     # keep_checkpoints_num=10, 
     checkpoint_score_attr="episode_reward_mean"
 )
@@ -116,8 +124,8 @@ Results=tuneobject.results_df
 # we must eliminate some parameters otw 
 # TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
 
-del config["lr"]
-tester=DQNTrainer(config, env=FlexEnv)
+# del config["lr"]
+tester=PPOTrainer(config, env=FlexEnv)
 
 #define the metric and the mode criteria for identifying the best checkpoint
 metric='episode_reward_mean'
