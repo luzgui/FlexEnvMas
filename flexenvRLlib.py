@@ -50,8 +50,11 @@ class FlexEnv(gym.Env):
         self.__version__ = "0.0.1"
         
         # Modify the observation space, low, high and shape values according to your custom environment's needs
-        highlim=np.array([100.0,100.0,10*self.soc_max,10*self.soc_max,100.0,100.0,100.0])
-        lowlim=np.array([-100.0,-100.0,-100.0,-100.0,-100.0,-100.0,-100.0])
+        # highlim=np.array([100.0,100.0,10*self.soc_max,10*self.soc_max,100.0,100.0,100.0])
+        # lowlim=np.array([-100.0,-100.0,-100.0,-100.0,-100.0,-100.0,-100.0])
+        
+        highlim=np.array([1000.0,1000.0,1000*self.soc_max,1000*self.soc_max,1000.0,1000.0,1000.0])
+        lowlim=np.array([-1000.0,-1000.0,-1000.0,-1000.0,-1000.0,-1000.0,-1000.0])
         
         #Names of variables
         self.varnames=('gen','load','soc','soc_1','delta','grid','I/E')
@@ -98,20 +101,10 @@ class FlexEnv(gym.Env):
         self.charge_lim=config["charge_lim"] # The battery has a limit of charging of charge_lim
         self.discharge_lim=-self.charge_lim # The battery has a limit of discharging of charge_lim
         self.minimum_charge_step =config["min_charge_step"]
-        # self.charge_steps=np.linspace(0,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge actions
-        # self.discharge_steps=np.linspace(-self.charge_lim,0,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of discharge actions
-        self.chargedischarge_steps=np.linspace(-self.charge_lim,self.charge_lim,int((self.charge_lim/self.minimum_charge_step)+1)) #definition of charge and discharge actions
-        
-        # Inserting a zero in the middle of the actions vector
-        self.chargedischarge_steps = np.insert(self.chargedischarge_steps, int(len(self.chargedischarge_steps)/2), 0)
-        
-        self.action_space = gym.spaces.Discrete((len(self.chargedischarge_steps)))
-        
 
-    
-    def get_charge_discharge(self,action):
-        #translates the action number into a charging power in discharge_steps
-        return self.chargedischarge_steps[action-1]
+
+        self.action_space = gym.spaces.Box(low=self.discharge_lim, high=self.charge_lim,shape=(1,))
+        
     
 
 
@@ -135,9 +128,8 @@ class FlexEnv(gym.Env):
         # action_charge=self.get_charge(action)
         # action_discharge=self.get_discharge(action)
         
-        action_=self.get_charge_discharge(action)
         
-        
+        action=float(action)
     
         reward=self.get_reward(action, reward_type=self.reward_type)
         
@@ -167,21 +159,21 @@ class FlexEnv(gym.Env):
         
         
         # Charging discharging dynamics
-        if action_ > 0: #charging
-            self.soc+=self.eta*(action_)*self.dh # New State of Charge
-        elif action_ < 0: #discharging
-            self.soc+=((action_)/self.eta)*self.dh
-        elif action_ == 0: #do nothing
-            self.soc = self.soc
+        if action >= 0: #charging
+            self.soc+=self.eta*(action)*self.dh # New State of Charge
+        elif action < 0: #discharging
+            self.soc+=((action)/self.eta)*self.dh
+        # elif action_ == 0: #do nothing
+        #     self.soc = self.soc
         
         
         self.tar=0.17 # grid tariff in €/kWh
         
         # If the action is to discharge, then the self.grid is the difference between the discharge amount and the load needed
         # If the action is to charge the battery or do nothing to the battery, then the self.grid is the load needed for that instant 
-        if action_<0: # Discharge the battery
-            if abs(action_)<=abs(self.delta):
-                self.grid =abs(self.delta)-abs(action_)
+        if action<0: # Discharge the battery
+            if abs(action)<=abs(self.delta):
+                self.grid =abs(self.delta)-abs(action)
             else:
                 self.grid=0
         else: # Charge the battery
@@ -192,17 +184,17 @@ class FlexEnv(gym.Env):
         
                 
         # IMport/Export
-        self.I_E = action_-self.delta
+        self.I_E = action-self.delta
             
         # If the action is to discharge, the amount the battery discharges is the amount of energy used   
-        if action_<0:
-            self.bat_used+=abs(action_)
+        if action<0:
+            self.bat_used+=abs(action)
 
         # self consumption (it should be 0<SC<1 but it is possible to have SC>1)
         #TODO: Think about how to maintain 0<SC<1
         
         if self.g!=0:
-            self.sc=(self.l+action_)/self.g
+            self.sc=(self.l+action)/self.g
         else:
             self.sc=0
 
@@ -228,14 +220,6 @@ class FlexEnv(gym.Env):
 
     def get_reward(self,action, reward_type):
 
-        # Modification Antonio
-        # action_charge=self.get_charge(action)       
-        # action_discharge=self.get_discharge(action)
-        
-        
-        
-        action_=self.get_charge_discharge(action)
-        
         
         #hipothesis 1
         if reward_type==1:
@@ -245,35 +229,35 @@ class FlexEnv(gym.Env):
         # Rewards mais geral possível (soc, g, soc_max, l, minimum_charge_step,action_,grid,delta)
         # Charge
         
-            if action_ > 0:
-                if self.soc_max>= self.soc >= 0 and self.delta>0 and action_<=self.delta:
-                    reward_charge = abs(action_)*2
+            if action > 0:
+                if self.soc_max>= self.soc >= 0 and self.delta>0 and action<=self.delta:
+                    reward_charge = abs(action)*2
                 else:
-                    reward_charge =-abs(action_)*2
+                    reward_charge =-abs(action)*2
             else:
                 reward_charge =0
                 
             # Discharge
-            if action_< 0:
+            if action< 0:
                 if self.soc_max>= self.soc >=0 and self.delta<0:
                     
-                    if abs(self.delta)<abs(action_): 
+                    if abs(self.delta)<abs(action): 
                         # Este se calahr era melhor multiplicar para os rewards positivos serem mais positivos
-                        reward_discharge =abs(self.delta)-(abs(action_)-abs(self.delta)) # Tentar perceber até onde é que faz sentido se ele descarregar bue se isso é realmente mau, pode ser só indiferente
+                        reward_discharge =abs(self.delta)-(abs(action)-abs(self.delta)) # Tentar perceber até onde é que faz sentido se ele descarregar bue se isso é realmente mau, pode ser só indiferente
                         # if reward_discharge < 0:
                         #     reward_discharge = 0
                         
                     else:
-                        reward_discharge = abs(action_)
+                        reward_discharge = abs(action)
     
                 else:
-                    reward_discharge = -abs(action_)*2
+                    reward_discharge = -abs(action)*2
             else:
                 reward_discharge= 0
                 
             
             # Do nothing
-            if action_==0 :
+            if action==0 :
                 if self.g==0 and 0<= self.soc <=self.minimum_charge_step: # Aumentar o reward positivo
                     reward_stay=self.charge_lim/2
                 else:
@@ -292,7 +276,7 @@ class FlexEnv(gym.Env):
         elif reward_type==2:
             
             if self.soc <= self.soc_max and self.soc >= 0:
-                reward=np.exp(-(action_-self.delta)**2/0.01) # Gaussian function that approximates a tep function
+                reward=float(np.exp(-(action-self.delta)**2/0.01)) # Gaussian function that approximates a tep function
             
             else:
                 reward=0

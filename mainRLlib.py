@@ -2,6 +2,8 @@ import gym
 
 import ray
 from ray import tune
+from ray.tune import Analysis
+from pathlib import Path
 
 from ray.rllib.agents import ppo
 from ray.rllib.agents.ppo import PPOTrainer
@@ -9,6 +11,12 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents import dqn
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.env.env_context import EnvContext
+
+from ray.rllib.agents import a3c
+from ray.rllib.agents.a3c import A3CTrainer
+
+
+from ray.rllib.agents.a3c import A2CTrainer
 
 #math + data
 import pandas as pd
@@ -89,8 +97,19 @@ config["observation_space"]=flexenv.observation_space
 config["action_space"]=flexenv.action_space
 # config["double_q"]=True
 # config["dueling"]=True
-# config["lr"]=tune.grid_search([1e-5, 1e-4])
-config["lr"]=1e-4
+config["lr"]=tune.grid_search([1e-5, 1e-4, 1e-3])
+# config["gamma"]=tune.grid_search([0.8,0.9,0.99])
+# config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
+# config["train_batch_size"]=tune.grid_search([4000,8000])
+# config["sgd_minibatch_size"]=tune.grid_search([128,256])
+
+
+# config["horizon"]=1000
+config["framework"]="tf2"
+# config["eager_tracing"]=True
+# config["lr"]=1e-4
+
+# config["lr"]=tune.uniform(0, 2)
 # config["framework"]='tf2'
 # config["explore"]=False
 # config["exploration_config"]={
@@ -105,13 +124,15 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 100 },
+    stop={'training_iteration': 2 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
-    name='Exp-PPO',
+    name='Exp-PPO-Tune-gridsearch-cenas',
+    verbose=0,
     # keep_checkpoints_num=10, 
     checkpoint_score_attr="episode_reward_mean"
 )
+
 
 Results=tuneobject.results_df
 
@@ -124,12 +145,21 @@ Results=tuneobject.results_df
 # we must eliminate some parameters otw 
 # TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
 
-# del config["lr"]
+config=ppo.DEFAULT_CONFIG.copy()
+config["env"]=FlexEnv
+config["env_config"]=env_config
+config["observation_space"]=flexenv.observation_space
+config["action_space"]=flexenv.action_space
+config["framework"]="tf2"
 tester=PPOTrainer(config, env=FlexEnv)
 
 #define the metric and the mode criteria for identifying the best checkpoint
 metric='episode_reward_mean'
 mode='max'
+
+#Recover the tune object from the dir
+tuneobject = Analysis(raylog + '/Exp-PPO-Tune-gridsearch', default_metric=metric, default_mode=mode)
+
 
 #identify the dir where is the best checkpoint according to metric and mode
 bestdir=tuneobject.get_best_logdir(metric,mode)
@@ -138,6 +168,7 @@ bestdir=tuneobject.get_best_logdir(metric,mode)
 trial=tuneobject.get_best_checkpoint(bestdir,metric,mode)
 #get the string
 checkpoint=trial.local_path
+
 
 #recover best agent for testing
 tester.restore(checkpoint)
@@ -168,14 +199,13 @@ for i in range(timesteps):
     action_track.append(action)
     
     rewards_track.append(reward)
-
     
 
 state_track=np.array(state_track)
 
 #translate actions into charging power
 action_numbers = action_track
-action_track=[flexenv.get_charge_discharge(k) for k in action_track]
+# action_track=[flexenv.get_charge_discharge(k) for k in action_track]
 
 
 #Create dataframe state_action

@@ -47,7 +47,7 @@ def experiment(config):
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    # ray.init(num_cpus=3)
+    ray.init(num_cpus=3)
     config = ppo.DEFAULT_CONFIG.copy()
     config["train-iterations"] = args.train_iterations
 
