@@ -3,6 +3,7 @@ import gym
 import ray
 from ray import tune
 from ray.tune import Analysis
+from ray.tune import ExperimentAnalysis
 from pathlib import Path
 
 from ray.rllib.agents import ppo
@@ -124,7 +125,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 2 },
+    stop={'training_iteration': 1 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name='Exp-PPO-Tune-gridsearch-cenas',
@@ -158,8 +159,9 @@ metric='episode_reward_mean'
 mode='max'
 
 #Recover the tune object from the dir
-tuneobject = Analysis(raylog + '/Exp-PPO-Tune-gridsearch', default_metric=metric, default_mode=mode)
-
+# The trainable must be initialized # reuslts must be stored in the same analysis object
+tuneobject = ExperimentAnalysis(raylog + '/Exp-PPO-Tune-gridsearch', default_metric=metric, default_mode=mode)
+df=tuneobject.dataframe(metric,mode) #get de dataframe results
 
 #identify the dir where is the best checkpoint according to metric and mode
 bestdir=tuneobject.get_best_logdir(metric,mode)
