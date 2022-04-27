@@ -152,7 +152,7 @@ config["action_space"]=shiftenv.action_space
 # config["horizon"]=1000
 # config["framework"]="tf2"
 # config["eager_tracing"]=True
-# config["lr"]=1e-4
+config["lr"]=1e-4
 
 # config["lr"]=tune.uniform(0, 2)
 # config["framework"]='tf2'
@@ -163,7 +163,7 @@ config["action_space"]=shiftenv.action_space
 #     "final_epsilon": 0.09,
 #     "epsilon_timesteps": 10000}
 
-exp_name='Exp-PPO-shift-3'
+exp_name='Exp-PPO-shift-Tune'
 
 tuneobject=tune.run(
     PPOTrainer,
@@ -171,7 +171,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 10 },
+    stop={'training_iteration': 80 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -231,7 +231,7 @@ tester.restore(checkpoint)
 action_track=[]
 state_track=[]
 
-obs = shiftenv.resetzero() #use the fuction taht resets to zero
+obs = shiftenv.reset() #use the fuction taht resets to zero
 
 rewards_track = []
 episode_reward=0

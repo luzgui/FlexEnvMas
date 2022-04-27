@@ -47,10 +47,14 @@ class ShiftEnv(gym.Env):
         self.R=0
         self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained
         self.n_episodes=0
+        self.hist=[]
 
         #new vars
         self.L_s=np.zeros(self.T) # we make a vector of zeros to store the shiftable load profile
         # self.l_s=self.L_s[0] #initialize with the first element in 
+        self.t_shift=0
+        
+        self.t_deliver=37
         
         # self.y=0
         # self.y_s=self.y
@@ -93,27 +97,27 @@ class ShiftEnv(gym.Env):
                             {'max':10,'min':-10.0},
                         'delta_s': #The differential betwee gen and l_s
                             {'max':10,'min':-10.0},
-                        'y': # binary 1 if app is schedulled at t, 0 otw
-                            # When it was connected
-                            {'max':1.0,'min':0.0}, 
+                        'y': # ≃1 if ON at t, 0 OTW
+                            {'max':1.0,'min':0.0},
+                        'y_1': # ≃1 if ON in t-1
+                            {'max':1.0,'min':0.0},
                         'y_s':  # +1 if app is schedulled at t (incremental) 
                                 #(how many times it was connected)
                             {'max':self.T,'min':0.0},
-                        'y_x':  # +1 if app is ON at t (incremental)
-                                # How many timesteps it was connected
-                            {'max':10*self.T_prof,'min':0.0},
                         'cost':
                             {'max':100.0,'min':-100.0},
                         'cost_s':
-                                {'max':100.0,'min':-100.0},
+                            {'max':100.0,'min':-100.0},
+                        'tar_buy':
+                            {'max':1,'min':0},
+                                
                         'E_prof': # reamining energy to supply appliance energy need
                             {'max':self.E_prof,'min':0.0}}
                     
         
-    
+            
         
         #Number of variables to be used
-
         self.var_dim=len(self.state_vars.keys())
         
 
@@ -169,7 +173,7 @@ class ShiftEnv(gym.Env):
             self.n_episodes+=1
             done = True
 
-            return np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_s,self.y_x,self.cost,self.cost_s,self.E_prof), dtype=np.dtype('float32')),0,done, {}
+            return np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.c_T,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
         
         else:
             done = False
@@ -177,6 +181,15 @@ class ShiftEnv(gym.Env):
         #Variables update
         
         self.tstep+=1
+        
+        
+        
+        if self.tstep >= 8 and self.tstep <=16:
+            self.tar_buy=0.09 
+        else:
+            self.tar_buy=0.17
+            
+            
         
         # O self.data é o data das duas colunas verticais do auxfunctions
         self.gen=self.data[self.tstep][0] # valor da generation para cada instante
@@ -214,13 +227,20 @@ class ShiftEnv(gym.Env):
         
         
         # Binary variables
-        self.y=action #what action have been taken
-        self.y_s+=self.y # how many times the machine have been turned on
-        # self.y_x+=self.y
+        
+        self.y=action # what is the ON/OFF state of appliance
+        
+         # how many times the machine have been turned on
+
         
         
-        if self.load_s != 0:
-            self.y_x+=1
+        self.hist.append(self.y)
+        if self.tstep > 1:
+            # print(self.step)
+            self.y_1=self.hist[self.tstep-1]
+        else:
+            self.y_1=0
+            
         #Load the shiftable profile [H1]
         
         # if self.y_s == 1:
@@ -233,28 +253,55 @@ class ShiftEnv(gym.Env):
             
         
         
-        #Load the shiftable profile [H2]
+        #Load control [H3]
         
-        if action == 1:
+        
+        # if self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof: # We need to impose that it  must start
+        #     self.y=1
+        
+        # if self.y_s > self.T_prof and action == 1:
+        #     self.y=0
+        
+        
+        if self.tstep <= self.T-self.T_prof:
+            if self.y == 1: #if it turn ON
+                if self.y_s==0: #if its never been ON
+                    # self.t_shift=0
+                    self.load_s=self.y*self.profile[self.t_shift]
+                
+                if self.y_s!=0 and self.t_shift < self.T_prof-1:
+                    self.t_shift+=1
+                    self.load_s=self.y*self.profile[self.t_shift]
+                
+                # if self.y_s > self.T_prof:
+                    
+                
+            elif self.y == 0:
+                self.load_s = 0
+                
+
+        self.y_s+=self.y
+            
+            
             # print('L_s',self.L_s)
             # print('L_s2', self.L_s[self.t:self.t+self.T_prof])
             # print('prof', self.profile)
             # self.L_s[self.t:self.t+self.T_prof]=self.profile # we load the shiftable profile from t onwards
             
-            self.L_s=np.zeros(self.T)
-            if self.tstep <= self.T-self.T_prof:
-                for k in range(self.T_prof):
-                    self.L_s[self.tstep+k]=self.profile[k]
-                    self.load_s=self.L_s[self.tstep] 
+            # self.L_s=np.zeros(self.T)
+            # if self.tstep <= self.T-self.T_prof:
+            #     for k in range(self.T_prof):
+            #         self.L_s[self.tstep+k]=self.profile[k]
+            #         self.load_s=self.L_s[self.tstep] 
             
-        if action == 0:
-            self.load_s=self.L_s[self.tstep] 
+        # if action == 0:
+        #     self.load_s=self.L_s[self.tstep] 
             
             # self.L_s[self.t:][:self.T_prof]=self.profile
             # #what if the appliance is turned on several times??
         
         #update remaining energy that needs to be consumed
-        if self.E_prof < self.load_s:
+        if self.E_prof < self.load_s*self.dh:
             self.E_prof=0.0
         else:
             self.E_prof-=self.load_s*self.dh
@@ -274,6 +321,7 @@ class ShiftEnv(gym.Env):
         #energy cost
         
         self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
+        
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
         # self.c_s=
         
@@ -281,11 +329,13 @@ class ShiftEnv(gym.Env):
         #     self.c=self.tar_buy*self.delta*self.dh
         # elif self.delta <= 0: #There is export to the grid
         #     self.c=self.tar_sell*self.delta*self.dh
-            
+        
+        #accumulated total cost
+        self.c_T+=self.cost_s
 
         info={}
 
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_s,self.y_x,self.cost,self.cost_s,self.E_prof), dtype=np.dtype('float32'))
+        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.c_T,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
     
 
         return observation, reward, done, info
@@ -301,16 +351,56 @@ class ShiftEnv(gym.Env):
         # b=0.3
         # reward=a*np.exp(-(self.cost_s**2)/0.001)+b*np.exp(-((self.y_s-1)**2)/0.001)
         
-        # reward=np.exp(-(self.cost_s**2)/0.001)+np.exp(-((self.y_s-1)**2)/0.001)
-
+        # if self.y==self.y_1:
+        # reward=np.exp(-(self.cost_s**2)/0.001)+np.exp(-((self.y_s-self.T_prof)**2)/0.001)+np.exp(-((self.y-self.y_1)**2)/0.001)
+            
+            
+        # else:
+            # reward=-1
         # reward=-self.cost_s-(-np.exp(-((self.y_s-1)**2)/0.001)
         
         # reward=-self.cost_s-10*self.E_prof
         # if self.tstep == self.T-1 and self.y_s!=1: # if we arrived at end without turning on
         #     reward=-100
         # else:
-        reward=-self.cost_s
+        # if     
         
+        # a=1
+        # b=0.5
+        # c=0.01
+        # # reward=-(a*self.cost_s)-b*(self.y-self.y_1)-c*(abs(self.y_s-self.T_prof))
+        # reward= 10*self.cost_s*self.gen*action
+        
+        
+        
+        if (self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
+            reward=-10
+        else:
+            reward= -self.cost*self.y-0.1*(abs(self.y-self.y_1))
+            
+            
+        
+        
+        
+        
+        # if self.tstep == self.T-1:
+        #     reward=-self.c_T-((self.y_s-self.T_prof)**2)
+        #     print('r', reward)
+        # else:
+        #     reward=0
+        
+        # print('tstep',self.tstep)
+        # if self.tstep < self.T:
+        #     reward=0
+        # elif self.tstep == self.T:
+        #     reward=-self.c_T-(self.ys-self.T_prof)
+        #     print('aqui')
+        
+        
+        # if self.y_s-self.T_prof!=0:
+        #     reward=-1
+        # else:    
+        #     reward=-self.c_T
         
         
         
@@ -320,7 +410,7 @@ class ShiftEnv(gym.Env):
         # else: 
             # reward=-1
             
-
+            
         
         return reward
 
@@ -338,8 +428,10 @@ class ShiftEnv(gym.Env):
         done=False
         
         # We can choose to reset to a random state or to t=0
-        # self.tstep=0 # start at t=0
-        self.tstep = rnd.randrange(0, self.T-self.T_prof-1, 2) # a random initial state
+        self.tstep=0 # start at t=0
+        # self.tstep = rnd.randrange(0, self.T-self.T_prof-1, 2) # a random initial state
+        
+        self.tar_buy=0.17
         
         self.L_s=np.zeros(self.T)
 
@@ -379,7 +471,8 @@ class ShiftEnv(gym.Env):
    
         self.R=0
         self.r=0
-
+        
+        self.c_T=0
 
         self.delta=(self.load+self.load_s)-self.gen
         self.delta_s=self.load_s-self.gen
@@ -387,9 +480,15 @@ class ShiftEnv(gym.Env):
         self.load_s=self.L_s[0] #initialize with the first element in L_s
         self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
         
+        
+        #inititialize binary variables
         self.y=0
+        self.y_1=0
         self.y_s=self.y
-        self.y_x=0
+        self.t_shift=0
+        
+        self.hist=[]
+        self.hist.append(self.y)
 
         # self.tstep=0
         # self.grid=0.0
@@ -398,7 +497,7 @@ class ShiftEnv(gym.Env):
         self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
     
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_s,self.y_x,self.cost,self.cost_s,self.E_prof), dtype=np.dtype('float32'))
+        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.c_T,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
     
         return observation
 
@@ -476,6 +575,8 @@ class ShiftEnv(gym.Env):
         self.y=0
         self.y_s=self.y
         self.y_x=0
+        self.hist=[]
+        self.hist.append(self.y)
 
         # self.tstep=0
         # self.grid=0.0
