@@ -173,7 +173,7 @@ class ShiftEnv(gym.Env):
             self.n_episodes+=1
             done = True
 
-            return np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.c_T,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
+            return np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
         
         else:
             done = False
@@ -335,7 +335,7 @@ class ShiftEnv(gym.Env):
 
         info={}
 
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.c_T,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
+        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
     
 
         return observation, reward, done, info
@@ -378,7 +378,8 @@ class ShiftEnv(gym.Env):
         else:
             reward= -self.cost*self.y-0.1*(abs(self.y-self.y_1))
             
-            
+        
+        
         
         
         
@@ -497,7 +498,7 @@ class ShiftEnv(gym.Env):
         self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
     
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.c_T,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
+        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
     
         return observation
 

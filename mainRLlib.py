@@ -113,7 +113,8 @@ minutes=[hour()[k]*60+minute()[k] for k in range(timesteps)]
 
 #convert
 load=env_data[0:timesteps,load_num] # Escolhe timestep (um número) 
-gen=abs(env_data[0:timesteps,1]) # Primeira coluna da data
+# gen=abs(env_data[0:timesteps,1]) # Primeira coluna da data
+gen=np.zeros(timesteps)
 data=np.vstack((gen*1,1*load,minutes)).T # Duas colunas, a primeira retrata
 
 ## Shiftable profile example
@@ -145,14 +146,14 @@ config["action_space"]=shiftenv.action_space
 
 # config["gamma"]=0.7
 # config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
-# config["train_batch_size"]=tune.grid_search([4000,8000])
+config["train_batch_size"]=tune.grid_search([8000.16000])
 # config["sgd_minibatch_size"]=tune.grid_search([128,256])
 
 
 # config["horizon"]=1000
 # config["framework"]="tf2"
 # config["eager_tracing"]=True
-config["lr"]=1e-4
+# config["lr"]=1e-4
 
 # config["lr"]=tune.uniform(0, 2)
 # config["framework"]='tf2'
@@ -163,7 +164,7 @@ config["lr"]=1e-4
 #     "final_epsilon": 0.09,
 #     "epsilon_timesteps": 10000}
 
-exp_name='Exp-PPO-shift-Tune'
+exp_name='Exp-PPO-shift-train_batch size'
 
 tuneobject=tune.run(
     PPOTrainer,
@@ -171,7 +172,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 80 },
+    stop={'training_iteration': 110 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -239,7 +240,6 @@ episode_reward=0
 for i in range(timesteps):
     
     state_track.append(obs)
-    
     action = tester.compute_single_action(obs)
     print(action)
     obs, reward, done, info = shiftenv.step(action)
