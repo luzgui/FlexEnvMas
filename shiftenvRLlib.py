@@ -34,9 +34,9 @@ class ShiftEnv(gym.Env):
         
        
         
-        
+        self.tstep_size=config["step_size"]
         self.T=len(self.data) # Time horizon
-        self.dh=30.0*(1/60.0) # Conversion factor energy-power
+        self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
         
         #Appliance profile
         
@@ -54,7 +54,9 @@ class ShiftEnv(gym.Env):
         # self.l_s=self.L_s[0] #initialize with the first element in 
         self.t_shift=0
         
-        self.t_deliver=37
+        self.t_deliver=config["time_deliver"]
+        
+        self.min_max=max(self.data[:,2])
         
         # self.y=0
         # self.y_s=self.y
@@ -303,6 +305,8 @@ class ShiftEnv(gym.Env):
         #update remaining energy that needs to be consumed
         if self.E_prof < self.load_s*self.dh:
             self.E_prof=0.0
+        elif self.minutes==self.min_max:
+            self.E_prof=self.profile.sum()*self.dh
         else:
             self.E_prof-=self.load_s*self.dh
         
@@ -373,14 +377,13 @@ class ShiftEnv(gym.Env):
         
         
         
-        if (self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
+        # if (self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
+                
+        if (self.minutes >= self.t_deliver-self.T_prof*self.tstep_size and self.minutes <= self.min_max and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
             reward=-10
         else:
             reward= -self.cost*self.y-0.1*(abs(self.y-self.y_1))
             
-        
-        
-        
         
         
         

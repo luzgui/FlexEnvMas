@@ -48,48 +48,6 @@ raylog=cwd + '/raylog'
 #Add this folder to path
 
 
-#%% Create data for the environment
-
-#impor the data csv
-# env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
-
-
-# #make and check the environment
-# # Select the number of timesteps to consider
-# # timestesps=141
-# timesteps=47
-
-# #Create environmentn from Gym
-# # flexenv=fun.make_env(env_data, load_num=2, timestep=timesteps, soc_max=4, eta=0.95, charge_lim=2, min_charge_step=0.02, reward_type=2)
-
-
-# # Create an RLlib Trainer instance to learn how to act in the above
-# # environment.
-# load_num=2 
-
-
-# data=env_data
-# soc_max=4.0
-# eta=0.95
-# charge_lim=2.0
-# min_charge_step=0.02
-# reward_type=2
-
-
-
-# env_data=data.to_numpy()
-# load=env_data[0:timesteps,load_num] # Escolhe timestep (um número) valores da coluna load_num, que representa os gastos uma casa
-# gen=abs(env_data[0:timesteps,1]) # Primeira coluna da data
-# # Modification (António) - Multiply the gen by 0.5 to make it smaller generation values
-# data=np.vstack((gen*1,1*load)).T # Duas colunas, a primeira retrata
-
-
-
-# env_config={"data": data,"soc_max": 4,"eta": 0.95,"charge_lim": 2,"min_charge_step": 0.02,"reward_type": 2}
-
-# flexenv=FlexEnv(env_config)
-
-
 #%% Shiftable loads
 
 from shiftenvRLlib import ShiftEnv
@@ -97,6 +55,8 @@ from shiftenvRLlib import ShiftEnv
 env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
 timesteps=48*1
 load_num=2 
+tstep_size=30 # number of minutes in each timestep
+
 
 data=env_data
 reward_type=2
@@ -113,8 +73,8 @@ minutes=[hour()[k]*60+minute()[k] for k in range(timesteps)]
 
 #convert
 load=env_data[0:timesteps,load_num] # Escolhe timestep (um número) 
-# gen=abs(env_data[0:timesteps,1]) # Primeira coluna da data
-gen=np.zeros(timesteps)
+gen=abs(env_data[0:timesteps,1]) # Primeira coluna da data
+# gen=np.zeros(timesteps)
 data=np.vstack((gen*1,1*load,minutes)).T # Duas colunas, a primeira retrata
 
 ## Shiftable profile example
@@ -123,8 +83,9 @@ data=np.vstack((gen*1,1*load,minutes)).T # Duas colunas, a primeira retrata
 shiftprof=np.array([0.5,0.3,0.2,0.4,0.8,0.3])
 
 
+t_deliver=37*tstep_size
 
-env_config={"data": data,"reward_type": 2, "profile": shiftprof}
+env_config={"step_size": tstep_size, "data": data,"reward_type": 2, "profile": shiftprof, "time_deliver": t_deliver}
 
 shiftenv=ShiftEnv(env_config)
 s=shiftenv
@@ -146,7 +107,7 @@ config["action_space"]=shiftenv.action_space
 
 # config["gamma"]=0.7
 # config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
-config["train_batch_size"]=tune.grid_search([8000.16000])
+# config["train_batch_size"]=tune.grid_search([8000.16000])
 # config["sgd_minibatch_size"]=tune.grid_search([128,256])
 
 
@@ -172,7 +133,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 110 },
+    stop={'training_iteration': 4 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -221,9 +182,6 @@ checkpoint=trial.local_path
 
 #recover best agent for testing
 tester.restore(checkpoint)
-
-# tester=
-
 
 
 # PLot Solutions
@@ -276,3 +234,10 @@ state_action_track=pd.DataFrame(state_action_track, columns=list(shiftenv.state_
 makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],shiftenv) # O Tempo e o Env
     
   
+
+
+# pol=tester.get_policy()
+
+
+# weights=pol.get_weights()
+# ml=pol.compute_log_likelihoods(actions, obs_batch)
