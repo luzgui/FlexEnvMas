@@ -21,9 +21,20 @@ def make_cyclical(series, max_val): # transforma valores como dia e hora em valo
     return list(data_sin), list(data_cos)
 
 
-s=np.sin( minutes 1410)
+def make_minutes(data, timesteps):
+    
+    time=pd.DatetimeIndex(pd.to_datetime(data[0:timesteps,0]))
+    hour=time.hour.to_numpy
+    minute=time.minute.to_numpy
+    minutes=[hour()[k]*60+minute()[k] for k in range(timesteps)]
+    
+    return minutes
+    
 
-
-
-
-
+def make_env_data(data,timesteps, load_num):
+    load=data[0:timesteps,load_num] # Escolhe timestep (um número) 
+    gen=abs(data[0:timesteps,1]) # Primeira coluna da data
+    # gen=np.zeros(timesteps)
+    minutes=make_minutes(data,timesteps) # make minutes vector
+    env_data=np.vstack((gen*1,1*load,minutes)).T # Duas colunas, a primeira retrata
+    return env_data

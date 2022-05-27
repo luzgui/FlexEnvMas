@@ -43,7 +43,6 @@ class ShiftEnv(gym.Env):
         self.profile=config["profile"]
         self.T_prof=len(self.profile)
         self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
-        
         self.R=0
         self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained
         self.n_episodes=0
@@ -54,6 +53,8 @@ class ShiftEnv(gym.Env):
         # self.l_s=self.L_s[0] #initialize with the first element in 
         self.t_shift=0
         
+        
+        #this must be set as a moving variable that updates the deliver time according to the day
         self.t_deliver=config["time_deliver"]
         
         self.min_max=max(self.data[:,2])
@@ -80,7 +81,11 @@ class ShiftEnv(gym.Env):
         self.state_vars={'tstep':
                         {'max':2000,'min':0},
                         'minutes':
-                            {'max':1440,'min':0}, 
+                            {'max':1440,'min':0},
+                        'sin':
+                            {'max':1.0,'min':-1.0},
+                        'cos':
+                            {'max':1.0,'min':-1.0},
                         'gen':# g : PV generation at timeslot
                             {'max':10,'min':0},
                         'gen0':# g : PV generation forecast next timeslot
@@ -128,7 +133,7 @@ class ShiftEnv(gym.Env):
         self.lowlim=np.array([value['min'] for key, value in self.state_vars.items()])
             
         # Observation space
-        self.observation_space = gym.spaces.Box(low=self.lowlim, high=self.highlim, shape=(self.var_dim,),dtype=np.dtype('float32'))
+        self.observation_space = gym.spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,),dtype=np.dtype('float32'))
 
 
 
@@ -175,7 +180,7 @@ class ShiftEnv(gym.Env):
             self.n_episodes+=1
             done = True
 
-            return np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
+            return np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
         
         else:
             done = False
@@ -223,6 +228,8 @@ class ShiftEnv(gym.Env):
           
         self.load=self.data[self.tstep][1] # valor da load para cada instante
         self.minutes=self.data[self.tstep][2]
+        self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
+        self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
         
         
         # note to consider: shiftable load is allways zero unless the appliance is activated
@@ -265,8 +272,25 @@ class ShiftEnv(gym.Env):
         #     self.y=0
         
         
+        # if self.tstep <= self.T-self.T_prof:
+        #     if self.y == 1: #if it must be turned ON on the present tslot
+        #         if self.y_s==0: #if its never been ON
+        #             # self.t_shift=0
+        #             self.load_s=self.y*self.profile[self.t_shift]
+                
+        #         if self.y_s!=0 and self.t_shift < self.T_prof-1:
+        #             self.t_shift+=1
+        #             self.load_s=self.y*self.profile[self.t_shift]
+                
+        #         # if self.y_s > self.T_prof:
+                    
+                
+        #     elif self.y == 0:
+        #         self.load_s = 0
+                
+                # self.E_prof == self.profile.sum()*self.dh
         if self.tstep <= self.T-self.T_prof:
-            if self.y == 1: #if it turn ON
+            if self.y == 1: #if it must be turned ON on the present tslot
                 if self.y_s==0: #if its never been ON
                     # self.t_shift=0
                     self.load_s=self.y*self.profile[self.t_shift]
@@ -275,7 +299,10 @@ class ShiftEnv(gym.Env):
                     self.t_shift+=1
                     self.load_s=self.y*self.profile[self.t_shift]
                 
-                # if self.y_s > self.T_prof:
+                if self.y_s == self.T_prof:
+                    self.t_shift=0
+                    self.load_s=self.y*self.profile[self.t_shift]
+                    
                     
                 
             elif self.y == 0:
@@ -311,6 +338,13 @@ class ShiftEnv(gym.Env):
             self.E_prof-=self.load_s*self.dh
         
         
+        #restart t_shift for each new day so that appliances may be schedulled again
+        if self.minutes ==self.min_max:
+            self.t_shift=0
+            self.y_s=0
+        
+        
+        
         #deficit vs excess
         self.delta = (self.load+self.load_s)-self.gen # if positive there is imports from the grid. If negative there are exports to the grid 
         
@@ -339,7 +373,7 @@ class ShiftEnv(gym.Env):
 
         info={}
 
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
+        observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
     
 
         return observation, reward, done, info
@@ -380,9 +414,9 @@ class ShiftEnv(gym.Env):
         # if (self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
                 
         if (self.minutes >= self.t_deliver-self.T_prof*self.tstep_size and self.minutes <= self.min_max and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
-            reward=-10
+            reward=-1/self.T
         else:
-            reward= -self.cost*self.y-0.1*(abs(self.y-self.y_1))
+            reward= -self.cost**2*self.y-0.1/self.T*(abs(self.y-self.y_1))
             
         
         
@@ -422,13 +456,13 @@ class ShiftEnv(gym.Env):
     def reset(self):
         """
         Reset the environment state and returns an initial observation
-
+        
         Returns:
         -------
         observation (object): The initial observation for the new episode after reset
         :return:
         """
-
+        
         done=False
         
         # We can choose to reset to a random state or to t=0
@@ -442,6 +476,9 @@ class ShiftEnv(gym.Env):
         self.gen=self.data[self.tstep,0]
         self.load=self.data[self.tstep,1]
         self.minutes=self.data[self.tstep,2]
+        self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
+        self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
+        
         self.load_s=0   
         
         # self.gen0=self.data[1][0] #next tstep
@@ -501,7 +538,7 @@ class ShiftEnv(gym.Env):
         self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
     
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32'))
+        observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
     
         return observation
 

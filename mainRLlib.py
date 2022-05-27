@@ -36,8 +36,9 @@ import datetime
 from datetime import datetime
 
 #Custom functions
-# from flexenvRLlib import FlexEnv
 from shiftenvRLlib import ShiftEnv
+
+from auxfunctions_shiftenv import *
 
 from plotutils import makeplot
 
@@ -48,53 +49,32 @@ raylog=cwd + '/raylog'
 #Add this folder to path
 
 
-#%% Shiftable loads
-
-from shiftenvRLlib import ShiftEnv
-
-env_data=pd.read_csv(datafolder + '/env_data.csv', header = None)
-timesteps=48*1
-load_num=2 
+#%% Make Shiftable loads environment
+#import raw data
+data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
 tstep_size=30 # number of minutes in each timestep
-
-
-data=env_data
-reward_type=2
-
-env_data=data.to_numpy()
-
-
-#convert and insert dates in the dataset
-time=pd.DatetimeIndex(pd.to_datetime(env_data[0:timesteps,0]))
-hour=time.hour.to_numpy
-minute=time.minute.to_numpy
-minutes=[hour()[k]*60+minute()[k] for k in range(timesteps)]
-
-
-#convert
-load=env_data[0:timesteps,load_num] # Escolhe timestep (um número) 
-gen=abs(env_data[0:timesteps,1]) # Primeira coluna da data
-# gen=np.zeros(timesteps)
-data=np.vstack((gen*1,1*load,minutes)).T # Duas colunas, a primeira retrata
+#%% convert to env data
+timesteps=48*3
+load_num=2
+env_data=make_env_data(data, timesteps, load_num)
 
 ## Shiftable profile example
 
 # shiftprof=0.5*np.ones(6)
-shiftprof=np.array([0.5,0.3,0.2,0.4,0.8,0.3])
+# shiftprof=np.array([0.5,0.3,0.2,0.4,0.8,0.3])
+shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 
 
-t_deliver=37*tstep_size
-
-env_config={"step_size": tstep_size, "data": data,"reward_type": 2, "profile": shiftprof, "time_deliver": t_deliver}
+#%% make train env
+env_config={"step_size": tstep_size, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size}
 
 shiftenv=ShiftEnv(env_config)
-s=shiftenv
-
 
 #%%Tune esperiments
 
 # experiment(config)
 config=ppo.DEFAULT_CONFIG.copy()
+# config=dqn.DEFAULT_CONFIG.copy()
 # config["env"]=FlexEnv
 config["env"]=ShiftEnv
 config["env_config"]=env_config
@@ -104,6 +84,10 @@ config["action_space"]=shiftenv.action_space
 # config["dueling"]=True
 # config["lr"]=tune.grid_search([1e-5, 1e-4, 1e-3])
 # config["gamma"]=tune.grid_search([0.8,0.9,0.99])
+config['model']['fcnet_hiddens']=[256,256]
+# config['model']['use_lstm']=True
+
+
 
 # config["gamma"]=0.7
 # config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
@@ -125,7 +109,85 @@ config["action_space"]=shiftenv.action_space
 #     "final_epsilon": 0.09,
 #     "epsilon_timesteps": 10000}
 
-exp_name='Exp-PPO-shift-train_batch size'
+# exp_name='Exp-PPO-Weights'
+
+
+exp_name='Exp-PPO'
+
+#make a trainable that logs model weights
+
+# def trainable(config):
+#     library.init(
+#         name=trial_id,
+#         id=trial_id,
+#         resume=trial_id,
+#         reinit=True,
+#         allow_val_change=True)
+#     library.set_log_path(tune.get_trial_dir())
+
+#     for step in range(100):
+#         library.log_model(...)
+#         library.log(results, step=step)
+#         tune.report(results)
+
+
+# def trainable(config):
+    
+#     trainer=PPOTrainer(config)
+#     print('hello')
+    
+#     result={}
+#     for k, v in trainer.get_policy().get_weights().items():
+#                 result["FCC/{}".format(k)] = v
+    
+#     tune.report(result)
+    
+#     return trainer
+
+# from ray.rllib.agents.callbacks import DefaultCallbacks
+
+# class MyCallbacks(DefaultCallbacks):
+    
+#     def setup():
+#         pass
+    
+#     def on_train_result(self, trainer, result: dict, **kwargs):
+#         for k, v in trainer.get_policy().get_weights().items():
+#             result["FCC/{}".format(k)] = v
+            
+
+# tuneobject2=tune.run(
+#     PPOTrainer,
+#     config=config,
+#     # resources_per_trial=DQNTrainer.default_resource_request(config),
+#     local_dir=raylog,
+#     # num_samples=4,
+#     stop={'training_iteration': 200 },
+#     checkpoint_at_end=True,
+#     checkpoint_freq=10,
+#     name=exp_name,
+#     verbose=0,
+#     # keep_checkpoints_num=10, 
+#     callbacks=[MyCallbacks()],
+#     checkpoint_score_attr="episode_reward_mean"
+# )
+
+
+# tuneobject=tune.run(
+#     DQNTrainer,
+#     config=config,
+#     # resources_per_trial=DQNTrainer.default_resource_request(config),
+#     local_dir=raylog,
+#     # num_samples=4,
+#     stop={'training_iteration': 200 },
+#     checkpoint_at_end=True,
+#     checkpoint_freq=10,
+#     name=exp_name,
+#     verbose=0,
+#     # keep_checkpoints_num=10, 
+#     checkpoint_score_attr="episode_reward_mean"
+# )
+
 
 tuneobject=tune.run(
     PPOTrainer,
@@ -133,7 +195,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 4 },
+    stop={'training_iteration': 1 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -143,8 +205,18 @@ tuneobject=tune.run(
 )
 
 
+
+
 Results=tuneobject.results_df
 
+
+
+#%% instantiate test environment
+
+test_env_data=make_env_data(data, 48*2, 4)
+test_env_config={"step_size": tstep_size, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size}
+
+test_shiftenv=ShiftEnv(test_env_config)
 
 #%% Recover checkpoints
 
@@ -155,11 +227,14 @@ Results=tuneobject.results_df
 # TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
 
 config=ppo.DEFAULT_CONFIG.copy()
+# config=dqn.DEFAULT_CONFIG.copy()
 config["env"]=ShiftEnv
-config["env_config"]=env_config
-config["observation_space"]=shiftenv.observation_space
-config["action_space"]=shiftenv.action_space
+config["env_config"]=test_env_config
+config["observation_space"]=test_shiftenv.observation_space
+config["action_space"]=test_shiftenv.action_space
 # config["framework"]="tf2"
+
+# tester=DQNTrainer(config, env=ShiftEnv)
 tester=PPOTrainer(config, env=ShiftEnv)
 
 #define the metric and the mode criteria for identifying the best checkpoint
@@ -174,6 +249,8 @@ df=analysis.dataframe(metric,mode) #get de dataframe results
 #identify the dir where is the best checkpoint according to metric and mode
 bestdir=analysis.get_best_logdir(metric,mode)
 
+# bestdir='Exp-PPO-SQR/PPOTrainer_ShiftEnv_6f381_00000_0_2022-05-24_10-25-21/'
+
 #get the best trial checkpoint
 trial=analysis.get_best_checkpoint(bestdir,metric,mode)
 #get the string
@@ -184,23 +261,26 @@ checkpoint=trial.local_path
 tester.restore(checkpoint)
 
 
+#%%
+
+
 # PLot Solutions
 
 ## Enjoy trained agent
 action_track=[]
 state_track=[]
 
-obs = shiftenv.reset() #use the fuction taht resets to zero
+obs = test_shiftenv.reset() #use the fuction taht resets to zero
 
 rewards_track = []
 episode_reward=0
 
-for i in range(timesteps):
+for i in range(test_shiftenv.T):
     
     state_track.append(obs)
     action = tester.compute_single_action(obs)
     print(action)
-    obs, reward, done, info = shiftenv.step(action)
+    obs, reward, done, info = test_shiftenv.step(action)
     episode_reward += reward
     
 
@@ -221,23 +301,28 @@ action_numbers = action_track
 
 #Create dataframe state_action
 
-state_action_track=(state_track,np.reshape(action_track,(timesteps, 1)), np.reshape(np.array(rewards_track),(timesteps, 1)))
+state_action_track=(state_track,np.reshape(action_track,(test_shiftenv.T, 1)), np.reshape(np.array(rewards_track),(test_shiftenv.T, 1)))
 
 
 state_action_track=np.concatenate(state_action_track, axis=1)
-state_action_track=pd.DataFrame(state_action_track, columns=list(shiftenv.state_vars.keys())+['actions','rewards'])
+state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
 
 
 
 #Plot
 
-makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],shiftenv) # O Tempo e o Env
+makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # O Tempo e o Env
     
   
 
+# # get policy
+# w=tester.get_policy().get_weights()
 
-# pol=tester.get_policy()
+
+# result={}
+# for k, v in tester.get_policy().get_weights().items():
+#             result["FCC/{}".format(k)] = v
 
 
-# weights=pol.get_weights()
-# ml=pol.compute_log_likelihoods(actions, obs_batch)
+# # weights=pol.get_weights()
+# # ml=pol.compute_log_likelihoods(actions, obs_batch)

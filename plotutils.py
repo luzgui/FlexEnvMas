@@ -18,17 +18,17 @@ def makeplot(T,soc,sol,gen,load,delta,env):
 
     fig, ax = plt.subplots(figsize=(10,7))
     # t=np.arange(0,T,1)
-    ax.plot(load,label='load')
+    ax.plot(load,label='base load')
     # ax.plot(sol+load,label='load+bat_charge')
-    ax.plot(sol,label='bat_charge')
-    ax.plot(soc,label='soc')
+    # ax.plot(sol,label='On/Off')
+    ax.plot(soc,label='shift load')
     ax.plot(gen,label='gen')
     ax.plot(delta,label='delta')
     
     ax.grid()
     ax.legend()
-    ax.set(xlabel='Time of the day', ylabel='kW/kWh',
-           title='Schedulling battery solution')
+    ax.set(xlabel='Time of the day', ylabel='kWh',
+           title='Shiftable device solution')
 #     plt.show()
 #     time.sleep(0.1)
 #     return(ax)
