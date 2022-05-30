@@ -36,7 +36,9 @@ class ShiftEnv(gym.Env):
         
         self.tstep_size=config["step_size"]
         self.T=len(self.data) # Time horizon
+        self.Tw=24*2 #window horizon
         self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
+        self.tstep_init=0 #initial timestep in each episode
         
         #Appliance profile
         
@@ -47,10 +49,12 @@ class ShiftEnv(gym.Env):
         self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained
         self.n_episodes=0
         self.hist=[]
-
+        
         #new vars
         self.L_s=np.zeros(self.T) # we make a vector of zeros to store the shiftable load profile
-        # self.l_s=self.L_s[0] #initialize with the first element in 
+        # self.l_s=self.L_s[0] 
+        
+        #initialize with the first element in 
         self.t_shift=0
         
         
@@ -75,11 +79,11 @@ class ShiftEnv(gym.Env):
         
         self.tar_buy=0.17 # import tariff in €/kWh
         self.tar_sell=0.0 # remuneration for excess
-
-
+                
+        
         # defining the state variables
         self.state_vars={'tstep':
-                        {'max':2000,'min':0},
+                        {'max':10000,'min':0},
                         'minutes':
                             {'max':1440,'min':0},
                         'sin':
@@ -104,9 +108,9 @@ class ShiftEnv(gym.Env):
                             {'max':10,'min':-10.0},
                         'delta_s': #The differential betwee gen and l_s
                             {'max':10,'min':-10.0},
-                        'y': # ≃1 if ON at t, 0 OTW
+                        'y': # =1 if ON at t, 0 OTW
                             {'max':1.0,'min':0.0},
-                        'y_1': # ≃1 if ON in t-1
+                        'y_1': # =1 if ON in t-1
                             {'max':1.0,'min':0.0},
                         'y_s':  # +1 if app is schedulled at t (incremental) 
                                 #(how many times it was connected)
@@ -126,9 +130,9 @@ class ShiftEnv(gym.Env):
         
         #Number of variables to be used
         self.var_dim=len(self.state_vars.keys())
+                
         
-
-        
+                
         self.highlim=np.array([value['max'] for key, value in self.state_vars.items()])
         self.lowlim=np.array([value['min'] for key, value in self.state_vars.items()])
             
@@ -160,10 +164,7 @@ class ShiftEnv(gym.Env):
             info (dict):
                 a dictionary containing additional information about the previous action
         """
-        #get charge load form action
-        #Mofification António
-        # action_charge=self.get_charge(action)
-        # action_discharge=self.get_discharge(action)
+
         
         
         action=float(action)
@@ -171,20 +172,23 @@ class ShiftEnv(gym.Env):
         reward=self.get_reward(action, reward_type=self.reward_type)
         
 
-        if self.tstep==len(self.data)-1:
+        if self.tstep==self.tstep_init+47: # episode ends when when 24 hours passed
             # done=True
             self.R_Total.append(self.R)
             print(self.R)
-            # print('timestep',self.t)
+            # print('tstep_init',self.tstep_init)
+            # print('tstep',self.tstep)
 
             self.n_episodes+=1
             done = True
 
-            return np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
+            # return np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
+        
+            return self.get_obs(), 0, done, {}
         
         else:
             done = False
-
+            
         #Variables update
         
         self.tstep+=1
@@ -244,9 +248,9 @@ class ShiftEnv(gym.Env):
         
         
         self.hist.append(self.y)
-        if self.tstep > 1:
+        if self.tstep > self.tstep_init+1:
             # print(self.step)
-            self.y_1=self.hist[self.tstep-1]
+            self.y_1=self.hist[-2] #penultiumate element to get the previous action
         else:
             self.y_1=0
             
@@ -289,6 +293,9 @@ class ShiftEnv(gym.Env):
         #         self.load_s = 0
                 
                 # self.E_prof == self.profile.sum()*self.dh
+        
+        
+        #garantee that it follows the machine profile
         if self.tstep <= self.T-self.T_prof:
             if self.y == 1: #if it must be turned ON on the present tslot
                 if self.y_s==0: #if its never been ON
@@ -373,7 +380,9 @@ class ShiftEnv(gym.Env):
 
         info={}
 
-        observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
+        # observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
+        
+        observation=self.get_obs()
     
 
         return observation, reward, done, info
@@ -466,11 +475,12 @@ class ShiftEnv(gym.Env):
         done=False
         
         # We can choose to reset to a random state or to t=0
-        self.tstep=0 # start at t=0
-        # self.tstep = rnd.randrange(0, self.T-self.T_prof-1, 2) # a random initial state
+        # self.tstep=0 # start at t=0
+        self.tstep = rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
+        self.tstep_init=self.tstep # initial timestep
+        # print(self.tstep)
         
         self.tar_buy=0.17
-        
         self.L_s=np.zeros(self.T)
 
         self.gen=self.data[self.tstep,0]
@@ -508,24 +518,34 @@ class ShiftEnv(gym.Env):
             self.gen6 = 0  
         else:
             self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
-       
-   
+        
+        
         self.R=0
         self.r=0
         
         self.c_T=0
-
+        
         self.delta=(self.load+self.load_s)-self.gen
         self.delta_s=self.load_s-self.gen
         
         self.load_s=self.L_s[0] #initialize with the first element in L_s
-        self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
+        
+        
+        # if the random initial time step is after the delivery time it must not turn on
+        if self.minutes >= self.t_deliver-self.T_prof*self.tstep_size:
+            self.E_prof=0 #means that there is no more energy to consume 
+            self.y_s=self.T_prof #means taht it connected allready the machine T_prof times
+        else:
+            self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
+            self.y_s=0 # means that it has never connected the machine
+        
+        
         
         
         #inititialize binary variables
         self.y=0
         self.y_1=0
-        self.y_s=self.y
+        # self.y_s=self.y
         self.t_shift=0
         
         self.hist=[]
@@ -538,9 +558,9 @@ class ShiftEnv(gym.Env):
         self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
     
-        observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
+        # observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
     
-        return observation
+        return self.get_obs()
 
 
     def render(self, mode='human', close=False):
@@ -550,82 +570,26 @@ class ShiftEnv(gym.Env):
         """
         return
     
+
+    def get_obs(self):
+        return np.array((self.tstep,
+                         self.minutes,
+                         self.sin,
+                         self.cos,
+                         self.gen,
+                         self.gen0,
+                         self.gen1,
+                         self.gen3,
+                         self.gen6,
+                         self.load,
+                         self.load_s,
+                         self.delta,
+                         self.delta_s,
+                         self.y,
+                         self.y_1,
+                         self.y_s,
+                         self.cost,
+                         self.cost_s,
+                         self.tar_buy,
+                         self.E_prof), dtype=np.dtype('float32'))
     
-    
-    def resetzero(self):
-        """
-        Reset the environment state and returns an initial observation
-
-        Returns:
-        -------
-        observation (object): The initial observation for the new episode after reset
-        :return:
-        """
-
-        done=False
-        
-        # We can choose to reset to a random state or to t=0
-        self.tstep=0 # start at t=0
-
-        self.L_s=np.zeros(self.T)
-
-        self.gen=self.data[self.tstep,0]
-        self.load=self.data[self.tstep,1]
-        self.minutes=self.data[self.tstep,2]
-        self.load_s=0   
-        
-        # self.gen0=self.data[1][0] #next tstep
-        # self.gen1=self.data[2][0] #1 hour ahead
-        # self.gen3=self.data[3*2][0] #3 hours ahead
-        # self.gen6=self.data[6*2][0] #6 hours ahead
-        
-        if self.tstep+1 >= self.T:
-            self.gen0 = 0  
-        else:
-            self.gen0=self.data[self.tstep+1][0] #next tstep
-                
-                
-        if self.tstep+2 >= self.T:
-            self.gen1 = 0  
-        else:
-            self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
-                
-        
-        if self.tstep+3*2 >= self.T:
-            self.gen3 = 0  
-        else:
-            self.gen3=self.data[self.tstep+3*2][0] #3 hours ahead
-                
-
-        if self.tstep+6*2 >= self.T:
-            self.gen6 = 0  
-        else:
-            self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
-       
-   
-        self.R=0
-        self.r=0
-
-
-        self.delta=(self.load+self.load_s)-self.gen
-        self.delta_s=self.load_s-self.gen
-        
-        self.load_s=self.L_s[0] #initialize with the first element in L_s
-        self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
-        
-        self.y=0
-        self.y_s=self.y
-        self.y_x=0
-        self.hist=[]
-        self.hist.append(self.y)
-
-        # self.tstep=0
-        # self.grid=0.0
-        # self.I_E = 0.0
-        
-        self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
-        self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
-    
-        observation=np.array((self.tstep,self.minutes,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_s,self.y_x,self.cost,self.cost_s,self.E_prof), dtype=np.dtype('float32'))
-    
-        return observation

@@ -54,7 +54,8 @@ raylog=cwd + '/raylog'
 data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
 tstep_size=30 # number of minutes in each timestep
 #%% convert to env data
-timesteps=48*3
+# timesteps=48*3
+timesteps=len(data)
 load_num=2
 env_data=make_env_data(data, timesteps, load_num)
 
@@ -112,7 +113,7 @@ config['model']['fcnet_hiddens']=[256,256]
 # exp_name='Exp-PPO-Weights'
 
 
-exp_name='Exp-PPO'
+exp_name='Exp-WIN'
 
 #make a trainable that logs model weights
 
@@ -195,7 +196,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 1 },
+    stop={'training_iteration': 50 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -204,12 +205,7 @@ tuneobject=tune.run(
     checkpoint_score_attr="episode_reward_mean"
 )
 
-
-
-
 Results=tuneobject.results_df
-
-
 
 #%% instantiate test environment
 
@@ -279,10 +275,9 @@ for i in range(test_shiftenv.T):
     
     state_track.append(obs)
     action = tester.compute_single_action(obs)
-    print(action)
+    # print(action)
     obs, reward, done, info = test_shiftenv.step(action)
     episode_reward += reward
-    
 
     # print(obs)
     # print(action)
@@ -290,17 +285,10 @@ for i in range(test_shiftenv.T):
     action_track.append(action)
     
     rewards_track.append(reward)
-    
 
 state_track=np.array(state_track)
 
-#translate actions into charging power
-action_numbers = action_track
-# action_track=[flexenv.get_charge_discharge(k) for k in action_track]
-
-
 #Create dataframe state_action
-
 state_action_track=(state_track,np.reshape(action_track,(test_shiftenv.T, 1)), np.reshape(np.array(rewards_track),(test_shiftenv.T, 1)))
 
 
@@ -310,19 +298,6 @@ state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.s
 
 
 #Plot
-
-makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # O Tempo e o Env
+makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # 
     
   
-
-# # get policy
-# w=tester.get_policy().get_weights()
-
-
-# result={}
-# for k, v in tester.get_policy().get_weights().items():
-#             result["FCC/{}".format(k)] = v
-
-
-# # weights=pol.get_weights()
-# # ml=pol.compute_log_likelihoods(actions, obs_batch)
