@@ -146,6 +146,11 @@ class ShiftEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(2) # ON/OFF
         
     
+        #Training/testing termination condition
+        
+        self.done_cond=config['done_condition'] #train or test mode
+        
+    
 
 
     def step(self, action):
@@ -171,8 +176,12 @@ class ShiftEnv(gym.Env):
         
         reward=self.get_reward(action, reward_type=self.reward_type)
         
+    
 
-        if self.tstep==self.tstep_init+47: # episode ends when when 24 hours passed
+        
+
+        # if self.tstep==self.tstep_init+47: # episode ends when when 24 hours passed
+        if self.tstep==self.get_term_cond(): 
             # done=True
             self.R_Total.append(self.R)
             print(self.R)
@@ -423,9 +432,10 @@ class ShiftEnv(gym.Env):
         # if (self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
                 
         if (self.minutes >= self.t_deliver-self.T_prof*self.tstep_size and self.minutes <= self.min_max and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
-            reward=-1/self.T
+            # reward=-1/self.T
+            reward=-1
         else:
-            reward= -self.cost**2*self.y-0.1/self.T*(abs(self.y-self.y_1))
+            reward= -self.cost_s**2*self.y-0.1/self.Tw*(abs(self.y-self.y_1))
             
         
         
@@ -476,7 +486,12 @@ class ShiftEnv(gym.Env):
         
         # We can choose to reset to a random state or to t=0
         # self.tstep=0 # start at t=0
-        self.tstep = rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
+        
+        # self.tstep = rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
+        
+        self.tstep=self.get_init_tstep()
+        
+        
         self.tstep_init=self.tstep # initial timestep
         # print(self.tstep)
         
@@ -593,3 +608,24 @@ class ShiftEnv(gym.Env):
                          self.tar_buy,
                          self.E_prof), dtype=np.dtype('float32'))
     
+      
+    def get_term_cond(self):
+        "A function to get the correct episiode termination condition according to weather it is in train or test mode defined in the self.done_cond variable"
+        
+        if self.done_cond == 'train': 
+            # episode ends when when 24 hours passed
+            return self.tstep_init+47
+        elif self.done_cond == 'test': 
+            #episode ends in the end of the data length
+            return self.T-1 
+     
+           
+    def get_init_tstep(self):
+        "A function that returns the initial tstep of the episode"
+        if self.done_cond == 'train': 
+            # episode starts at a random initial tstep
+            return rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
+            
+        elif self.done_cond == 'test': 
+            #episode starts at t=0
+            return 0

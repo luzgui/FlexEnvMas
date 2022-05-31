@@ -19,6 +19,9 @@ from ray.rllib.agents.a3c import A3CTrainer
 
 from ray.rllib.agents.a3c import A2CTrainer
 
+#models
+from ray.rllib.models import ModelCatalog
+
 #math + data
 import pandas as pd
 import numpy as np
@@ -37,17 +40,16 @@ from datetime import datetime
 
 #Custom functions
 from shiftenvRLlib import ShiftEnv
-
 from auxfunctions_shiftenv import *
-
 from plotutils import makeplot
+from models import ActionMaskModel
+
 
 cwd=os.getcwd()
 datafolder=cwd + '/Data'
 
 raylog=cwd + '/raylog'
 #Add this folder to path
-
 
 #%% Make Shiftable loads environment
 #import raw data
@@ -67,9 +69,24 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 
 
 #%% make train env
-env_config={"step_size": tstep_size, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size}
+env_config={"step_size": tstep_size, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
 
 shiftenv=ShiftEnv(env_config)
+
+
+#%% Model
+# from models import ActionMaskModel
+# m=ActionMaskModel(shiftenv.observation_space, 
+#                   shiftenv.action_space,
+#                   shiftenv.action_space.n,
+#                   env_config,
+#                   'model0')
+
+
+
+
+ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
+
 
 #%%Tune esperiments
 
@@ -88,7 +105,7 @@ config["action_space"]=shiftenv.action_space
 config['model']['fcnet_hiddens']=[256,256]
 # config['model']['use_lstm']=True
 
-
+# config['model']['custom_model']=ActionMaskModel
 
 # config["gamma"]=0.7
 # config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
@@ -196,7 +213,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 50 },
+    stop={'training_iteration': 500 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -210,9 +227,11 @@ Results=tuneobject.results_df
 #%% instantiate test environment
 
 test_env_data=make_env_data(data, 48*2, 4)
-test_env_config={"step_size": tstep_size, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size}
+test_env_config={"step_size": tstep_size, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 test_shiftenv=ShiftEnv(test_env_config)
+
+# test_shiftenv=shiftenv
 
 #%% Recover checkpoints
 
