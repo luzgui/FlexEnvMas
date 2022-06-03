@@ -17,6 +17,9 @@ from gym import spaces
 # from or_gym.utils import create_env
 
 tf = try_import_tf()
+tf0=tf[0]
+tf1=tf[1]
+
 
 class ActionMaskModel(TFModelV2):
     
@@ -46,10 +49,10 @@ class ActionMaskModel(TFModelV2):
         
         action_embedding, _ = self.action_embed_model({
             "obs": input_dict["obs"]["state"]})
-        intent_vector = tf.expand_dims(action_embedding, 1)
-        action_logits = tf.reduce_sum(avail_actions * intent_vector,
+        intent_vector = tf1.expand_dims(action_embedding, 1)
+        action_logits = tf1.reduce_sum(avail_actions * intent_vector,
             axis=1)
-        inf_mask = tf.maximum(tf.log(action_mask), tf.float32.min)
+        inf_mask = tf1.maximum(tf0.log(action_mask), tf1.float32.min)
         return action_logits + inf_mask, state   
     
     def value_function(self):

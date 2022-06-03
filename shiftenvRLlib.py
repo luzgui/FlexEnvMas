@@ -6,11 +6,11 @@ Created on Fri Feb 25 11:31:14 2022
 @author: omega
 """
 import gym
-import gym
+from gym import spaces
 import numpy as np
 import random as rnd
 import time
-
+from collections import OrderedDict
 
 
 class ShiftEnv(gym.Env):
@@ -96,18 +96,42 @@ class ShiftEnv(gym.Env):
                                 {'max':10,'min':0},
                         'gen1':# g : PV generation forecast 1h ahead
                                  {'max':10,'min':0},
-                        'gen3':# g : PV generation forecast 3h ahead
-                                 {'max':10,'min':0},
                         'gen6':# g : PV generation forecast 6h ahead
                                  {'max':10,'min':0},
+                        'gen12':# g : PV generation forecast 12h ahead
+                                 {'max':10,'min':0},
+                        'gen24':# g : PV generation forecast 24h ahead
+                                 {'max':10,'min':0},  
                         'load':# l : Load at timeslot t
                             {'max':10,'min':0},
-                        'load_s': #l_s: shiftable load 
-                            {'max':max(self.profile),'min':0},
+                        'load0':# g : PV load forecast next timeslot
+                                {'max':10,'min':0},
+                        'load1':# g : PV load forecast 1h ahead
+                                 {'max':10,'min':0},
+                        'load6':# g : PV load forecast 6h ahead
+                                 {'max':10,'min':0},
+                        'load12':# g : PV load forecast 12h ahead
+                                 {'max':10,'min':0},
+                        'load24':# g : PV load forecast 24h ahead
+                                 {'max':10,'min':0},
                         'delta': #The differential between the gen and load
                             {'max':10,'min':-10.0},
+                        'delta0': #The differential between the gen and load next timeslot
+                            {'max':10,'min':-10.0},
+                        'delta1': #The differential between the gen and load 1h ahead
+                            {'max':10,'min':-10.0},
+                        'delta6': #The differential between the gen and load 6h ahead
+                            {'max':10,'min':-10.0},
+                        'delta12': #The differential between the gen and load 12h ahead
+                            {'max':10,'min':-10.0},
+                        'delta24': #The differential between the gen and load 24h ahead
+                            {'max':10,'min':-10.0},
+                        'load_s': #l_s: shiftable load 
+                            {'max':max(self.profile),'min':0},
                         'delta_s': #The differential betwee gen and l_s
                             {'max':10,'min':-10.0},
+                        'delta_c': #The differential betwee gen and l_s
+                                {'max':10,'min':-10.0},
                         'y': # =1 if ON at t, 0 OTW
                             {'max':1.0,'min':0.0},
                         'y_1': # =1 if ON in t-1
@@ -136,16 +160,24 @@ class ShiftEnv(gym.Env):
         self.highlim=np.array([value['max'] for key, value in self.state_vars.items()])
         self.lowlim=np.array([value['min'] for key, value in self.state_vars.items()])
             
-        # Observation space
-        self.observation_space = gym.spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,),dtype=np.dtype('float32'))
-
-
-
-        #Actions
-
-        self.action_space = gym.spaces.Discrete(2) # ON/OFF
         
-    
+        #Actions
+        self.action_space = spaces.Discrete(2) # ON/OFF
+        
+        # Observation space
+       
+        # self.observation_space = spaces.Dict({
+        #     "action_mask": spaces.Box(0, 1, shape=(self.action_space.n,), dtype=np.int32),
+        #     "avail_actions": spaces.Box(0, 1, shape=(self.action_space.n,), dtype=np.int16),
+        #     "state": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,),dtype=np.float32)})
+        
+        
+        # self.observation_space = spaces.Dict({
+        #     "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),
+        #     "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))})
+        
+        self.observation_space=spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))    
+        
         #Training/testing termination condition
         
         self.done_cond=config['done_condition'] #train or test mode
@@ -191,7 +223,6 @@ class ShiftEnv(gym.Env):
             self.n_episodes+=1
             done = True
 
-            # return np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof), dtype=np.dtype('float32')),0,done, {}
         
             return self.get_obs(), 0, done, {}
         
@@ -226,20 +257,66 @@ class ShiftEnv(gym.Env):
             self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
                 
         
-        if self.tstep+3*2 >= self.T:
-            self.gen3 = 0  
-        else:
-            self.gen3=self.data[self.tstep+3*2][0] #3 hours ahead
-                
-
         if self.tstep+6*2 >= self.T:
             self.gen6 = 0  
         else:
             self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
+                
+
+        if self.tstep+12*2 >= self.T:
+            self.gen12 = 0  
+        else:
+            self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
             
+        if self.tstep+24*2 >= self.T:
+            self.gen24 = 0  
+        else:
+            self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
         
-          
+        
+        #Load and load forecast
+        #Load and load forecast
         self.load=self.data[self.tstep][1] # valor da load para cada instante
+        
+        if self.tstep+1 >= self.T:
+            self.load0 = 0  
+        else:
+            self.load0=self.data[self.tstep+1][1] #next tstep
+                
+                
+        if self.tstep+2 >= self.T:
+            self.load1 = 0  
+        else:
+            self.load1=self.data[self.tstep+2][1] #1 hour ahead      
+                
+        
+        if self.tstep+6*2 >= self.T:
+            self.load6 = 0  
+        else:
+            self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
+                
+
+        if self.tstep+12*2 >= self.T:
+            self.load12 = 0  
+        else:
+            self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
+            
+        if self.tstep+24*2 >= self.T:
+            self.load24 = 0  
+        else:
+            self.load24=self.data[self.tstep+24*2][1] #12 hours ahead
+        
+        
+        #deltas
+        self.delta = self.load-self.gen
+        self.delta0 = self.load0-self.gen0
+        self.delta1 = self.load1-self.gen1
+        self.delta6 = self.load6-self.gen6
+        self.delta12 = self.load12-self.gen12
+        self.delta24 = self.load24-self.gen24
+        
+
+        ##
         self.minutes=self.data[self.tstep][2]
         self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
         self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
@@ -362,9 +439,10 @@ class ShiftEnv(gym.Env):
         
         
         #deficit vs excess
-        self.delta = (self.load+self.load_s)-self.gen # if positive there is imports from the grid. If negative there are exports to the grid 
+        self.delta_c = (self.load+self.load_s)-self.gen # if positive there is imports from the grid. If negative there are exports to the grid 
         
         self.delta_s=self.load_s-self.gen
+        
 
         
         # reward=self.get_reward(action, reward_type=self.reward_type)
@@ -374,7 +452,7 @@ class ShiftEnv(gym.Env):
         
         #energy cost
         
-        self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
+        self.cost=max(0,self.delta_c)*self.tar_buy*self.dh + min(0,self.delta_c)*self.tar_sell*self.dh
         
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
         # self.c_s=
@@ -387,14 +465,19 @@ class ShiftEnv(gym.Env):
         #accumulated total cost
         self.c_T+=self.cost_s
 
-        info={}
-
-        # observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
         
-        observation=self.get_obs()
     
+        #A function to populate 
+        
 
-        return observation, reward, done, info
+        
+        # obs={"action_mask": np.ones(self.action_space.n, dtype=np.int32),
+        #      "observations": self.get_obs()
+        #      }
+
+        obs=self.get_obs()
+
+        return obs, reward, done, {}
     
 
 
@@ -435,7 +518,7 @@ class ShiftEnv(gym.Env):
             # reward=-1/self.T
             reward=-1
         else:
-            reward= -self.cost_s**2*self.y-0.1/self.Tw*(abs(self.y-self.y_1))
+            reward= -self.cost_s*self.y-0.1/self.Tw*(abs(self.y-self.y_1))
             
         
         
@@ -498,18 +581,16 @@ class ShiftEnv(gym.Env):
         self.tar_buy=0.17
         self.L_s=np.zeros(self.T)
 
-        self.gen=self.data[self.tstep,0]
-        self.load=self.data[self.tstep,1]
+        # self.gen=self.data[self.tstep,0]
+        # self.load=self.data[self.tstep,1]
         self.minutes=self.data[self.tstep,2]
         self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
         self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
         
         self.load_s=0   
         
-        # self.gen0=self.data[1][0] #next tstep
-        # self.gen1=self.data[2][0] #1 hour ahead
-        # self.gen3=self.data[3*2][0] #3 hours ahead
-        # self.gen6=self.data[6*2][0] #6 hours ahead
+
+        self.gen=self.data[self.tstep][0] # valor da generation para cada instante
         
         if self.tstep+1 >= self.T:
             self.gen0 = 0  
@@ -523,16 +604,62 @@ class ShiftEnv(gym.Env):
             self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
                 
         
-        if self.tstep+3*2 >= self.T:
-            self.gen3 = 0  
-        else:
-            self.gen3=self.data[self.tstep+3*2][0] #3 hours ahead
-                
-
         if self.tstep+6*2 >= self.T:
             self.gen6 = 0  
         else:
             self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
+                
+
+        if self.tstep+12*2 >= self.T:
+            self.gen12 = 0  
+        else:
+            self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
+            
+        if self.tstep+24*2 >= self.T:
+            self.gen24 = 0  
+        else:
+            self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
+        
+        
+        #Load and load forecast
+        self.load=self.data[self.tstep][1] # valor da load para cada instante
+        
+        if self.tstep+1 >= self.T:
+            self.load0 = 0  
+        else:
+            self.load0=self.data[self.tstep+1][1] #next tstep
+                
+                
+        if self.tstep+2 >= self.T:
+            self.load1 = 0  
+        else:
+            self.load1=self.data[self.tstep+2][1] #1 hour ahead      
+                
+        
+        if self.tstep+6*2 >= self.T:
+            self.load6 = 0  
+        else:
+            self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
+                
+
+        if self.tstep+12*2 >= self.T:
+            self.load12 = 0  
+        else:
+            self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
+            
+        if self.tstep+24*2 >= self.T:
+            self.load24 = 0  
+        else:
+            self.load24=self.data[self.tstep+24*2][1] #12 hours ahead
+        
+        
+        #deltas
+        self.delta = self.load-self.gen
+        self.delta0 = self.load0-self.gen0
+        self.delta1 = self.load1-self.gen1
+        self.delta6 = self.load6-self.gen6
+        self.delta12 = self.load12-self.gen12
+        self.delta24 = self.load24-self.gen24
         
         
         self.R=0
@@ -540,7 +667,7 @@ class ShiftEnv(gym.Env):
         
         self.c_T=0
         
-        self.delta=(self.load+self.load_s)-self.gen
+        self.delta_c=(self.load+self.load_s)-self.gen
         self.delta_s=self.load_s-self.gen
         
         self.load_s=self.L_s[0] #initialize with the first element in L_s
@@ -574,8 +701,14 @@ class ShiftEnv(gym.Env):
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
     
         # observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
+        
+        # obs={"action_mask": np.ones(self.action_space.n, dtype=np.int32),
+        #      "observations": self.get_obs()
+        #      }
+
+        obs=self.get_obs()
     
-        return self.get_obs()
+        return obs
 
 
     def render(self, mode='human', close=False):
@@ -594,11 +727,23 @@ class ShiftEnv(gym.Env):
                          self.gen,
                          self.gen0,
                          self.gen1,
-                         self.gen3,
                          self.gen6,
+                         self.gen12,
+                         self.gen24,
                          self.load,
-                         self.load_s,
+                         self.load0,
+                         self.load1,
+                         self.load6,
+                         self.load12,
+                         self.load24,
                          self.delta,
+                         self.delta0,
+                         self.delta1,
+                         self.delta6,
+                         self.delta12,
+                         self.delta24,
+                         self.load_s,
+                         self.delta_c,
                          self.delta_s,
                          self.y,
                          self.y_1,
@@ -606,7 +751,7 @@ class ShiftEnv(gym.Env):
                          self.cost,
                          self.cost_s,
                          self.tar_buy,
-                         self.E_prof), dtype=np.dtype('float32'))
+                         self.E_prof))
     
       
     def get_term_cond(self):

@@ -42,7 +42,7 @@ from datetime import datetime
 from shiftenvRLlib import ShiftEnv
 from auxfunctions_shiftenv import *
 from plotutils import makeplot
-from models import ActionMaskModel
+from models2 import ActionMaskModel
 
 
 cwd=os.getcwd()
@@ -102,10 +102,11 @@ config["action_space"]=shiftenv.action_space
 # config["dueling"]=True
 # config["lr"]=tune.grid_search([1e-5, 1e-4, 1e-3])
 # config["gamma"]=tune.grid_search([0.8,0.9,0.99])
-config['model']['fcnet_hiddens']=[256,256]
+# config['model']['fcnet_hiddens']=[256,256]
 # config['model']['use_lstm']=True
 
 # config['model']['custom_model']=ActionMaskModel
+# config['log_level']='INFO'
 
 # config["gamma"]=0.7
 # config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
@@ -130,7 +131,7 @@ config['model']['fcnet_hiddens']=[256,256]
 # exp_name='Exp-PPO-Weights'
 
 
-exp_name='Exp-WIN'
+exp_name='Exp-WIN-NEW'
 
 #make a trainable that logs model weights
 
@@ -213,7 +214,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 500 },
+    stop={'training_iteration': 200 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     name=exp_name,
@@ -297,14 +298,14 @@ for i in range(test_shiftenv.T):
     # print(action)
     obs, reward, done, info = test_shiftenv.step(action)
     episode_reward += reward
-
+    
     # print(obs)
     # print(action)
     # print(reward)
     action_track.append(action)
     
     rewards_track.append(reward)
-
+    
 state_track=np.array(state_track)
 
 #Create dataframe state_action
