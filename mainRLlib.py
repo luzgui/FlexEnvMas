@@ -44,6 +44,10 @@ from auxfunctions_shiftenv import *
 from plotutils import makeplot
 from models2 import ActionMaskModel
 
+from ray.rllib.utils.pre_checks import env
+
+
+# from ray.tune.registry import register_env
 
 cwd=os.getcwd()
 datafolder=cwd + '/Data'
@@ -73,6 +77,7 @@ env_config={"step_size": tstep_size, "data": env_data,"reward_type": 2, "profile
 
 shiftenv=ShiftEnv(env_config)
 
+env.check_env(shiftenv)
 
 #%% Model
 # from models import ActionMaskModel
@@ -95,9 +100,12 @@ config=ppo.DEFAULT_CONFIG.copy()
 # config=dqn.DEFAULT_CONFIG.copy()
 # config["env"]=FlexEnv
 config["env"]=ShiftEnv
+
+
 config["env_config"]=env_config
 config["observation_space"]=shiftenv.observation_space
 config["action_space"]=shiftenv.action_space
+config["_disable_preprocessor_api"]=True
 # config["double_q"]=True
 # config["dueling"]=True
 # config["lr"]=tune.grid_search([1e-5, 1e-4, 1e-3])
@@ -114,7 +122,7 @@ config["action_space"]=shiftenv.action_space
 # config["sgd_minibatch_size"]=tune.grid_search([128,256])
 
 
-# config["horizon"]=1000
+config["horizon"]=shiftenv.Tw
 # config["framework"]="tf2"
 # config["eager_tracing"]=True
 # config["lr"]=1e-4
@@ -131,7 +139,7 @@ config["action_space"]=shiftenv.action_space
 # exp_name='Exp-PPO-Weights'
 
 
-exp_name='Exp-WIN-NEW'
+exp_name='Exp-WIN-TAR-PreProc'
 
 #make a trainable that logs model weights
 
@@ -214,20 +222,23 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 200 },
+    stop={'training_iteration': 300 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
+    # resume=True,
     name=exp_name,
     verbose=0,
     # keep_checkpoints_num=10, 
     checkpoint_score_attr="episode_reward_mean"
 )
 
+
+
 Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-test_env_data=make_env_data(data, 48*2, 4)
+test_env_data=make_env_data(data, 48*1, 4)
 test_env_config={"step_size": tstep_size, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 test_shiftenv=ShiftEnv(test_env_config)
@@ -279,7 +290,7 @@ tester.restore(checkpoint)
 
 #%%
 
-
+from plotutils import makeplot
 # PLot Solutions
 
 ## Enjoy trained agent

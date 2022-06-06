@@ -17,17 +17,17 @@ import random as rnd
 def makeplot(T,soc,sol,gen,load,delta,env):
 
     fig, ax = plt.subplots(figsize=(10,7))
-    # t=np.arange(0,T,1)
-    ax.plot(load,label='base load')
+    t=np.arange(0,len(gen),1)
+    ax.plot(t, load,label='Unflexible load')
     # ax.plot(sol+load,label='load+bat_charge')
     # ax.plot(sol,label='On/Off')
-    ax.plot(soc,label='shift load')
-    ax.plot(gen,label='gen')
+    ax.plot(soc,label='Shiftable load')
+    ax.plot(gen,label='PV generation')
     ax.plot(delta,label='delta')
     
     ax.grid()
     ax.legend()
-    ax.set(xlabel='Time of the day', ylabel='kWh',
+    ax.set(xlabel='Timesteps', ylabel='kWh',
            title='Shiftable device solution')
 #     plt.show()
 #     time.sleep(0.1)

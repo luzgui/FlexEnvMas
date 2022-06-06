@@ -40,6 +40,7 @@ class ShiftEnv(gym.Env):
         self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
         self.tstep_init=0 #initial timestep in each episode
         
+        
         #Appliance profile
         
         self.profile=config["profile"]
@@ -234,8 +235,8 @@ class ShiftEnv(gym.Env):
         self.tstep+=1
         
         
-        
-        if self.tstep >= 8 and self.tstep <=16:
+        #tariff
+        if self.minutes >= 240 and self.minutes <=540:
             self.tar_buy=0.09 
         else:
             self.tar_buy=0.17
