@@ -29,7 +29,7 @@ class ActionMaskModel(TFModelV2):
                  num_outputs,
                  model_config, 
                  name, 
-                 true_obs_shape=(20,),
+                 true_obs_shape=(32,),
                  action_embed_size=2, *args, **kwargs):
         
         super(ActionMaskModel, self).__init__(obs_space,

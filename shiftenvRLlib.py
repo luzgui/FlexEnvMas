@@ -5,6 +5,8 @@ Created on Fri Feb 25 11:31:14 2022
 
 @author: omega
 """
+import math
+from numpy import Inf
 import gym
 from gym import spaces
 import numpy as np
@@ -153,6 +155,8 @@ class ShiftEnv(gym.Env):
         
             
         
+        self.obs=None   
+            
         #Number of variables to be used
         self.var_dim=len(self.state_vars.keys())
                 
@@ -172,12 +176,14 @@ class ShiftEnv(gym.Env):
         #     "avail_actions": spaces.Box(0, 1, shape=(self.action_space.n,), dtype=np.int16),
         #     "state": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,),dtype=np.float32)})
         
+        #     "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),      
+        self.observation_space = spaces.Dict({
+            "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),
+            "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))})
         
-        # self.observation_space = spaces.Dict({
-        #     "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),
-        #     "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))})
+        # self.observation_space=spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))    
         
-        self.observation_space=spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))    
+
         
         #Training/testing termination condition
         
@@ -224,8 +230,12 @@ class ShiftEnv(gym.Env):
             self.n_episodes+=1
             done = True
 
+            
+            self.obs={"action_mask": np.array([1,1]),
+                  "observations": self.get_obs()
+                  }
         
-            return self.get_obs(), 0, done, {}
+            return self.obs, 0, done, {}
         
         else:
             done = False
@@ -472,13 +482,19 @@ class ShiftEnv(gym.Env):
         
 
         
-        # obs={"action_mask": np.ones(self.action_space.n, dtype=np.int32),
-        #      "observations": self.get_obs()
-        #      }
+        # self.obs={"action_mask": np.ones(self.action_space.n, dtype=np.int32),
+        #        "observations": self.get_obs()
+        #        }
 
-        obs=self.get_obs()
+        self.obs={"action_mask": np.array([1,1]),
+              "observations": self.get_obs()
+              }
+        
+        # obs = {'cart': np.array([-4.8,2.0]), 'pole': np.array([-0.418, 0.86])}
 
-        return obs, reward, done, {}
+        # obs=self.get_obs()
+
+        return self.obs, reward, done, {}
     
 
 
@@ -700,16 +716,18 @@ class ShiftEnv(gym.Env):
         
         self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
-    
-        # observation=np.array((self.tstep,self.minutes,self.sin,self.cos,self.gen,self.gen0,self.gen1,self.gen3,self.gen6, self.load,self.load_s,self.delta,self.delta_s,self.y,self.y_1,self.y_s,self.cost,self.cost_s,self.tar_buy,self.E_prof))
         
-        # obs={"action_mask": np.ones(self.action_space.n, dtype=np.int32),
-        #      "observations": self.get_obs()
-        #      }
+        
+        
+        # obs = {'cart': np.array([-4.8,2.0]), 'pole': np.array([-0.418, 0.86])}
 
-        obs=self.get_obs()
+        # obs=self.get_obs()
+        
+        self.obs={"action_mask": np.array([1,1]),
+              "observations": self.get_obs()
+              }
     
-        return obs
+        return self.obs
 
 
     def render(self, mode='human', close=False):
@@ -752,7 +770,7 @@ class ShiftEnv(gym.Env):
                          self.cost,
                          self.cost_s,
                          self.tar_buy,
-                         self.E_prof))
+                         self.E_prof), dtype=np.float)
     
       
     def get_term_cond(self):

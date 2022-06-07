@@ -105,7 +105,7 @@ config["env"]=ShiftEnv
 config["env_config"]=env_config
 config["observation_space"]=shiftenv.observation_space
 config["action_space"]=shiftenv.action_space
-config["_disable_preprocessor_api"]=True
+# config["_disable_preprocessor_api"]=True
 # config["double_q"]=True
 # config["dueling"]=True
 # config["lr"]=tune.grid_search([1e-5, 1e-4, 1e-3])
@@ -113,7 +113,7 @@ config["_disable_preprocessor_api"]=True
 # config['model']['fcnet_hiddens']=[256,256]
 # config['model']['use_lstm']=True
 
-# config['model']['custom_model']=ActionMaskModel
+config['model']['custom_model']=ActionMaskModel
 # config['log_level']='INFO'
 
 # config["gamma"]=0.7
@@ -222,12 +222,12 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 300 },
+    stop={'training_iteration': 1 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     # resume=True,
     name=exp_name,
-    verbose=0,
+    # verbose=0,
     # keep_checkpoints_num=10, 
     checkpoint_score_attr="episode_reward_mean"
 )
@@ -304,7 +304,7 @@ episode_reward=0
 
 for i in range(test_shiftenv.T):
     
-    state_track.append(obs)
+    state_track.append(obs['observations'])
     action = tester.compute_single_action(obs)
     # print(action)
     obs, reward, done, info = test_shiftenv.step(action)
@@ -332,3 +332,34 @@ state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.s
 makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # 
     
   
+    
+  
+    
+# #%%
+# k=0
+# obs=shiftenv.reset()
+# while k<100:
+#     # a=shiftenv.action_space.sample()
+#     a=0
+#     print(a)
+#     step_out=shiftenv.step(a)
+#     obs=step_out[0]
+#     print(obs)
+#     assert type(obs)==dict, 'Não é dict'
+#     print(k, 'k=')
+#     k+=1
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
