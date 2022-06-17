@@ -60,8 +60,8 @@ raylog=cwd + '/raylog'
 data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
 tstep_size=30 # number of minutes in each timestep
 #%% convert to env data
-# timesteps=48*3
-timesteps=len(data)
+timesteps=48*3
+# timesteps=len(data)
 load_num=2
 env_data=make_env_data(data, timesteps, load_num)
 
@@ -73,7 +73,9 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 
 
 #%% make train env
-env_config={"step_size": tstep_size, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
+# env_config={"step_size": tstep_size,'window_size':24*2*1, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
+
+env_config={"step_size": tstep_size,'window_size':24*2*2, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
 
 shiftenv=ShiftEnv(env_config)
 
@@ -139,7 +141,7 @@ config["horizon"]=shiftenv.Tw
 # exp_name='Exp-PPO-Weights'
 
 
-exp_name='Exp-WIN-TAR-PreProc'
+exp_name='Exp-WIN-TAR-AM'
 
 #make a trainable that logs model weights
 
@@ -227,7 +229,7 @@ tuneobject=tune.run(
     checkpoint_freq=10,
     # resume=True,
     name=exp_name,
-    # verbose=0,
+    verbose=0,
     # keep_checkpoints_num=10, 
     checkpoint_score_attr="episode_reward_mean"
 )
@@ -238,10 +240,13 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-test_env_data=make_env_data(data, 48*1, 4)
-test_env_config={"step_size": tstep_size, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
+# test_env_data=make_env_data(data, 48*2, 4)
+# test_env_config={"step_size": tstep_size,'window_size':24*2*2, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
-test_shiftenv=ShiftEnv(test_env_config)
+# test_shiftenv=ShiftEnv(test_env_config)
+
+test_shiftenv=shiftenv
+test_env_config=env_config
 
 # test_shiftenv=shiftenv
 
@@ -266,7 +271,7 @@ tester=PPOTrainer(config, env=ShiftEnv)
 
 #define the metric and the mode criteria for identifying the best checkpoint
 metric='episode_reward_mean'
-mode='max'
+mode='min'
 
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
@@ -296,31 +301,50 @@ from plotutils import makeplot
 ## Enjoy trained agent
 action_track=[]
 state_track=[]
+mask_track=[]
 
 obs = test_shiftenv.reset() #use the fuction taht resets to zero
+# print(obs)
+# action = tester.compute_single_action(obs)
+# print(action)
+
 
 rewards_track = []
 episode_reward=0
 
-for i in range(test_shiftenv.T):
+T=test_shiftenv.T
+# T=48*3
+
+
+#An emprirical pseudo-optimal solution
+# A=np.zeros(T)
+# A[20:26]=1
+# A[69:75]=1
+
+
+for i in range(T):
+    # print(i)
     
     state_track.append(obs['observations'])
     action = tester.compute_single_action(obs)
+    # action=int(A[i])
     # print(action)
     obs, reward, done, info = test_shiftenv.step(action)
+    # print(obs)
     episode_reward += reward
     
     # print(obs)
     # print(action)
     # print(reward)
     action_track.append(action)
+    mask_track.append(obs['action_mask'])
     
     rewards_track.append(reward)
     
 state_track=np.array(state_track)
 
 #Create dataframe state_action
-state_action_track=(state_track,np.reshape(action_track,(test_shiftenv.T, 1)), np.reshape(np.array(rewards_track),(test_shiftenv.T, 1)))
+state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
 
 
 state_action_track=np.concatenate(state_action_track, axis=1)
@@ -329,7 +353,7 @@ state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.s
 
 
 #Plot
-makeplot(48,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # 
+makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # 
     
   
     

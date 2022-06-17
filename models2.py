@@ -58,9 +58,9 @@ class ActionMaskModel(TFModelV2):
         # Compute the unmasked logits.
         logits, _ = self.internal_model({"obs": input_dict["obs"]["observations"]})
 
-        # # If action masking is disabled, directly return unmasked logits
-        # if self.no_masking:
-        #     return logits, state
+        # If action masking is disabled, directly return unmasked logits
+        if self.no_masking:
+            return logits, state
 
         # Convert action_mask into a [0.0 || -inf]-type mask.
         inf_mask = tf.maximum(tf.math.log(action_mask), tf.float32.min)

@@ -38,7 +38,7 @@ class ShiftEnv(gym.Env):
         
         self.tstep_size=config["step_size"]
         self.T=len(self.data) # Time horizon
-        self.Tw=24*2 #window horizon
+        self.Tw=config["window_size"] #window horizon
         self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
         self.tstep_init=0 #initial timestep in each episode
         
@@ -223,7 +223,8 @@ class ShiftEnv(gym.Env):
         if self.tstep==self.get_term_cond(): 
             # done=True
             self.R_Total.append(self.R)
-            print(self.R)
+            print('sparse', self.R)
+
             # print('tstep_init',self.tstep_init)
             # print('tstep',self.tstep)
 
@@ -231,7 +232,7 @@ class ShiftEnv(gym.Env):
             done = True
 
             
-            self.obs={"action_mask": np.array([1,1]),
+            self.obs={"action_mask": self.get_mask(),
                   "observations": self.get_obs()
                   }
         
@@ -241,9 +242,10 @@ class ShiftEnv(gym.Env):
             done = False
             
         #Variables update
-        
         self.tstep+=1
         
+        # print('step', self.tstep)
+        # print('episodes', self.n_episodes)
         
         #tariff
         if self.minutes >= 240 and self.minutes <=540:
@@ -393,26 +395,27 @@ class ShiftEnv(gym.Env):
         
         
         #garantee that it follows the machine profile
-        if self.tstep <= self.T-self.T_prof:
-            if self.y == 1: #if it must be turned ON on the present tslot
-                if self.y_s==0: #if its never been ON
-                    # self.t_shift=0
-                    self.load_s=self.y*self.profile[self.t_shift]
+        # if self.tstep <= self.T-self.T_prof:
+        #     if self.y == 1: #if it must be turned ON on the present tslot
+        #         if self.y_s==0: #if its never been ON
+        #             # self.t_shift=0
+        #             self.load_s=self.y*self.profile[self.t_shift]
                 
-                if self.y_s!=0 and self.t_shift < self.T_prof-1:
-                    self.t_shift+=1
-                    self.load_s=self.y*self.profile[self.t_shift]
+        #         if self.y_s!=0 and self.t_shift < self.T_prof-1:
+        #             self.t_shift+=1
+        #             self.load_s=self.y*self.profile[self.t_shift]
                 
-                if self.y_s == self.T_prof:
-                    self.t_shift=0
-                    self.load_s=self.y*self.profile[self.t_shift]
+        #         if self.y_s == self.T_prof:
+        #             self.t_shift=0
+        #             self.load_s=self.y*self.profile[self.t_shift]
                     
                     
                 
-            elif self.y == 0:
-                self.load_s = 0
-                
-
+        #     elif self.y == 0:
+        #         self.load_s = 0
+         
+        #convert action to power (constant profile)
+        self.load_s=self.y*self.profile[0]
         self.y_s+=self.y
             
             
@@ -486,7 +489,7 @@ class ShiftEnv(gym.Env):
         #        "observations": self.get_obs()
         #        }
 
-        self.obs={"action_mask": np.array([1,1]),
+        self.obs={"action_mask": self.get_mask(),
               "observations": self.get_obs()
               }
         
@@ -500,7 +503,11 @@ class ShiftEnv(gym.Env):
 
     def get_reward(self,action, reward_type):
 
-        # reward=np.exp(-(self.cost**2)/0.001)
+        # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
+          
+        reward=np.exp(-(self.cost_s**2)/0.001)-0.5                                           
+                                                     
+    
         # if self.g!=0 and self.y=1 :
             
         # a=0.7
@@ -531,14 +538,18 @@ class ShiftEnv(gym.Env):
         
         # if (self.tstep >= self.t_deliver-self.T_prof and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
                 
-        if (self.minutes >= self.t_deliver-self.T_prof*self.tstep_size and self.minutes <= self.min_max and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
-            # reward=-1/self.T
-            reward=-1
-        else:
-            reward= -self.cost_s*self.y-0.1/self.Tw*(abs(self.y-self.y_1))
+        # if (self.minutes >= self.t_deliver-self.T_prof*self.tstep_size and self.minutes <= self.min_max and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
+        #     # reward=-1/self.T
+        #     reward=-1
+        # else:
+        #     reward= -self.cost_s*self.y-0.1/self.Tw*(abs(self.y-self.y_1))
             
-        
-        
+        # if (self.minutes >= self.t_deliver-self.T_prof*self.tstep_size and self.minutes <= self.min_max and self.y_s < self.T_prof) or (self.y_s > self.T_prof) or (self.y_s > 0 and self.y_s < self.T_prof and self.y==0):
+        #     # reward=-1/self.T
+        #     reward=-1
+        # else:
+        #     reward= -self.cost_s
+
         
         # if self.tstep == self.T-1:
         #     reward=-self.c_T-((self.y_s-self.T_prof)**2)
@@ -588,6 +599,7 @@ class ShiftEnv(gym.Env):
         # self.tstep=0 # start at t=0
         
         # self.tstep = rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
+        # print('chamou resert')
         
         self.tstep=self.get_init_tstep()
         
@@ -691,14 +703,15 @@ class ShiftEnv(gym.Env):
         
         
         # if the random initial time step is after the delivery time it must not turn on
-        if self.minutes >= self.t_deliver-self.T_prof*self.tstep_size:
-            self.E_prof=0 #means that there is no more energy to consume 
-            self.y_s=self.T_prof #means taht it connected allready the machine T_prof times
-        else:
-            self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
-            self.y_s=0 # means that it has never connected the machine
+        # if self.minutes >= self.t_deliver-self.T_prof*self.tstep_size:
+        #     self.E_prof=0 #means that there is no more energy to consume 
+        #     self.y_s=self.T_prof #means taht it connected allready the machine T_prof times
+        # else:
+        #     self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
+        #     self.y_s=0 # means that it has never connected the machine
         
-        
+        self.E_prof=self.profile.sum()*self.dh
+        self.y_s=0
         
         
         #inititialize binary variables
@@ -723,7 +736,7 @@ class ShiftEnv(gym.Env):
 
         # obs=self.get_obs()
         
-        self.obs={"action_mask": np.array([1,1]),
+        self.obs={"action_mask": self.get_mask(),
               "observations": self.get_obs()
               }
     
@@ -778,7 +791,7 @@ class ShiftEnv(gym.Env):
         
         if self.done_cond == 'train': 
             # episode ends when when 24 hours passed
-            return self.tstep_init+47
+            return self.tstep_init+self.Tw-1
         elif self.done_cond == 'test': 
             #episode ends in the end of the data length
             return self.T-1 
@@ -787,9 +800,37 @@ class ShiftEnv(gym.Env):
     def get_init_tstep(self):
         "A function that returns the initial tstep of the episode"
         if self.done_cond == 'train': 
-            # episode starts at a random initial tstep
-            return rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
+            return rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
             
         elif self.done_cond == 'test': 
             #episode starts at t=0
             return 0
+        
+        
+    def get_mask(self):
+        
+        mask = np.ones(self.action_space.n)
+        # obs=self.get_obs()
+        
+        if self.y==1 and self.y_s < self.T_prof:
+            mask=np.array([0,1])
+        # else:
+        #     mask = np.ones(self.action_space.n)
+            
+        elif self.y_s >= self.T_prof:
+            mask=np.array([1,0])
+
+        return mask
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
