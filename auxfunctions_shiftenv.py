@@ -31,10 +31,10 @@ def make_minutes(data, timesteps):
     return minutes
     
 
-def make_env_data(data,timesteps, load_num):
+def make_env_data(data,timesteps, load_num, pv_factor):
     load=data[0:timesteps,load_num] # Escolhe timestep (um número) 
     gen=abs(data[0:timesteps,1]) # Primeira coluna da data
     # gen=np.zeros(timesteps)
     minutes=make_minutes(data,timesteps) # make minutes vector
-    env_data=np.vstack((gen*1,1*load,minutes)).T # Duas colunas, a primeira retrata
+    env_data=np.vstack((gen*pv_factor,1*load,minutes)).T # Duas colunas, a primeira retrata
     return env_data

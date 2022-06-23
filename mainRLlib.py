@@ -59,11 +59,13 @@ raylog=cwd + '/raylog'
 #import raw data
 data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
 tstep_size=30 # number of minutes in each timestep
-#%% convert to env data
-timesteps=48*3
+# %% convert to env data
+tstep_per_day=48 #number of timesteps per day
+num_days=7 #number of days
+timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 # timesteps=len(data)
-load_num=2
-env_data=make_env_data(data, timesteps, load_num)
+load_num=2 #number of the load to consider
+env_data=make_env_data(data, timesteps, load_num, 1)
 
 ## Shiftable profile example
 
@@ -75,7 +77,7 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 #%% make train env
 # env_config={"step_size": tstep_size,'window_size':24*2*1, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
 
-env_config={"step_size": tstep_size,'window_size':24*2*2, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
+env_config={"step_size": tstep_size,'window_size':48, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
 
 shiftenv=ShiftEnv(env_config)
 
@@ -116,6 +118,7 @@ config["action_space"]=shiftenv.action_space
 # config['model']['use_lstm']=True
 
 config['model']['custom_model']=ActionMaskModel
+config['model']['custom_model_config']['fcnet_hiddens']=[256,256]
 # config['log_level']='INFO'
 
 # config["gamma"]=0.7
@@ -224,7 +227,7 @@ tuneobject=tune.run(
     # resources_per_trial=DQNTrainer.default_resource_request(config),
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 1 },
+    stop={'training_iteration': 200 },
     checkpoint_at_end=True,
     checkpoint_freq=10,
     # resume=True,
@@ -240,14 +243,14 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-# test_env_data=make_env_data(data, 48*2, 4)
-# test_env_config={"step_size": tstep_size,'window_size':24*2*2, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
+test_env_data=make_env_data(data, timesteps, 4, 4)
+# test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # test_shiftenv=ShiftEnv(test_env_config)
 
 test_shiftenv=shiftenv
 test_env_config=env_config
-
+test_shiftenv.data=test_env_data
 # test_shiftenv=shiftenv
 
 #%% Recover checkpoints
@@ -271,7 +274,7 @@ tester=PPOTrainer(config, env=ShiftEnv)
 
 #define the metric and the mode criteria for identifying the best checkpoint
 metric='episode_reward_mean'
-mode='min'
+mode='max'
 
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
@@ -303,6 +306,8 @@ action_track=[]
 state_track=[]
 mask_track=[]
 
+full_state_track=[]
+
 obs = test_shiftenv.reset() #use the fuction taht resets to zero
 # print(obs)
 # action = tester.compute_single_action(obs)
@@ -312,7 +317,9 @@ obs = test_shiftenv.reset() #use the fuction taht resets to zero
 rewards_track = []
 episode_reward=0
 
-T=test_shiftenv.T
+T=test_shiftenv.Tw
+
+# T=3
 # T=48*3
 
 
@@ -325,17 +332,20 @@ T=test_shiftenv.T
 for i in range(T):
     # print(i)
     
+    # print('1_obs_1', obs)
     state_track.append(obs['observations'])
     action = tester.compute_single_action(obs)
     # action=int(A[i])
-    # print(action)
+    # print('2_action',action)
     obs, reward, done, info = test_shiftenv.step(action)
-    # print(obs)
+    # print('3_obs_2', obs)
+    # print('4_rew',reward)
     episode_reward += reward
     
     # print(obs)
     # print(action)
     # print(reward)
+    full_state_track.append(obs)
     action_track.append(action)
     mask_track.append(obs['action_mask'])
     
