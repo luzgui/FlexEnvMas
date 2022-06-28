@@ -62,10 +62,10 @@ tstep_size=30 # number of minutes in each timestep
 # %% convert to env data
 tstep_per_day=48 #number of timesteps per day
 num_days=7 #number of days
-timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
-# timesteps=len(data)
+# timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
+timesteps=len(data)
 load_num=2 #number of the load to consider
-env_data=make_env_data(data, timesteps, load_num, 1)
+env_data=make_env_data(data, timesteps, load_num, 0)
 
 ## Shiftable profile example
 
@@ -77,23 +77,13 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 #%% make train env
 # env_config={"step_size": tstep_size,'window_size':24*2*1, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
 
-env_config={"step_size": tstep_size,'window_size':48, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
+env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
 
 shiftenv=ShiftEnv(env_config)
 
 env.check_env(shiftenv)
 
 #%% Model
-# from models import ActionMaskModel
-# m=ActionMaskModel(shiftenv.observation_space, 
-#                   shiftenv.action_space,
-#                   shiftenv.action_space.n,
-#                   env_config,
-#                   'model0')
-
-
-
-
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 
@@ -112,13 +102,13 @@ config["action_space"]=shiftenv.action_space
 # config["_disable_preprocessor_api"]=True
 # config["double_q"]=True
 # config["dueling"]=True
-# config["lr"]=tune.grid_search([1e-5, 1e-4, 1e-3])
-# config["gamma"]=tune.grid_search([0.8,0.9,0.99])
+# config["lr"]=tune.grid_search([1e-5, 1e-4])
+config["gamma"]=tune.grid_search([0.8,0.9])
 # config['model']['fcnet_hiddens']=[256,256]
 # config['model']['use_lstm']=True
 
 config['model']['custom_model']=ActionMaskModel
-config['model']['custom_model_config']['fcnet_hiddens']=[256,256]
+config['model']['custom_model_config']['fcnet_hiddens']=[32,32]
 # config['log_level']='INFO'
 
 # config["gamma"]=0.7
@@ -128,6 +118,8 @@ config['model']['custom_model_config']['fcnet_hiddens']=[256,256]
 
 
 config["horizon"]=shiftenv.Tw
+
+# config['training_iteration']=[1]
 # config["framework"]="tf2"
 # config["eager_tracing"]=True
 # config["lr"]=1e-4
@@ -141,109 +133,61 @@ config["horizon"]=shiftenv.Tw
 #     "final_epsilon": 0.09,
 #     "epsilon_timesteps": 10000}
 
-# exp_name='Exp-PPO-Weights'
 
+#experiment name
+exp_name='Exp-NoPV'   
+#allocate resources
+resources = PPOTrainer.default_resource_request(config)
+#define the metric and the mode criteria for identifying the best checkpoint
+metric='_metric/episode_reward_mean'
+mode='max'
 
-exp_name='Exp-WIN-TAR-AM'
-
-#make a trainable that logs model weights
-
-# def trainable(config):
-#     library.init(
-#         name=trial_id,
-#         id=trial_id,
-#         resume=trial_id,
-#         reinit=True,
-#         allow_val_change=True)
-#     library.set_log_path(tune.get_trial_dir())
-
-#     for step in range(100):
-#         library.log_model(...)
-#         library.log(results, step=step)
-#         tune.report(results)
-
-
-# def trainable(config):
+def experiment(config):
     
-#     trainer=PPOTrainer(config)
-#     print('hello')
-    
-#     result={}
-#     for k, v in trainer.get_policy().get_weights().items():
-#                 result["FCC/{}".format(k)] = v
-    
-#     tune.report(result)
-    
-#     return trainer
+    trainer=PPOTrainer(config, env=ShiftEnv)
+    weights={}
+    for i in range(10):
+        train_results=trainer.train()
+        # tune.report(train_results)
+        
+        #get model weights
+        for k, v in trainer.get_policy().get_weights().items():
+                    weights["FCC/{}".format(k)] = v
+        
+        #save checkpoint
+        checkpoint=trainer.save(tune.get_trial_dir())
 
-# from ray.rllib.agents.callbacks import DefaultCallbacks
-
-# class MyCallbacks(DefaultCallbacks):
-    
-#     def setup():
-#         pass
-    
-#     def on_train_result(self, trainer, result: dict, **kwargs):
-#         for k, v in trainer.get_policy().get_weights().items():
-#             result["FCC/{}".format(k)] = v
-            
-
-# tuneobject2=tune.run(
-#     PPOTrainer,
-#     config=config,
-#     # resources_per_trial=DQNTrainer.default_resource_request(config),
-#     local_dir=raylog,
-#     # num_samples=4,
-#     stop={'training_iteration': 200 },
-#     checkpoint_at_end=True,
-#     checkpoint_freq=10,
-#     name=exp_name,
-#     verbose=0,
-#     # keep_checkpoints_num=10, 
-#     callbacks=[MyCallbacks()],
-#     checkpoint_score_attr="episode_reward_mean"
-# )
+        results={**train_results,**weights}
+        tune.report(results)
+        
+    trainer.stop()
 
 
-# tuneobject=tune.run(
-#     DQNTrainer,
-#     config=config,
-#     # resources_per_trial=DQNTrainer.default_resource_request(config),
-#     local_dir=raylog,
-#     # num_samples=4,
-#     stop={'training_iteration': 200 },
-#     checkpoint_at_end=True,
-#     checkpoint_freq=10,
-#     name=exp_name,
-#     verbose=0,
-#     # keep_checkpoints_num=10, 
-#     checkpoint_score_attr="episode_reward_mean"
-# )
 
 
 tuneobject=tune.run(
-    PPOTrainer,
+    experiment,
     config=config,
-    # resources_per_trial=DQNTrainer.default_resource_request(config),
+    resources_per_trial=resources,
     local_dir=raylog,
     # num_samples=4,
-    stop={'training_iteration': 200 },
+    # stop={'training_iteration': 10},
     checkpoint_at_end=True,
     checkpoint_freq=10,
     # resume=True,
     name=exp_name,
     verbose=0,
     # keep_checkpoints_num=10, 
-    checkpoint_score_attr="episode_reward_mean"
+    checkpoint_score_attr=metric, 
+    mode='max'
 )
-
 
 
 Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-test_env_data=make_env_data(data, timesteps, 4, 4)
+test_env_data=make_env_data(data, timesteps, 4, 0)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # test_shiftenv=ShiftEnv(test_env_config)
@@ -272,12 +216,11 @@ config["action_space"]=test_shiftenv.action_space
 # tester=DQNTrainer(config, env=ShiftEnv)
 tester=PPOTrainer(config, env=ShiftEnv)
 
-#define the metric and the mode criteria for identifying the best checkpoint
-metric='episode_reward_mean'
-mode='max'
 
+mode='max'
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
+
 analysis = ExperimentAnalysis(os.path.join(raylog, exp_name), default_metric=metric, default_mode=mode)
 df=analysis.dataframe(metric,mode) #get de dataframe results
 
@@ -286,14 +229,20 @@ bestdir=analysis.get_best_logdir(metric,mode)
 
 # bestdir='Exp-PPO-SQR/PPOTrainer_ShiftEnv_6f381_00000_0_2022-05-24_10-25-21/'
 
+# bestdir='/home/omega/Documents/FCUL/Projects/FlexEnv/raylog/Exp-WIN-TAR-AM/PPOTrainer_ShiftEnv_f3e03_00000_0_2022-06-23_17-10-08'
+
 #get the best trial checkpoint
 trial=analysis.get_best_checkpoint(bestdir,metric,mode)
 #get the string
 checkpoint=trial.local_path
-
+print(mode,checkpoint)
 
 #recover best agent for testing
 tester.restore(checkpoint)
+
+
+# pol=tester.get_policy()
+# pol.export_model()
 
 
 #%%
@@ -363,7 +312,7 @@ state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.s
 
 
 #Plot
-makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],test_shiftenv) # 
+makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],state_action_track['tar_buy'],test_shiftenv) # 
     
   
     

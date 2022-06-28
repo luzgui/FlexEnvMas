@@ -186,12 +186,19 @@ class ShiftEnv(gym.Env):
         
         
         
-        self.state_update(action) #update state variables    
+        
         
         #accumulated total cost
         self.c_T+=self.cost_s
 
         #A function to populate 
+        
+        
+        
+        self.check_term() #check weather to end or not the episode
+        
+        self.tstep+=1 # update timestep
+        self.state_update(action) #update state variables  
         
         reward=self.get_reward(reward_type=self.reward_type) #get reward value
         # print(reward)
@@ -199,13 +206,9 @@ class ShiftEnv(gym.Env):
         self.R+=reward
         self.r=reward
         
-        
-        self.check_term() #check weather to end or not the episode
+
         
     
-        self.tstep+=1 # update timestep
-
-
         self.obs={"action_mask": self.get_mask(),
               "observations": self.get_obs()
               }
@@ -519,7 +522,7 @@ class ShiftEnv(gym.Env):
         if self.done_cond == 'mode_window': # episode ends when when Tw timeslots passed
             return self.tstep_init+self.Tw-1
         elif self.done_cond == 'mode_horizon': #episode ends in the end of the data length
-            return self.T-1 
+            return self.T
      
            
     def get_init_tstep(self):
@@ -527,7 +530,7 @@ class ShiftEnv(gym.Env):
         if self.done_cond == 'mode_window':
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
-            t=rnd.choice([k*self.Tw for k in range(int(self.T/self.Tw))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
+            t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
             
             return t
             
@@ -560,13 +563,14 @@ class ShiftEnv(gym.Env):
         # if self.tstep==self.tstep_init+47: # episode ends when when 24 hours passed
         if self.tstep==self.get_term_cond(): 
             self.R_Total.append(self.R)
-            print('sparse', self.R)
+            # print('sparse', self.R)
+            print(self.R)
 
             # print('tstep_init',self.tstep_init)
             # print('tstep',self.tstep)
 
             self.n_episodes+=1
-            self.done = True
+            
 
             self.obs={"action_mask": self.get_mask(),
                   "observations": self.get_obs()
@@ -575,6 +579,8 @@ class ShiftEnv(gym.Env):
 
         
             reward=self.get_reward(reward_type=self.reward_type)
+            
+            self.done = True
             
             return self.obs, reward, self.done, {}
         
@@ -825,7 +831,7 @@ class ShiftEnv(gym.Env):
         # Tarifa bi-horaria
         if self.minutes >= 240 and self.minutes <=540:
             # self.tar_buy=0.09
-            self.tar_buy=0.17 
+            self.tar_buy=0.09 
         else:
             self.tar_buy=0.17
             

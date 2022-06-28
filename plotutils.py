@@ -14,7 +14,7 @@ import numpy.random as rnd
 import time
 import random as rnd
 
-def makeplot(T,soc,sol,gen,load,delta,env):
+def makeplot(T,soc,sol,gen,load,delta,tar,env):
     
     fig, ax = plt.subplots(figsize=(10,7))
     t=np.arange(0,T,1)
@@ -24,7 +24,8 @@ def makeplot(T,soc,sol,gen,load,delta,env):
     ax.plot(soc[0:T],label='Shiftable load')
     ax.plot(gen[0:T],label='PV generation')
     ax.plot(delta[0:T],label='delta')
-    
+    ax2=ax.twinx()
+    ax2.plot(tar[0:T],label='tariff')
     ax.grid()
     ax.legend()
     ax.set(xlabel='Timesteps', ylabel='kWh',

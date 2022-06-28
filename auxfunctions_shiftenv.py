@@ -32,6 +32,7 @@ def make_minutes(data, timesteps):
     
 
 def make_env_data(data,timesteps, load_num, pv_factor):
+    "(data: timeseries, laod_num: house number, pv_factor"
     load=data[0:timesteps,load_num] # Escolhe timestep (um número) 
     gen=abs(data[0:timesteps,1]) # Primeira coluna da data
     # gen=np.zeros(timesteps)
