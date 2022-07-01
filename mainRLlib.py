@@ -65,7 +65,7 @@ num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 timesteps=len(data)
 load_num=2 #number of the load to consider
-env_data=make_env_data(data, timesteps, load_num, 0)
+env_data=make_env_data(data, timesteps, load_num, 0.2)
 
 ## Shiftable profile example
 
@@ -99,11 +99,10 @@ config["env"]=ShiftEnv
 config["env_config"]=env_config
 config["observation_space"]=shiftenv.observation_space
 config["action_space"]=shiftenv.action_space
-# config["_disable_preprocessor_api"]=True
-# config["double_q"]=True
-# config["dueling"]=True
+
+
 # config["lr"]=tune.grid_search([1e-5, 1e-4])
-config["gamma"]=tune.grid_search([0.8,0.9])
+# config["gamma"]=tune.grid_search([0.8,0.9])
 # config['model']['fcnet_hiddens']=[256,256]
 # config['model']['use_lstm']=True
 
@@ -134,8 +133,16 @@ config["horizon"]=shiftenv.Tw
 #     "epsilon_timesteps": 10000}
 
 
+# config['evaluation_duration']=
+# evaluation_duration_unit
+config['evaluation_interval']=1
+config['evaluation_num_episodes']=10
+config['evaluation_num_workers']=1
+
 #experiment name
-exp_name='Exp-NoPV'   
+exp_name='Exp-gauss-Fcost-Eval'
+# exp_name='Exp-FullCost'   
+# exp_name='Exp-LowPV'
 #allocate resources
 resources = PPOTrainer.default_resource_request(config)
 #define the metric and the mode criteria for identifying the best checkpoint
@@ -144,11 +151,23 @@ mode='max'
 
 def experiment(config):
     
-    trainer=PPOTrainer(config, env=ShiftEnv)
+    trainer=PPOTrainer(config, env=config["env"])
     weights={}
-    for i in range(10):
+    for i in range(100):
+        print('training...')
         train_results=trainer.train()
-        # tune.report(train_results)
+
+        #Metrics we are gonna log from full train_results dict
+        metrics={'episode_reward_max', 
+              'episode_reward_mean',
+              'episode_reward_min',
+              'info', 
+              'episodes_total',
+              'agent_timesteps_total',
+              'training_iteration'}
+        
+        logs={k: train_results[k] for k in metrics}
+        
         
         #get model weights
         for k, v in trainer.get_policy().get_weights().items():
@@ -157,7 +176,18 @@ def experiment(config):
         #save checkpoint
         checkpoint=trainer.save(tune.get_trial_dir())
 
-        results={**train_results,**weights}
+
+        #evaluate agent
+        print('evaluating...')
+        eval_results=trainer.evaluate()
+        eval_metrics={'episode_reward_max', 
+              'episode_reward_mean',
+              'episode_reward_min',}
+        eval_logs={'evaluation':{}}
+        eval_logs['evaluation']={k: eval_results['evaluation'][k] for k in eval_metrics}
+
+        results={**logs,**weights,**eval_logs}
+        # results={**eval_logs}
         tune.report(results)
         
     trainer.stop()
@@ -187,7 +217,7 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-test_env_data=make_env_data(data, timesteps, 4, 0)
+test_env_data=make_env_data(data, timesteps, 4, 0.2)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # test_shiftenv=ShiftEnv(test_env_config)
@@ -217,7 +247,7 @@ config["action_space"]=test_shiftenv.action_space
 tester=PPOTrainer(config, env=ShiftEnv)
 
 
-mode='max'
+
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
 
@@ -241,8 +271,6 @@ print(mode,checkpoint)
 tester.restore(checkpoint)
 
 
-# pol=tester.get_policy()
-# pol.export_model()
 
 
 #%%
@@ -312,7 +340,7 @@ state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.s
 
 
 #Plot
-makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta'],state_action_track['tar_buy'],test_shiftenv) # 
+makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv) # 
     
   
     

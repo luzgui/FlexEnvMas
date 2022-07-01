@@ -114,7 +114,7 @@ class ShiftEnv(gym.Env):
                             {'max':max(self.profile),'min':0},
                         'delta_s': #The differential betwee gen and l_s
                             {'max':10,'min':-10.0},
-                        'delta_c': #The differential betwee gen and l_s
+                        'delta_c': #The differential betwee gen and load + l_s
                                 {'max':10,'min':-10.0},
                         'y': # =1 if ON at t, 0 OTW
                             {'max':1.0,'min':0.0},
@@ -255,7 +255,7 @@ class ShiftEnv(gym.Env):
         self.minutes=self.data[self.tstep,2]
         
         
-        self.get_tariffs() #update tarrifs
+       
         
         
         self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
@@ -324,8 +324,11 @@ class ShiftEnv(gym.Env):
         if self.tstep+24*2 >= self.T:
             self.load24 = 0  
         else:
-            self.load24=self.data[self.tstep+24*2][1] #12 hours ahead
+            self.load24=self.data[self.tstep+24*2][1] #24 hours ahead
         
+        
+        
+        self.get_tariffs() #update tarrifs
         
         #deltas
         self.delta = self.load-self.gen
@@ -372,7 +375,7 @@ class ShiftEnv(gym.Env):
         # self.grid=0.0
         # self.I_E = 0.0
         
-        self.cost=max(0,self.delta)*self.tar_buy*self.dh + min(0,self.delta)*self.tar_sell*self.dh
+        self.cost=max(0,self.delta_c)*self.tar_buy*self.dh + min(0,self.delta_c)*self.tar_sell*self.dh
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
         
         
@@ -394,7 +397,9 @@ class ShiftEnv(gym.Env):
                 reward=-10
             
             else:
-                reward=np.exp(-(self.cost_s**2)/0.001)-0.5                                           
+                reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
+                # reward=-self.cost*self.delta
+
                                                          
             # reward=np.exp(-(self.cost_s**2)/0.001)-0.5                                           
         
@@ -505,8 +510,8 @@ class ShiftEnv(gym.Env):
                          self.delta12,
                          self.delta24,
                          self.load_s,
-                         self.delta_c,
                          self.delta_s,
+                         self.delta_c,
                          self.y,
                          self.y_1,
                          self.y_s,
@@ -807,21 +812,16 @@ class ShiftEnv(gym.Env):
         self.delta_s=self.load_s-self.gen
         
 
-        
-        
-        
+    
         
         #energy cost
         
+        # cost considering the full load
         self.cost=max(0,self.delta_c)*self.tar_buy*self.dh + min(0,self.delta_c)*self.tar_sell*self.dh
-        
+        #cost considering only the appliance
         self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
-        # self.c_s=
         
-        # if self.delta > 0: # there is import from the grid
-        #     self.c=self.tar_buy*self.delta*self.dh
-        # elif self.delta <= 0: #There is export to the grid
-        #     self.c=self.tar_sell*self.delta*self.dh
+
         
         
         
@@ -829,13 +829,14 @@ class ShiftEnv(gym.Env):
     def get_tariffs(self):
         "Define tarrifs in €/kWh -- define here any function for defining tarrifs"
         # Tarifa bi-horaria
-        if self.minutes >= 240 and self.minutes <=540:
-            # self.tar_buy=0.09
-            self.tar_buy=0.09 
+        # if self.minutes >= 240 and self.minutes <=540:
+        #Tarifa bi-horaria
+        if self.minutes >= self.tstep_size*2*8 and self.minutes <=self.tstep_size*2*22:
+            self.tar_buy=0.1393
         else:
-            self.tar_buy=0.17
+            self.tar_buy=0.0615
+        # self.tar_buy=0.17*(1-(self.gen/1.764)) #PV indexed tariff 
             
-
         self.tar_sell=0.0 # remuneration for excess production
     
         
