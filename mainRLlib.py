@@ -46,6 +46,7 @@ from models2 import ActionMaskModel
 
 from ray.rllib.utils.pre_checks import env
 
+import random
 
 # from ray.tune.registry import register_env
 
@@ -86,61 +87,26 @@ env.check_env(shiftenv)
 #%% Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
-
-#%%Tune esperiments
-
-# experiment(config)
+#%% Make config
 config=ppo.DEFAULT_CONFIG.copy()
-# config=dqn.DEFAULT_CONFIG.copy()
-# config["env"]=FlexEnv
+
 config["env"]=ShiftEnv
-
-
 config["env_config"]=env_config
 config["observation_space"]=shiftenv.observation_space
 config["action_space"]=shiftenv.action_space
-
-
-# config["lr"]=tune.grid_search([1e-5, 1e-4])
-# config["gamma"]=tune.grid_search([0.8,0.9])
-# config['model']['fcnet_hiddens']=[256,256]
-# config['model']['use_lstm']=True
-
-config['model']['custom_model']=ActionMaskModel
-config['model']['custom_model_config']['fcnet_hiddens']=[32,32]
-# config['log_level']='INFO'
-
-# config["gamma"]=0.7
-# config["kl_coeff"]=tune.grid_search([0.1,0.2,0.3])
-# config["train_batch_size"]=tune.grid_search([8000.16000])
-# config["sgd_minibatch_size"]=tune.grid_search([128,256])
-
-
+config['model']['custom_model']=ActionMaskModel # define the custom model
+config['model']['custom_model_config']['fcnet_hiddens']=[32,32] # hidden layers in the custom model
+config['seed']=42 #define random seed
 config["horizon"]=shiftenv.Tw
-
-# config['training_iteration']=[1]
-# config["framework"]="tf2"
-# config["eager_tracing"]=True
-# config["lr"]=1e-4
-
-# config["lr"]=tune.uniform(0, 2)
-# config["framework"]='tf2'
-# config["explore"]=False
-# config["exploration_config"]={
-#     "type": "EpsilonGreedy",
-#     "initial_epsilon": 1.0,
-#     "final_epsilon": 0.09,
-#     "epsilon_timesteps": 10000}
-
-
-# config['evaluation_duration']=
-# evaluation_duration_unit
+#evaluation
 config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
 
+
+#%%Tune esperiments
 #experiment name
-exp_name='Exp-gauss-Fcost-Eval'
+exp_name='Exp-step'
 # exp_name='Exp-FullCost'   
 # exp_name='Exp-LowPV'
 #allocate resources
@@ -153,7 +119,13 @@ def experiment(config):
     
     trainer=PPOTrainer(config, env=config["env"])
     weights={}
-    for i in range(100):
+    
+    #setting the seed
+    seed=config['seed']
+    np.random.seed(seed)
+    random.seed(seed)    
+    
+    for i in range(1):
         print('training...')
         train_results=trainer.train()
 
@@ -206,7 +178,7 @@ tuneobject=tune.run(
     checkpoint_freq=10,
     # resume=True,
     name=exp_name,
-    verbose=0,
+    verbose=3,
     # keep_checkpoints_num=10, 
     checkpoint_score_attr=metric, 
     mode='max'

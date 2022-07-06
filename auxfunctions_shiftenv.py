@@ -15,6 +15,8 @@ import time
 import random as rnd
 
 
+
+
 def make_cyclical(series, max_val): # transforma valores como dia e hora em valores cíclicos de sin e cos para remover efeitos indesejados
     data_sin = np.sin( 2 * np.pi * series / max_val )
     data_cos = np.cos( 2 * np.pi * series / max_val )
@@ -39,3 +41,4 @@ def make_env_data(data,timesteps, load_num, pv_factor):
     minutes=make_minutes(data,timesteps) # make minutes vector
     env_data=np.vstack((gen*pv_factor,1*load,minutes)).T # Duas colunas, a primeira retrata
     return env_data
+

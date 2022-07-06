@@ -180,13 +180,11 @@ class ShiftEnv(gym.Env):
                 a dictionary containing additional information about the previous action
         """
 
-        
-        
         action=float(action)
         
+        reward=self.get_reward(reward_type=self.reward_type) #get reward value
         
-        
-        
+    
         
         #accumulated total cost
         self.c_T+=self.cost_s
@@ -200,7 +198,7 @@ class ShiftEnv(gym.Env):
         self.tstep+=1 # update timestep
         self.state_update(action) #update state variables  
         
-        reward=self.get_reward(reward_type=self.reward_type) #get reward value
+        # reward=self.get_reward(reward_type=self.reward_type) #get reward value
         # print(reward)
 
         self.R+=reward
@@ -397,10 +395,17 @@ class ShiftEnv(gym.Env):
                 reward=-10
             
             else:
-                reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
+                # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
                 # reward=-self.cost*self.delta
+                reward=-10*self.cost
 
-                                                         
+              
+
+
+            # self.delta_c=(self.load+self.load_s)-self.gen
+            # self.cost=max(0,self.delta_c)*self.tar_buy*self.dh + min(0,self.delta_c)*self.tar_sell*self.dh
+
+                                           
             # reward=np.exp(-(self.cost_s**2)/0.001)-0.5                                           
         
             # if self.g!=0 and self.y=1 :
@@ -812,8 +817,6 @@ class ShiftEnv(gym.Env):
         self.delta_s=self.load_s-self.gen
         
 
-    
-        
         #energy cost
         
         # cost considering the full load
