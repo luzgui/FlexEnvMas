@@ -20,6 +20,17 @@ class ShiftEnv(gym.Env):
     
     """
     A custom OpenAI Gym environment for managing shiftable loads
+    
+    The objective is to schedulle a cyclic shiftable appliance.
+    The environment has the follwoing dynamics:
+        - the episode starts at a given timestep
+        - The agent observes the state and takes an action (whether to turn ON or not the appliance IN THE NEXT STATE)
+            - Due to the using of action masking we are able to guarantee that once the appliance is connected it maintains connceted for the required number of timesteps
+        - It recieves a reward based on the current state 
+        - Evolves into next state
+        
+    
+    
     """
 
     def __init__(self, config):
@@ -129,6 +140,8 @@ class ShiftEnv(gym.Env):
                             {'max':100.0,'min':-100.0},
                         'tar_buy':
                             {'max':1,'min':0},
+                        'tar_buy0': #Tariff at the next timestep
+                            {'max':1,'min':0},
                                 
                         'E_prof': # reamining energy to supply appliance energy need
                             {'max':self.E_prof,'min':0.0}}
@@ -180,11 +193,12 @@ class ShiftEnv(gym.Env):
                 a dictionary containing additional information about the previous action
         """
 
-        action=float(action)
+        #Qual o significado de action:
+                # - ação no timeslot atual?: nesse caso necessito de corrigir o state e so depois avançar com o tempo
+                # - ação para o timeslot seguint
+        self.action=float(action)
         
-        reward=self.get_reward(reward_type=self.reward_type) #get reward value
-        
-    
+        reward=self.get_reward() #get reward value
         
         #accumulated total cost
         self.c_T+=self.cost_s
@@ -196,9 +210,10 @@ class ShiftEnv(gym.Env):
         self.check_term() #check weather to end or not the episode
         
         self.tstep+=1 # update timestep
-        self.state_update(action) #update state variables  
+        self.state_update(self.action) #update state variables  
         
-        # reward=self.get_reward(reward_type=self.reward_type) #get reward value
+        
+        
         # print(reward)
 
         self.R+=reward
@@ -327,6 +342,7 @@ class ShiftEnv(gym.Env):
         
         
         self.get_tariffs() #update tarrifs
+        self.get_tariffs0() #update tarifs from next timestep
         
         #deltas
         self.delta = self.load-self.gen
@@ -387,19 +403,54 @@ class ShiftEnv(gym.Env):
 
 
 
-    def get_reward(self, reward_type):
+    def get_reward(self):
+        
+            if self.reward_type == 'simple_cost':
 
-            # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
-            
-            if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
-                reward=-10
-            
-            else:
-                # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
-                # reward=-self.cost*self.delta
-                reward=-10*self.cost
+                # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
+                # The reward should be function of the action
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-10
+                
+                else:
+                    # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
+                    # reward=-self.cost*self.delta
+                    reward=-10*self.cost_s*self.delta
+                    
+            elif self.reward_type == 'next_time_cost':
+                
+                if self.action ==1:
+                    load_shiftable=0.3
+                    #If the agent decides to turn ON at the next timestep then it will pay the cost of being  ON at the next timestep
+                    
+                if self.action == 0: #The agent decides to be turned OFF
+                    load_shiftable=0
+                    
+                
+                reward=-(max(0,self.delta0+load_shiftable)*self.tar_buy0*self.dh + min(0,self.delta0+load_shiftable)*self.tar_sell*self.dh)
+                    
+                    
+            elif self.reward_type== 'shift_cost':
+                
+                excess=max(0,-self.delta)
+                reward=-(max(0,self.load_s-excess)*self.tar_buy*self.dh + min(0,self.load_s-excess)*self.tar_sell*self.dh)
+                
 
-              
+            elif self.reward_type== 'next_shift_cost':
+                
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-10
+                else:
+                
+                    if self.action==1:
+                        load_shiftable=0.3
+                    elif self.action == 0: #The agent decides to be turned OFF
+                        load_shiftable=0
+                    
+                        
+                    excess=max(0,-self.delta0)
+                    reward=-(max(0,load_shiftable-excess)*self.tar_buy*self.dh + min(0,load_shiftable-excess)*self.tar_sell*self.dh)
+                                  
 
 
             # self.delta_c=(self.load+self.load_s)-self.gen
@@ -523,6 +574,7 @@ class ShiftEnv(gym.Env):
                          self.cost,
                          self.cost_s,
                          self.tar_buy,
+                         self.tar_buy0,
                          self.E_prof), dtype=np.float)
     
       
@@ -570,7 +622,6 @@ class ShiftEnv(gym.Env):
         
         
     def check_term(self):
-        # if self.tstep==self.tstep_init+47: # episode ends when when 24 hours passed
         if self.tstep==self.get_term_cond(): 
             self.R_Total.append(self.R)
             # print('sparse', self.R)
@@ -581,14 +632,14 @@ class ShiftEnv(gym.Env):
 
             self.n_episodes+=1
             
-
+            
             self.obs={"action_mask": self.get_mask(),
                   "observations": self.get_obs()
                   }
         
 
         
-            reward=self.get_reward(reward_type=self.reward_type)
+            reward=self.get_reward()
             
             self.done = True
             
@@ -611,7 +662,8 @@ class ShiftEnv(gym.Env):
         # print('episodes', self.n_episodes)
         
         
-        self.get_tariffs() #update tariffs 
+        self.get_tariffs() #update tariffs
+        self.get_tariffs0() #update tarifs from next timestep
         
             
         # O self.data é o data das duas colunas verticais do auxfunctions
@@ -844,8 +896,16 @@ class ShiftEnv(gym.Env):
     
         
         
-        
-        
+    def get_tariffs0(self):
+        "Define tarrifs in €/kWh for the next timestep-- define here any function for defining tarrifs"
+        if self.minutes+self.tstep_size>= self.tstep_size*2*8 and self.minutes+self.tstep_size <=self.tstep_size*2*22:
+            self.tar_buy0=0.1393
+        else:
+            self.tar_buy0=0.0615
+        # self.tar_buy=0.17*(1-(self.gen/1.764)) #PV indexed tariff 
+            
+        self.tar_sell0=0.0 # remuneration for excess production
+    
         
         
         

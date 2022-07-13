@@ -78,7 +78,12 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 #%% make train env
 # env_config={"step_size": tstep_size,'window_size':24*2*1, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'train'}
 
-env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
+# reward_type='next_time_cost'
+# reward_type='simple_cost'
+# reward_type='shift_cost'
+reward_type='next_shift_cost'
+
+env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": reward_type, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
 
 shiftenv=ShiftEnv(env_config)
 
@@ -96,6 +101,9 @@ config["observation_space"]=shiftenv.observation_space
 config["action_space"]=shiftenv.action_space
 config['model']['custom_model']=ActionMaskModel # define the custom model
 config['model']['custom_model_config']['fcnet_hiddens']=[32,32] # hidden layers in the custom model
+# config['model']['fcnet_hiddens']=[256,256,256,256,256]
+# config['model']['fcnet_hiddens']=[256]
+# config['model']['fcnet_activation']='relu'
 config['seed']=42 #define random seed
 config["horizon"]=shiftenv.Tw
 #evaluation
@@ -106,14 +114,14 @@ config['evaluation_num_workers']=1
 
 #%%Tune esperiments
 #experiment name
-exp_name='Exp-step'
+exp_name='Exp-NewCost'
 # exp_name='Exp-FullCost'   
 # exp_name='Exp-LowPV'
 #allocate resources
 resources = PPOTrainer.default_resource_request(config)
 #define the metric and the mode criteria for identifying the best checkpoint
-metric='_metric/episode_reward_mean'
-mode='max'
+metric="_metric/episode_reward_mean"
+mode="max"
 
 def experiment(config):
     
@@ -121,14 +129,14 @@ def experiment(config):
     weights={}
     
     #setting the seed
-    seed=config['seed']
-    np.random.seed(seed)
-    random.seed(seed)    
+    # seed=config['seed']
+    # np.random.seed(seed)
+    # random.seed(seed)    
     
-    for i in range(1):
+    for i in range(500):
         print('training...')
         train_results=trainer.train()
-
+# 
         #Metrics we are gonna log from full train_results dict
         metrics={'episode_reward_max', 
               'episode_reward_mean',
@@ -165,6 +173,16 @@ def experiment(config):
     trainer.stop()
 
 
+# pol=trainer.get_policy()
+# m=pol.model
+# m.variables()
+# m.forward()
+# vf=m.value_function()
+
+# grad=pol.compute_gradients()
+
+
+
 
 
 tuneobject=tune.run(
@@ -178,10 +196,10 @@ tuneobject=tune.run(
     checkpoint_freq=10,
     # resume=True,
     name=exp_name,
-    verbose=3,
+    verbose=0,
     # keep_checkpoints_num=10, 
-    checkpoint_score_attr=metric, 
-    mode='max'
+    # checkpoint_score_attr=metric, 
+    # mode='max'
 )
 
 
