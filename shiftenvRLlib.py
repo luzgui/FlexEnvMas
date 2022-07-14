@@ -389,8 +389,8 @@ class ShiftEnv(gym.Env):
         # self.grid=0.0
         # self.I_E = 0.0
         
-        self.cost=max(0,self.delta_c)*self.tar_buy*self.dh + min(0,self.delta_c)*self.tar_sell*self.dh
-        self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
+        self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
+        self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
         
         
         
@@ -417,6 +417,10 @@ class ShiftEnv(gym.Env):
                     # reward=-self.cost*self.delta
                     reward=-10*self.cost_s*self.delta
                     
+                    
+                    
+                    
+                    # :::::::::::::::::::::::
             elif self.reward_type == 'next_time_cost':
                 
                 if self.action ==1:
@@ -429,13 +433,23 @@ class ShiftEnv(gym.Env):
                 
                 reward=-(max(0,self.delta0+load_shiftable)*self.tar_buy0*self.dh + min(0,self.delta0+load_shiftable)*self.tar_sell*self.dh)
                     
+                
+                # :::::::::::::::::::::::
                     
             elif self.reward_type== 'shift_cost':
                 
-                excess=max(0,-self.delta)
-                reward=-(max(0,self.load_s-excess)*self.tar_buy*self.dh + min(0,self.load_s-excess)*self.tar_sell*self.dh)
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-1
+                else:
                 
+                    excess=max(0,-self.delta)   
+                    reward=-(max(0,self.load_s-excess)*self.tar_buy*self.dh + min(0,self.load_s-excess)*self.tar_sell*self.dh)
 
+
+
+
+                
+          # :::::::::::::::::::::::
             elif self.reward_type== 'next_shift_cost':
                 
                 if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
@@ -872,9 +886,9 @@ class ShiftEnv(gym.Env):
         #energy cost
         
         # cost considering the full load
-        self.cost=max(0,self.delta_c)*self.tar_buy*self.dh + min(0,self.delta_c)*self.tar_sell*self.dh
+        self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
         #cost considering only the appliance
-        self.cost_s=max(0,self.delta_s)*self.tar_buy*self.dh + min(0,self.delta_s)*self.tar_sell*self.dh
+        self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
         
 
         

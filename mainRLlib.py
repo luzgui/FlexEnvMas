@@ -80,8 +80,8 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 
 # reward_type='next_time_cost'
 # reward_type='simple_cost'
-# reward_type='shift_cost'
-reward_type='next_shift_cost'
+reward_type='shift_cost'
+# reward_type='next_shift_cost'
 
 env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": reward_type, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
 
@@ -104,13 +104,14 @@ config['model']['custom_model_config']['fcnet_hiddens']=[32,32] # hidden layers 
 # config['model']['fcnet_hiddens']=[256,256,256,256,256]
 # config['model']['fcnet_hiddens']=[256]
 # config['model']['fcnet_activation']='relu'
-config['seed']=42 #define random seed
+config['seed']=1024 #define random seed
 config["horizon"]=shiftenv.Tw
 #evaluation
 config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
 
+config['lr']=tune.grid_search([1e-5,1e-4])
 
 #%%Tune esperiments
 #experiment name
@@ -128,12 +129,12 @@ def experiment(config):
     trainer=PPOTrainer(config, env=config["env"])
     weights={}
     
-    #setting the seed
-    # seed=config['seed']
-    # np.random.seed(seed)
-    # random.seed(seed)    
+    # setting the seed
+    seed=config['seed']
+    np.random.seed(seed)
+    random.seed(seed)    
     
-    for i in range(500):
+    for i in range(250):
         print('training...')
         train_results=trainer.train()
 # 
@@ -282,7 +283,7 @@ obs = test_shiftenv.reset() #use the fuction taht resets to zero
 
 
 rewards_track = []
-episode_reward=0
+episode_reward=[]
 
 T=test_shiftenv.Tw
 
@@ -327,7 +328,9 @@ state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.a
 state_action_track=np.concatenate(state_action_track, axis=1)
 state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
 
+state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','cost','cost_s','y','y_s','actions','rewards']]
 
+Episode_reward=state_action_track_filter['cost_s'].sum()
 
 #Plot
 makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv) # 
