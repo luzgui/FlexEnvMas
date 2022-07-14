@@ -134,7 +134,7 @@ def experiment(config):
     np.random.seed(seed)
     random.seed(seed)    
     
-    for i in range(250):
+    for i in range(2):
         print('training...')
         train_results=trainer.train()
 # 
@@ -270,25 +270,7 @@ from plotutils import makeplot
 # PLot Solutions
 
 ## Enjoy trained agent
-action_track=[]
-state_track=[]
-mask_track=[]
 
-full_state_track=[]
-
-obs = test_shiftenv.reset() #use the fuction taht resets to zero
-# print(obs)
-# action = tester.compute_single_action(obs)
-# print(action)
-
-
-rewards_track = []
-episode_reward=[]
-
-T=test_shiftenv.Tw
-
-# T=3
-# T=48*3
 
 
 #An emprirical pseudo-optimal solution
@@ -297,47 +279,75 @@ T=test_shiftenv.Tw
 # A[69:75]=1
 
 
-for i in range(T):
-    # print(i)
+costs=[]
+
+n_episodes=10
+k=0
+while k < n_episodes:
+    action_track=[]
+    state_track_temp=[]
+    mask_track=[]
+
+    full_state_track=[]
+
+    obs = test_shiftenv.reset()
+
+    rewards_track = []
+    episode_reward=0
+
+    T=test_shiftenv.Tw
+
+    for i in range(T):
+        # print(i)
+        
+        # print('1_obs_1', obs)
+        state_track_temp.append(obs['observations'])
+        action = tester.compute_single_action(obs)
+        # action=int(A[i])
+        # print('2_action',action)
+        obs, reward, done, info = test_shiftenv.step(action)
+        # print('3_obs_2', obs)
+        # print('4_rew',reward)
+        episode_reward += reward
+        
+        # print(obs)
+        # print(action)
+        # print(reward)
+        full_state_track.append(obs)
+        action_track.append(action)
+        mask_track.append(obs['action_mask'])
+        
+        rewards_track.append(reward)
+        
+    state_track=np.array(state_track_temp)
     
-    # print('1_obs_1', obs)
-    state_track.append(obs['observations'])
-    action = tester.compute_single_action(obs)
-    # action=int(A[i])
-    # print('2_action',action)
-    obs, reward, done, info = test_shiftenv.step(action)
-    # print('3_obs_2', obs)
-    # print('4_rew',reward)
-    episode_reward += reward
+    #Create dataframe state_action
+    state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
     
-    # print(obs)
-    # print(action)
-    # print(reward)
-    full_state_track.append(obs)
-    action_track.append(action)
-    mask_track.append(obs['action_mask'])
     
-    rewards_track.append(reward)
+    state_action_track=np.concatenate(state_action_track, axis=1)
+    state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
     
-state_track=np.array(state_track)
-
-#Create dataframe state_action
-state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
-
-
-state_action_track=np.concatenate(state_action_track, axis=1)
-state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
-
-state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','cost','cost_s','y','y_s','actions','rewards']]
-
-Episode_reward=state_action_track_filter['cost_s'].sum()
-
-#Plot
-makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv) # 
+    state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','excess','cost','cost_s','cost_s_x','y','y_s','actions','rewards']]
+    
+    Episode_reward=state_action_track_filter['cost_s'].sum()
+    
+    #Plot
+    makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv) # 
+        
+    
+    #get metrics
+    
+    costs.append(state_action_track_filter['cost_s_x'].sum()) 
+    
+    
+    
+    k+=1 
     
   
     
   
+
     
 # #%%
 # k=0

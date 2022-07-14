@@ -138,13 +138,18 @@ class ShiftEnv(gym.Env):
                             {'max':100.0,'min':-100.0},
                         'cost_s':
                             {'max':100.0,'min':-100.0},
+                        'cost_s_x':#cost of supply shiftable load using PV excess
+                            {'max':100.0,'min':-100.0},
+
                         'tar_buy':
                             {'max':1,'min':0},
                         'tar_buy0': #Tariff at the next timestep
                             {'max':1,'min':0},
-                                
                         'E_prof': # reamining energy to supply appliance energy need
-                            {'max':self.E_prof,'min':0.0}}
+                            {'max':self.E_prof,'min':0.0},
+                        'excess': #PV excess affter supplying baseload (self.load)}
+                            {'max':10,'min':-10.0},}
+                            
                     
         
             
@@ -361,7 +366,8 @@ class ShiftEnv(gym.Env):
         self.delta_c=(self.load+self.load_s)-self.gen
         self.delta_s=self.load_s-self.gen
         
-        self.load_s=self.L_s[0] #initialize with the first element in L_s
+        # self.load_s=self.L_s[0] #initialize with the first element in L_s
+        self.load_s=0 #machine starts diconected
         
         
         # if the random initial time step is after the delivery time it must not turn on
@@ -392,9 +398,12 @@ class ShiftEnv(gym.Env):
         self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
         self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
         
+        self.excess=max(0,-self.delta)   
+        self.cost_s_x=max(0,self.load_s-self.excess)*self.tar_buy + min(0,self.load_s-self.excess)*self.tar_sell
         
         
-        self.obs={"action_mask": self.get_mask(),
+        
+        self.obs={"action_mask": self.get_mask(),  
               "observations": self.get_obs()
               }
     
@@ -442,10 +451,7 @@ class ShiftEnv(gym.Env):
                     reward=-1
                 else:
                 
-                    excess=max(0,-self.delta)   
-                    reward=-(max(0,self.load_s-excess)*self.tar_buy*self.dh + min(0,self.load_s-excess)*self.tar_sell*self.dh)
-
-
+                    reward=-self.cost_s_x
 
 
                 
@@ -587,9 +593,12 @@ class ShiftEnv(gym.Env):
                          self.y_s,
                          self.cost,
                          self.cost_s,
+                         self.cost_s_x,
                          self.tar_buy,
                          self.tar_buy0,
-                         self.E_prof), dtype=np.float)
+                         self.E_prof,
+                         self.excess,), 
+                         dtype=np.float)
     
       
     def get_term_cond(self):
@@ -889,6 +898,11 @@ class ShiftEnv(gym.Env):
         self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
         #cost considering only the appliance
         self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
+        
+        
+        self.excess=max(0,-self.delta)   
+        self.cost_s_x=max(0,self.load_s-self.excess)*self.tar_buy + min(0,self.load_s-self.excess)*self.tar_sell
+        
         
 
         
