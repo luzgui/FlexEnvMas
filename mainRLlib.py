@@ -80,8 +80,9 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 
 # reward_type='next_time_cost'
 # reward_type='simple_cost'
-reward_type='shift_cost'
+# reward_type='shift_cost'
 # reward_type='next_shift_cost'
+reward_type='gauss_shift_cost'
 
 env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": reward_type, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
 
@@ -134,7 +135,7 @@ def experiment(config):
     np.random.seed(seed)
     random.seed(seed)    
     
-    for i in range(2):
+    for i in range(50):
         print('training...')
         train_results=trainer.train()
 # 
@@ -241,7 +242,7 @@ tester=PPOTrainer(config, env=ShiftEnv)
 
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
-
+metric='training_iteration'
 analysis = ExperimentAnalysis(os.path.join(raylog, exp_name), default_metric=metric, default_mode=mode)
 df=analysis.dataframe(metric,mode) #get de dataframe results
 
@@ -345,8 +346,8 @@ while k < n_episodes:
     k+=1 
     
   
-    
   
+costs
 
     
 # #%%

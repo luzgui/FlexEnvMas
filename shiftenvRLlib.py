@@ -470,7 +470,20 @@ class ShiftEnv(gym.Env):
                         
                     excess=max(0,-self.delta0)
                     reward=-(max(0,load_shiftable-excess)*self.tar_buy*self.dh + min(0,load_shiftable-excess)*self.tar_sell*self.dh)
-                                  
+                   
+                    
+                   
+                    
+          # :::::::::::::::::::::::::::::::::
+              
+            elif self.reward_type== 'gauss_shift_cost':
+                
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-1
+                else:
+                
+                    reward=np.exp(-(self.cost_s_x**2)/0.01)
+                    reward=reward/self.Tw
 
 
             # self.delta_c=(self.load+self.load_s)-self.gen
