@@ -215,7 +215,7 @@ class ShiftEnv(gym.Env):
         self.check_term() #check weather to end or not the episode
         
         self.tstep+=1 # update timestep
-        self.state_update(self.action) #update state variables  
+        self.state_update() #update state variables  
         
         
         
@@ -403,7 +403,7 @@ class ShiftEnv(gym.Env):
         
         
         
-        self.obs={"action_mask": self.get_mask(),  
+        self.obs={"action_mask": np.array([1,1]), # we concede full freedom for the appliance 
               "observations": self.get_obs()
               }
     
@@ -419,7 +419,7 @@ class ShiftEnv(gym.Env):
                 # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
                 # The reward should be function of the action
                 if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
-                    reward=-10
+                    reward=-1
                 
                 else:
                     # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
@@ -645,7 +645,7 @@ class ShiftEnv(gym.Env):
         mask = np.ones(self.action_space.n)
         # obs=self.get_obs()
         
-        if self.y==1 and self.y_s < self.T_prof:
+        if self.action==1 and self.y_s < self.T_prof:
             mask=np.array([0,1])
         # else:
         #     mask = np.ones(self.action_space.n)
@@ -687,15 +687,13 @@ class ShiftEnv(gym.Env):
 
 
 
-    def state_update(self, action):
+    def state_update(self):
         
         #Variables update
         
-        self.y=action # what is the ON/OFF state of appliance
+        self.y=self.action # what is the ON/OFF state of appliance
         
-        
-        # print('step', self.tstep)
-        # print('episodes', self.n_episodes)
+
         
         
         self.get_tariffs() #update tariffs
@@ -791,7 +789,7 @@ class ShiftEnv(gym.Env):
 
         
         
-        self.hist.append(self.y)
+        self.hist.append(self.action)
         if self.tstep > self.tstep_init+1:
             # print(self.step)
             self.y_1=self.hist[-2] #penultiumate element to get the previous action
@@ -862,8 +860,8 @@ class ShiftEnv(gym.Env):
         
         
         #convert action to power (constant profile)
-        self.load_s=self.y*self.profile[0]
-        self.y_s+=self.y
+        self.load_s=self.action*self.profile[0]
+        self.y_s+=self.action
             
             
             # print('L_s',self.L_s)

@@ -94,6 +94,8 @@ env.check_env(shiftenv)
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 #%% Make config
+exp_name='Exp-NewCost'
+
 config=ppo.DEFAULT_CONFIG.copy()
 
 config["env"]=ShiftEnv
@@ -112,11 +114,11 @@ config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
 
-config['lr']=tune.grid_search([1e-5,1e-4])
+# config['lr']=tune.grid_search([1e-5,1e-4])
 
-#%%Tune esperiments
+#Tune esperiments
 #experiment name
-exp_name='Exp-NewCost'
+
 # exp_name='Exp-FullCost'   
 # exp_name='Exp-LowPV'
 #allocate resources
@@ -124,6 +126,9 @@ resources = PPOTrainer.default_resource_request(config)
 #define the metric and the mode criteria for identifying the best checkpoint
 metric="_metric/episode_reward_mean"
 mode="max"
+
+
+#%%
 
 def experiment(config):
     
