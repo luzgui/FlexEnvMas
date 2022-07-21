@@ -14,7 +14,7 @@ import numpy.random as rnd
 import time
 import random as rnd
 
-def makeplot(T,soc,sol,gen,load,delta,tar,env):
+def makeplot(T,soc,sol,gen,load,delta,tar,env,var_1,var_2):
     
     fig, ax = plt.subplots(figsize=(10,7))
     t=np.arange(0,T,1)
@@ -29,7 +29,13 @@ def makeplot(T,soc,sol,gen,load,delta,tar,env):
     ax.grid()
     ax.legend()
     ax.set(xlabel='Timesteps', ylabel='kWh',
-           title='Shiftable device solution')
+           title=' c= {:f} // r={:f}'.format(var_1,var_2))
+           # title= 'Shiftable device solution c='.format
+    
+    # print(var_1)
+    
+
+    
 #     plt.show()
 #     time.sleep(0.1)
 #     return(ax)

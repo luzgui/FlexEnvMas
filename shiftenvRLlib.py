@@ -178,7 +178,8 @@ class ShiftEnv(gym.Env):
         
         self.done_cond=config['done_condition'] # window or horizon mode
         
-    
+        # app conection counter
+        self.count=0
 
 
     def step(self, action):
@@ -390,7 +391,7 @@ class ShiftEnv(gym.Env):
         
         self.hist=[]
         self.hist.append(self.y)
-
+        
         # self.tstep=0
         # self.grid=0.0
         # self.I_E = 0.0
@@ -427,7 +428,18 @@ class ShiftEnv(gym.Env):
                     reward=-10*self.cost_s*self.delta
                     
                     
-                    
+            if self.reward_type == 'excess_cost':
+
+                # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
+                # The reward should be function of the action
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-3
+                
+                else:
+                    # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
+                    # reward=-self.cost*self.delta
+                    reward=(-10*self.cost + 0.1*self.excess)*self.action
+                           
                     
                     # :::::::::::::::::::::::
             elif self.reward_type == 'next_time_cost':
@@ -613,6 +625,44 @@ class ShiftEnv(gym.Env):
                          self.excess,), 
                          dtype=np.float)
     
+    def get_full_obs(self):
+        return np.array((self.tstep,
+                         self.minutes,
+                         self.sin,
+                         self.cos,
+                         self.gen,
+                         self.gen0,
+                         self.gen1,
+                         self.gen6,
+                         self.gen12,
+                         self.gen24,
+                         self.load,
+                         self.load0,
+                         self.load1,
+                         self.load6,
+                         self.load12,
+                         self.load24,
+                         self.delta,
+                         self.delta0,
+                         self.delta1,
+                         self.delta6,
+                         self.delta12,
+                         self.delta24,
+                         self.load_s,
+                         self.delta_s,
+                         self.delta_c,
+                         self.y,
+                         self.y_1,
+                         self.y_s,
+                         self.cost,
+                         self.cost_s,
+                         self.cost_s_x,
+                         self.tar_buy,
+                         self.tar_buy0,
+                         self.E_prof,
+                         self.excess,), 
+                         dtype=np.float)
+    
       
     def get_term_cond(self):
         "A function to get the correct episiode termination condition according to weather it is in window or horizon mode defined in the self.done_cond variable"
@@ -642,7 +692,7 @@ class ShiftEnv(gym.Env):
         
     def get_mask(self):
         
-        mask = np.ones(self.action_space.n)
+        # mask = np.ones(self.action_space.n)
         # obs=self.get_obs()
         
         if self.action==1 and self.y_s < self.T_prof:
@@ -652,6 +702,20 @@ class ShiftEnv(gym.Env):
             
         elif self.y_s >= self.T_prof:
             mask=np.array([1,0])
+            
+        else:
+            mask = np.ones(self.action_space.n)
+        
+        # if self.action==1 and self.count <= self.T_prof :
+        #     self.count+=1
+        #     mask=np.array([0,1])
+        # # else:
+        # #     mask = np.ones(self.action_space.n)
+            
+        # elif self.action==0:
+        #     self.count=0
+        #     mask = np.ones(self.action_space.n)
+            
 
         return mask
         

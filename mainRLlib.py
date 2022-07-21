@@ -58,7 +58,10 @@ raylog=cwd + '/raylog'
 
 #%% Make Shiftable loads environment
 #import raw data
-data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
+# data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
+data=pd.read_csv(datafolder + '/issda_data_halfyear.csv').to_numpy()
+data=data[:,[8,9,10,11,12,13,14,15,4]] #extract a bunch of houses
+
 tstep_size=30 # number of minutes in each timestep
 # %% convert to env data
 tstep_per_day=48 #number of timesteps per day
@@ -66,7 +69,7 @@ num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 timesteps=len(data)
 load_num=2 #number of the load to consider
-env_data=make_env_data(data, timesteps, load_num, 0.2)
+env_data=make_env_data(data, timesteps, load_num, 2)
 
 ## Shiftable profile example
 
@@ -82,7 +85,8 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 # reward_type='simple_cost'
 # reward_type='shift_cost'
 # reward_type='next_shift_cost'
-reward_type='gauss_shift_cost'
+# reward_type='gauss_shift_cost'
+reward_type='excess_cost'
 
 env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": reward_type, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
 
@@ -103,7 +107,9 @@ config["env_config"]=env_config
 config["observation_space"]=shiftenv.observation_space
 config["action_space"]=shiftenv.action_space
 config['model']['custom_model']=ActionMaskModel # define the custom model
-config['model']['custom_model_config']['fcnet_hiddens']=[32,32] # hidden layers in the custom model
+config['model']['custom_model_config']['fcnet_hiddens']=[128,128] # hidden layers in the custom model
+config['model']['fcnet_hiddens']=[128,128]
+
 # config['model']['fcnet_hiddens']=[256,256,256,256,256]
 # config['model']['fcnet_hiddens']=[256]
 # config['model']['fcnet_activation']='relu'
@@ -113,6 +119,7 @@ config["horizon"]=shiftenv.Tw
 config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
+config['lr']=1e-4
 
 # config['lr']=tune.grid_search([1e-5,1e-4])
 
@@ -130,6 +137,8 @@ mode="max"
 
 #%%
 
+n_iters=100
+
 def experiment(config):
     
     trainer=PPOTrainer(config, env=config["env"])
@@ -140,7 +149,7 @@ def experiment(config):
     np.random.seed(seed)
     random.seed(seed)    
     
-    for i in range(50):
+    for i in range(n_iters):
         print('training...')
         train_results=trainer.train()
 # 
@@ -180,16 +189,6 @@ def experiment(config):
     trainer.stop()
 
 
-# pol=trainer.get_policy()
-# m=pol.model
-# m.variables()
-# m.forward()
-# vf=m.value_function()
-
-# grad=pol.compute_gradients()
-
-
-
 
 
 tuneobject=tune.run(
@@ -214,7 +213,7 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-test_env_data=make_env_data(data, timesteps, 4, 0.2)
+test_env_data=make_env_data(data, timesteps, 4, 2)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # test_shiftenv=ShiftEnv(test_env_config)
@@ -226,14 +225,12 @@ test_shiftenv.data=test_env_data
 
 #%% Recover checkpoints
 
-#instantiate the tester agent
-# tester=DQNTrainer(test_config)
+
 
 # we must eliminate some parameters otw 
 # TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
 
 config=ppo.DEFAULT_CONFIG.copy()
-# config=dqn.DEFAULT_CONFIG.copy()
 config["env"]=ShiftEnv
 config["env_config"]=test_env_config
 config["observation_space"]=test_shiftenv.observation_space
@@ -243,11 +240,14 @@ config["action_space"]=test_shiftenv.action_space
 # tester=DQNTrainer(config, env=ShiftEnv)
 tester=PPOTrainer(config, env=ShiftEnv)
 
+# analyse policy
+policy=tester.get_policy()
+policy.model.internal_model.base_model.summary()
 
 
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
-metric='training_iteration'
+# metric='training_iteration'
 analysis = ExperimentAnalysis(os.path.join(raylog, exp_name), default_metric=metric, default_mode=mode)
 df=analysis.dataframe(metric,mode) #get de dataframe results
 
@@ -286,8 +286,10 @@ from plotutils import makeplot
 
 
 costs=[]
+rewards=[]
+deltas=[]
 
-n_episodes=10
+n_episodes=1
 k=0
 while k < n_episodes:
     action_track=[]
@@ -334,25 +336,44 @@ while k < n_episodes:
     state_action_track=np.concatenate(state_action_track, axis=1)
     state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
     
-    state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','excess','cost','cost_s','cost_s_x','y','y_s','actions','rewards']]
+    state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','delta_c','excess','cost','cost_s','cost_s_x','y','y_s','actions','rewards']]
     
     Episode_reward=state_action_track_filter['cost_s'].sum()
     
     #Plot
-    makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv) # 
+
         
     
     #get metrics
     
-    costs.append(state_action_track_filter['cost_s_x'].sum()) 
+    #means
+    delta_c_episode=state_action_track_filter['delta_c'].mean()
+    
+    #sums
+    cost_episode=state_action_track_filter['cost_s_x'].sum()
+    reward_episode=state_action_track_filter['rewards'].sum()
+    
+    
+    #lists per episode
+    costs.append(cost_episode) 
+    rewards.append(reward_episode)
+    deltas.append(delta_c_episode)
+    
+    
+    makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv, cost_episode,reward_episode) # 
     
     
     
     k+=1 
+    # print(cost_episode)
     
+
+R=pd.DataFrame({'c':costs,'r':rewards,'delta_c_means':deltas})
+
+    
+
   
-  
-costs
+# costs
 
     
 # #%%
