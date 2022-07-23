@@ -59,15 +59,15 @@ raylog=cwd + '/raylog'
 #%% Make Shiftable loads environment
 #import raw data
 # data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
-data=pd.read_csv(datafolder + '/issda_data_halfyear.csv').to_numpy()
-data=data[:,[8,9,10,11,12,13,14,15,4]] #extract a bunch of houses
+data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv').to_numpy()
+data=data_raw[:,[8,9,10,11,12,13,14,15,4]] #extract a bunch of houses
 
 tstep_size=30 # number of minutes in each timestep
 # %% convert to env data
 tstep_per_day=48 #number of timesteps per day
 num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
-timesteps=len(data)
+timesteps=len(data)-1
 load_num=2 #number of the load to consider
 env_data=make_env_data(data, timesteps, load_num, 2)
 
@@ -98,7 +98,7 @@ env.check_env(shiftenv)
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 #%% Make config
-exp_name='Exp-NewCost'
+exp_name='Exp-NewState'
 
 config=ppo.DEFAULT_CONFIG.copy()
 
@@ -137,7 +137,7 @@ mode="max"
 
 #%%
 
-n_iters=100
+n_iters=1
 
 def experiment(config):
     
@@ -213,7 +213,7 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 
-test_env_data=make_env_data(data, timesteps, 4, 2)
+test_env_data=make_env_data(data, timesteps, 4, 0.2)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # test_shiftenv=ShiftEnv(test_env_config)
@@ -224,8 +224,6 @@ test_shiftenv.data=test_env_data
 # test_shiftenv=shiftenv
 
 #%% Recover checkpoints
-
-
 
 # we must eliminate some parameters otw 
 # TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
@@ -294,11 +292,14 @@ k=0
 while k < n_episodes:
     action_track=[]
     state_track_temp=[]
+    full_state_track_temp=[]
     mask_track=[]
+    cost_temp=[]
 
     full_state_track=[]
 
     obs = test_shiftenv.reset()
+
 
     rewards_track = []
     episode_reward=0
@@ -310,24 +311,29 @@ while k < n_episodes:
         
         # print('1_obs_1', obs)
         state_track_temp.append(obs['observations'])
+        full_state_track_temp.append(test_shiftenv.get_full_obs())
         action = tester.compute_single_action(obs)
+        #append cost
+        cost_temp.append(max(0,action*0.3-test_shiftenv.excess)*test_shiftenv.tar_buy)
         # action=int(A[i])
         # print('2_action',action)
         obs, reward, done, info = test_shiftenv.step(action)
-        # print('3_obs_2', obs)
-        # print('4_rew',reward)
+        full_obs=shiftenv.get_full_obs()
+
+
         episode_reward += reward
         
         # print(obs)
         # print(action)
         # print(reward)
-        full_state_track.append(obs)
+        full_state_track.append(full_obs)
         action_track.append(action)
         mask_track.append(obs['action_mask'])
         
         rewards_track.append(reward)
         
     state_track=np.array(state_track_temp)
+    full_state_track=np.array(full_state_track_temp)
     
     #Create dataframe state_action
     state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
@@ -336,9 +342,9 @@ while k < n_episodes:
     state_action_track=np.concatenate(state_action_track, axis=1)
     state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
     
-    state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','delta_c','excess','cost','cost_s','cost_s_x','y','y_s','actions','rewards']]
+    state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','excess','y','y_s','actions','rewards']]
     
-    Episode_reward=state_action_track_filter['cost_s'].sum()
+    # Episode_reward=state_action_track_filter['cost_s'].sum()
     
     #Plot
 
@@ -346,11 +352,11 @@ while k < n_episodes:
     
     #get metrics
     
-    #means
-    delta_c_episode=state_action_track_filter['delta_c'].mean()
+    # means
+    delta_c_episode=state_action_track_filter['delta'].mean()
     
     #sums
-    cost_episode=state_action_track_filter['cost_s_x'].sum()
+    cost_episode=sum(cost_temp)
     reward_episode=state_action_track_filter['rewards'].sum()
     
     
@@ -360,7 +366,7 @@ while k < n_episodes:
     deltas.append(delta_c_episode)
     
     
-    makeplot(T,state_action_track['load_s'],state_action_track['actions'],state_action_track['gen'],state_action_track['load'],state_action_track['delta_c'],state_action_track['tar_buy'],test_shiftenv, cost_episode,reward_episode) # 
+    makeplot(T,state_action_track['actions']*0.3,state_action_track['gen'],state_action_track['load'],state_action_track['tar_buy'],test_shiftenv, cost_episode,reward_episode) # 
     
     
     
@@ -368,7 +374,7 @@ while k < n_episodes:
     # print(cost_episode)
     
 
-R=pd.DataFrame({'c':costs,'r':rewards,'delta_c_means':deltas})
+R=pd.DataFrame({'c':costs,'r':rewards})
 
     
 

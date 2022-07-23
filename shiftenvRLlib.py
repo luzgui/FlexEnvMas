@@ -121,12 +121,12 @@ class ShiftEnv(gym.Env):
                             {'max':10,'min':-10.0},
                         'delta24': #The differential between the gen and load 24h ahead
                             {'max':10,'min':-10.0},
-                        'load_s': #l_s: shiftable load 
-                            {'max':max(self.profile),'min':0},
-                        'delta_s': #The differential betwee gen and l_s
-                            {'max':10,'min':-10.0},
-                        'delta_c': #The differential betwee gen and load + l_s
-                                {'max':10,'min':-10.0},
+                        # 'load_s': #l_s: shiftable load 
+                        #     {'max':max(self.profile),'min':0},
+                        # 'delta_s': #The differential betwee gen and l_s
+                        #     {'max':10,'min':-10.0},
+                        # 'delta_c': #The differential betwee gen and load + l_s
+                        #         {'max':10,'min':-10.0},
                         'y': # =1 if ON at t, 0 OTW
                             {'max':1.0,'min':0.0},
                         'y_1': # =1 if ON in t-1
@@ -134,13 +134,12 @@ class ShiftEnv(gym.Env):
                         'y_s':  # +1 if app is schedulled at t (incremental) 
                                 #(how many times it was connected)
                             {'max':self.T,'min':0.0},
-                        'cost':
-                            {'max':100.0,'min':-100.0},
-                        'cost_s':
-                            {'max':100.0,'min':-100.0},
-                        'cost_s_x':#cost of supply shiftable load using PV excess
-                            {'max':100.0,'min':-100.0},
-
+                        # 'cost':
+                        #     {'max':100.0,'min':-100.0},
+                        # 'cost_s':
+                        #     {'max':100.0,'min':-100.0},
+                        # 'cost_s_x':#cost of supply shiftable load using PV excess
+                        #     {'max':100.0,'min':-100.0},
                         'tar_buy':
                             {'max':1,'min':0},
                         'tar_buy0': #Tariff at the next timestep
@@ -396,6 +395,8 @@ class ShiftEnv(gym.Env):
         # self.grid=0.0
         # self.I_E = 0.0
         
+        
+        (self.load+self.load_s)-self.gen
         self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
         self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
         
@@ -425,7 +426,9 @@ class ShiftEnv(gym.Env):
                 else:
                     # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
                     # reward=-self.cost*self.delta
-                    reward=-10*self.cost_s*self.delta
+                    # reward=-10*self.cost_s*self.delta
+                    
+                    reward=-10*max(0,((self.load+self.action*0.3)-self.gen))*self.tar_buy
                     
                     
             if self.reward_type == 'excess_cost':
@@ -433,13 +436,16 @@ class ShiftEnv(gym.Env):
                 # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
                 # The reward should be function of the action
                 if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
-                    reward=-3
+                    reward=-1
                 
                 else:
                     # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
                     # reward=-self.cost*self.delta
-                    reward=(-10*self.cost + 0.1*self.excess)*self.action
-                           
+                    # reward=(-10*max(0,((self.action*0.3)-self.excess))*self.tar_buy + 0.1*self.excess)*self.action
+                    
+                    reward=-((self.action*0.3-self.excess)*self.tar_buy)*self.action
+                               
+                        
                     
                     # :::::::::::::::::::::::
             elif self.reward_type == 'next_time_cost':
@@ -610,15 +616,9 @@ class ShiftEnv(gym.Env):
                          self.delta6,
                          self.delta12,
                          self.delta24,
-                         self.load_s,
-                         self.delta_s,
-                         self.delta_c,
                          self.y,
                          self.y_1,
                          self.y_s,
-                         self.cost,
-                         self.cost_s,
-                         self.cost_s_x,
                          self.tar_buy,
                          self.tar_buy0,
                          self.E_prof,
@@ -679,10 +679,13 @@ class ShiftEnv(gym.Env):
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
             t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
+            assert self.data[t,2]==0, 'initial timeslot not 0'
             
             return t
             
-           
+        elif self.done_cond=='mode_random':
+            t=rnd.randrange(0, self.T-self.Tw-1)
+            return t
         
         
         elif self.done_cond == 'mode_horizon': 
@@ -835,6 +838,10 @@ class ShiftEnv(gym.Env):
         self.delta6 = self.load6-self.gen6
         self.delta12 = self.load12-self.gen12
         self.delta24 = self.load24-self.gen24
+        
+        #excesses
+        self.excess=max(0,-self.delta) 
+        # self.excess0=max(0,-self.delta0) 
         
 
         ##

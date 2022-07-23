@@ -14,16 +14,16 @@ import numpy.random as rnd
 import time
 import random as rnd
 
-def makeplot(T,soc,sol,gen,load,delta,tar,env,var_1,var_2):
+def makeplot(T,sol,gen,load,tar,env,var_1,var_2):
     
     fig, ax = plt.subplots(figsize=(10,7))
     t=np.arange(0,T,1)
     ax.plot(t, load[0:T],label='Unflexible load')
     # ax.plot(sol+load,label='load+bat_charge')
-    # ax.plot(sol,label='On/Off')
-    ax.plot(soc[0:T],label='Shiftable load')
+    ax.plot(sol,label='On/Off')
+    # ax.plot(soc[0:T],label='Shiftable load')
     ax.plot(gen[0:T],label='PV generation')
-    ax.plot(delta[0:T],label='delta')
+    # ax.plot(delta[0:T],label='delta')
     ax2=ax.twinx()
     ax2.plot(tar[0:T],label='tariff')
     ax.grid()

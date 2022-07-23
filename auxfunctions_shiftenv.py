@@ -39,7 +39,7 @@ def make_env_data(data,timesteps, load_num, pv_factor):
     gen=abs(data[0:timesteps,0]) # Primeira coluna da data
     # gen=np.zeros(timesteps)
     # minutes=make_minutes(data,timesteps) # make minutes vector
-    minutes=data[:,-1]
+    minutes=data[0:timesteps,-1]
     env_data=np.vstack((gen*pv_factor,1*load,minutes)).T # Duas colunas, a primeira retrata
     return env_data
 
