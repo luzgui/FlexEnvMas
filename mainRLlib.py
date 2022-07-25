@@ -59,8 +59,17 @@ raylog=cwd + '/raylog'
 #%% Make Shiftable loads environment
 #import raw data
 # data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
-data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv').to_numpy()
-data=data_raw[:,[8,9,10,11,12,13,14,15,4]] #extract a bunch of houses
+# data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv').to_numpy()
+data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv')
+
+data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
+'id2006', 'id2007', 'id2008', 'id2009', 'id2010', 'id2011', 'id2013',
+'id2015', 'id2017', 'id2018', 'id2019', 'id2022', 'id2023', 'id2024',
+'id2025', 'id2027', 'id2028', 'id2029', 'id2032', 'id2034', 'id2035',
+'id2036', 'id2037', 'id2038', 'id2039', 'id2041', 'id2042', 'id2045',
+'id2046', 'id2047', 'id2048', 'id2049', 'id2052', 'id2053', 'id2054',
+'id2055', 'id2056', 'id2057', 'id2058', 'id2059', 'id2062', 'id2064']]
+
 
 tstep_size=30 # number of minutes in each timestep
 # %% convert to env data
@@ -68,8 +77,9 @@ tstep_per_day=48 #number of timesteps per day
 num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 timesteps=len(data)-1
-load_num=2 #number of the load to consider
-env_data=make_env_data(data, timesteps, load_num, 2)
+load_id='id2000' #ISDDA id of the load to consider
+
+env_data=make_env_data(data, timesteps, load_id, 2)
 
 ## Shiftable profile example
 
@@ -212,16 +222,16 @@ tuneobject=tune.run(
 Results=tuneobject.results_df
 
 #%% instantiate test environment
-
-test_env_data=make_env_data(data, timesteps, 4, 0.2)
+test_load_id='id2005'
+test_env_data=make_env_data(data, timesteps, load_id, 0.2)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
-# test_shiftenv=ShiftEnv(test_env_config)
+# tenv=ShiftEnv(test_env_config)
 
-test_shiftenv=shiftenv
+tenv=shiftenv
 test_env_config=env_config
-test_shiftenv.data=test_env_data
-# test_shiftenv=shiftenv
+tenv.data=test_env_data
+# tenv=shiftenv
 
 #%% Recover checkpoints
 
@@ -231,16 +241,16 @@ test_shiftenv.data=test_env_data
 config=ppo.DEFAULT_CONFIG.copy()
 config["env"]=ShiftEnv
 config["env_config"]=test_env_config
-config["observation_space"]=test_shiftenv.observation_space
-config["action_space"]=test_shiftenv.action_space
+config["observation_space"]=tenv.observation_space
+config["action_space"]=tenv.action_space
 # config["framework"]="tf2"
 
 # tester=DQNTrainer(config, env=ShiftEnv)
 tester=PPOTrainer(config, env=ShiftEnv)
 
 # analyse policy
-policy=tester.get_policy()
-policy.model.internal_model.base_model.summary()
+# policy=tester.get_policy()
+# policy.model.internal_model.base_model.summary()
 
 
 #Recover the tune object from the dir
@@ -275,12 +285,11 @@ from plotutils import makeplot
 
 ## Enjoy trained agent
 
-
-
 #An emprirical pseudo-optimal solution
 # A=np.zeros(T)
 # A[20:26]=1
 # A[69:75]=1
+
 
 
 costs=[]
@@ -288,59 +297,92 @@ rewards=[]
 deltas=[]
 
 n_episodes=1
+
+
 k=0
 while k < n_episodes:
-    action_track=[]
-    state_track_temp=[]
-    full_state_track_temp=[]
+    # action_track=[]
+    # state_track_temp=[]
+    # full_state_track_temp=[]
     mask_track=[]
     cost_temp=[]
 
-    full_state_track=[]
+    # full_state_track=[]
 
-    obs = test_shiftenv.reset()
+    obs = tenv.reset()
 
 
-    rewards_track = []
+    # rewards_track = []
     episode_reward=0
 
-    T=test_shiftenv.Tw
+    T=tenv.Tw
+    
+    #create a dataframe to store observations
+    state_track=pd.DataFrame(columns=tenv.state_vars.keys(), index=range(T))
+    action_reward_track=pd.DataFrame(columns=['action','reward'], index=range(T))
+    metrics_episode=pd.DataFrame(columns=['cost','delta_c'], index=range(T))
 
+    state_track.iloc[0]=obs['observations']
+    
+    
     for i in range(T):
         # print(i)
         
+        
+        
         # print('1_obs_1', obs)
-        state_track_temp.append(obs['observations'])
-        full_state_track_temp.append(test_shiftenv.get_full_obs())
+        # state_track_temp.append(obs['observations'])
+        # full_state_track_temp.append(tenv.get_full_obs())
         action = tester.compute_single_action(obs)
+        action_reward_track.iloc[i]=[action,reward]
+        
+        #compute metrics per episode
+        cost=max(0,action*tenv.profile[0]-tenv.excess)*tenv.tar_buy
+        delta_c=(tenv.load0+action*tenv.profile[0])-tenv.gen0
+        
         #append cost
-        cost_temp.append(max(0,action*0.3-test_shiftenv.excess)*test_shiftenv.tar_buy)
+        # cost_temp.append(max(0,action*tenv.profile[0]-tenv.excess)*tenv.tar_buy)
         # action=int(A[i])
         # print('2_action',action)
-        obs, reward, done, info = test_shiftenv.step(action)
-        full_obs=shiftenv.get_full_obs()
-
-
-        episode_reward += reward
+        obs, reward, done, info = tenv.step(action)
+        # full_obs=shiftenv.get_full_obs()
+        
+        if i >0:
+            state_track.iloc[i]=obs['observations']
+        
+        # episode_reward += reward
         
         # print(obs)
         # print(action)
         # print(reward)
-        full_state_track.append(full_obs)
-        action_track.append(action)
+        # full_state_track.append(full_obs)
+        # action_track.append(action)
         mask_track.append(obs['action_mask'])
         
-        rewards_track.append(reward)
+        # rewards_track.append(reward)
         
-    state_track=np.array(state_track_temp)
-    full_state_track=np.array(full_state_track_temp)
+        
+        
+        
+        
+        
+        
+        metrics_episode.iloc[i]=[cost,delta_c]
+
+
+    k+=1
+        
+        
+        
+    # state_track=np.array(state_track_temp)
+    # full_state_track=np.array(full_state_track_temp)
     
     #Create dataframe state_action
     state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
     
     
     state_action_track=np.concatenate(state_action_track, axis=1)
-    state_action_track=pd.DataFrame(state_action_track, columns=list(test_shiftenv.state_vars.keys())+['actions','rewards'])
+    state_action_track=pd.DataFrame(state_action_track, columns=list(tenv.state_vars.keys())+['actions','rewards'])
     
     state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','excess','y','y_s','actions','rewards']]
     
@@ -366,7 +408,7 @@ while k < n_episodes:
     deltas.append(delta_c_episode)
     
     
-    makeplot(T,state_action_track['actions']*0.3,state_action_track['gen'],state_action_track['load'],state_action_track['tar_buy'],test_shiftenv, cost_episode,reward_episode) # 
+    makeplot(T,state_action_track['actions']*0.3,state_action_track['gen'],state_action_track['load'],state_action_track['tar_buy'],tenv, cost_episode,reward_episode) # 
     
     
     

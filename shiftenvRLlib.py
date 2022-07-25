@@ -11,6 +11,7 @@ import gym
 from gym import spaces
 import numpy as np
 import random as rnd
+import re
 # import time
 # from collections import OrderedDict
 
@@ -39,6 +40,7 @@ class ShiftEnv(gym.Env):
         self.data=config["data"] # We need to import the unflexible load and PV production.
         # data is an array with load in column 0 and pv production in column 1
         
+        setattr(self,'coisa',4)     
        
         
         self.tstep_size=config["step_size"]
@@ -69,7 +71,7 @@ class ShiftEnv(gym.Env):
         #this must be set as a moving variable that updates the deliver time according to the day
         self.t_deliver=config["time_deliver"]
         
-        self.min_max=max(self.data[:,2])
+        self.min_max=self.data['minutes'].max()
         
 
         # self.tar_buy=0.17 # import tariff in €/kWh
@@ -78,49 +80,121 @@ class ShiftEnv(gym.Env):
         
         # defining the state variables
         self.state_vars={'tstep':
-                        {'max':10000,'min':0},
+                                {'max':10000,'min':0},
                         'minutes':
-                            {'max':1440,'min':0},
+                                {'max':1440,'min':0},
                         'sin':
-                            {'max':1.0,'min':-1.0},
+                                {'max':1.0,'min':-1.0},
                         'cos':
-                            {'max':1.0,'min':-1.0},
-                        'gen':# g : PV generation at timeslot
-                            {'max':10,'min':0},
-                        'gen0':# g : PV generation forecast next timeslot
-                                {'max':10,'min':0},
-                        'gen1':# g : PV generation forecast 1h ahead
-                                 {'max':10,'min':0},
-                        'gen6':# g : PV generation forecast 6h ahead
-                                 {'max':10,'min':0},
-                        'gen12':# g : PV generation forecast 12h ahead
-                                 {'max':10,'min':0},
-                        'gen24':# g : PV generation forecast 24h ahead
-                                 {'max':10,'min':0},  
-                        'load':# l : Load at timeslot t
-                            {'max':10,'min':0},
-                        'load0':# g : PV load forecast next timeslot
-                                {'max':10,'min':0},
-                        'load1':# g : PV load forecast 1h ahead
-                                 {'max':10,'min':0},
-                        'load6':# g : PV load forecast 6h ahead
-                                 {'max':10,'min':0},
-                        'load12':# g : PV load forecast 12h ahead
-                                 {'max':10,'min':0},
-                        'load24':# g : PV load forecast 24h ahead
-                                 {'max':10,'min':0},
-                        'delta': #The differential between the gen and load
-                            {'max':10,'min':-10.0},
-                        'delta0': #The differential between the gen and load next timeslot
-                            {'max':10,'min':-10.0},
-                        'delta1': #The differential between the gen and load 1h ahead
-                            {'max':10,'min':-10.0},
-                        'delta6': #The differential between the gen and load 6h ahead
-                            {'max':10,'min':-10.0},
-                        'delta12': #The differential between the gen and load 12h ahead
-                            {'max':10,'min':-10.0},
-                        'delta24': #The differential between the gen and load 24h ahead
-                            {'max':10,'min':-10.0},
+                                {'max':1.0,'min':-1.0},
+                        'gen0':# g : PV generation at timeslot
+                                {'max':10.0,'min':0},
+                        'gen1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'gen2':# g : PV generation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'gen3':# g : PV generation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'gen4':# g : PV generation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'gen5':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'gen6':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'gen7':# g : PV generation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'gen8':# g : PV generation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'gen9':# g : PV generation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'gen10':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'gen11':# g : PV generation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'gen12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'load0':# g : PV generation at timeslot
+                                {'max':10.0,'min':0},
+                        'load1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'load2':# g : PV loaderation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'load3':# g : PV loaderation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'load4':# g : PV loaderation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'load5':# g : PV loaderation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'load6':# g : PV loaderation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'load7':# g : PV loaderation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'load8':# g : PV loaderation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'load9':# g : PV loaderation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'load10':# g : PV loaderation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'load11':# g : PV loaderation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'load12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'delta0':# g : PV generation at timeslot
+                                {'max':10.0,'min':-10.0},
+                        'delta1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'delta2':# g : PV deltaeration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta3':# g : PV deltaeration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta4':# g : PV deltaeration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta5':# g : PV deltaeration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta6':# g : PV deltaeration forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'delta7':# g : PV deltaeration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta8':# g : PV deltaeration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta9':# g : PV deltaeration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta10':# g : PV deltaeration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta11':# g : PV deltaeration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess0':# g : PV generation at timeslot
+                                {'max':10.0,'min':-10.0},
+                        'excess1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'excess2':# g : PV excesseration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess3':# g : PV excesseration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess4':# g : PV excesseration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess5':# g : PV excesseration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess6':# g : PV excesseration forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'excess7':# g : PV excesseration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess8':# g : PV excesseration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess9':# g : PV excesseration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess10':# g : PV excesseration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess11':# g : PV excesseration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                
+                        
+                                
+
                         # 'load_s': #l_s: shiftable load 
                         #     {'max':max(self.profile),'min':0},
                         # 'delta_s': #The differential betwee gen and l_s
@@ -145,13 +219,15 @@ class ShiftEnv(gym.Env):
                         'tar_buy0': #Tariff at the next timestep
                             {'max':1,'min':0},
                         'E_prof': # reamining energy to supply appliance energy need
-                            {'max':self.E_prof,'min':0.0},
-                        'excess': #PV excess affter supplying baseload (self.load)}
-                            {'max':10,'min':-10.0},}
+                            {'max':self.E_prof,'min':0.0}}
+                        # 'excess': #PV excess affter supplying baseload (self.load)}
+                        #     {'max':10,'min':-10.0},}
                             
                     
         
             
+        
+        self.var_class={'gen','load','delta','excess'}
         
         self.obs=None   
             
@@ -270,7 +346,8 @@ class ShiftEnv(gym.Env):
 
         # self.gen=self.data[self.tstep,0]
         # self.load=self.data[self.tstep,1]
-        self.minutes=self.data[self.tstep,2]
+        # self.minutes=self.data[self.tstep,2]
+        self.minutes=self.data.iloc[self.tstep]['minutes']
         
         
        
@@ -281,68 +358,82 @@ class ShiftEnv(gym.Env):
         
         self.load_s=0   
         
-
-        self.gen=self.data[self.tstep][0] # valor da generation para cada instante
         
-        if self.tstep+1 >= self.T:
-            self.gen0 = 0  
-        else:
-            self.gen0=self.data[self.tstep+1][0] #next tstep
-                
-                
-        if self.tstep+2 >= self.T:
-            self.gen1 = 0  
-        else:
-            self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
-                
+        #update forecasts
+        self.update_forecast()
         
-        if self.tstep+6*2 >= self.T:
-            self.gen6 = 0  
-        else:
-            self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
-                
-
-        if self.tstep+12*2 >= self.T:
-            self.gen12 = 0  
-        else:
-            self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
+        # for var in self.var_class:
+        #     var_keys=[key for key in self.state_vars.keys() if var in key]
             
-        if self.tstep+24*2 >= self.T:
-            self.gen24 = 0  
-        else:
-            self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
+        #     for k in var_keys:
+        #         t=re.findall(r"\d+", k)
+        #         t=int(t[0])
+        #         setattr(self,k, self.data.iloc[self.tstep+t][var] )
+        
+
         
         
-        #Load and load forecast
-        self.load=self.data[self.tstep][1] # valor da load para cada instante
+        # self.gen=self.data[self.tstep][0] # valor da generation para cada instante
         
-        if self.tstep+1 >= self.T:
-            self.load0 = 0  
-        else:
-            self.load0=self.data[self.tstep+1][1] #next tstep
+        # if self.tstep+1 >= self.T:
+        #     self.gen0 = 0  
+        # else:
+        #     self.gen0=self.data[self.tstep+1][0] #next tstep
                 
                 
-        if self.tstep+2 >= self.T:
-            self.load1 = 0  
-        else:
-            self.load1=self.data[self.tstep+2][1] #1 hour ahead      
+        # if self.tstep+2 >= self.T:
+        #     self.gen1 = 0  
+        # else:
+        #     self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
                 
         
-        if self.tstep+6*2 >= self.T:
-            self.load6 = 0  
-        else:
-            self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
+        # if self.tstep+6*2 >= self.T:
+        #     self.gen6 = 0  
+        # else:
+        #     self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
                 
 
-        if self.tstep+12*2 >= self.T:
-            self.load12 = 0  
-        else:
-            self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
+        # if self.tstep+12*2 >= self.T:
+        #     self.gen12 = 0  
+        # else:
+        #     self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
             
-        if self.tstep+24*2 >= self.T:
-            self.load24 = 0  
-        else:
-            self.load24=self.data[self.tstep+24*2][1] #24 hours ahead
+        # if self.tstep+24*2 >= self.T:
+        #     self.gen24 = 0  
+        # else:
+        #     self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
+        
+        
+        # #Load and load forecast
+        # self.load=self.data[self.tstep][1] # valor da load para cada instante
+        
+        # if self.tstep+1 >= self.T:
+        #     self.load0 = 0  
+        # else:
+        #     self.load0=self.data[self.tstep+1][1] #next tstep
+                
+                
+        # if self.tstep+2 >= self.T:
+        #     self.load1 = 0  
+        # else:
+        #     self.load1=self.data[self.tstep+2][1] #1 hour ahead      
+                
+        
+        # if self.tstep+6*2 >= self.T:
+        #     self.load6 = 0  
+        # else:
+        #     self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
+                
+
+        # if self.tstep+12*2 >= self.T:
+        #     self.load12 = 0  
+        # else:
+        #     self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
+            
+        # if self.tstep+24*2 >= self.T:
+        #     self.load24 = 0  
+        # else:
+        #     self.load24=self.data[self.tstep+24*2][1] #24 hours ahead
         
         
         
@@ -350,12 +441,12 @@ class ShiftEnv(gym.Env):
         self.get_tariffs0() #update tarifs from next timestep
         
         #deltas
-        self.delta = self.load-self.gen
-        self.delta0 = self.load0-self.gen0
-        self.delta1 = self.load1-self.gen1
-        self.delta6 = self.load6-self.gen6
-        self.delta12 = self.load12-self.gen12
-        self.delta24 = self.load24-self.gen24
+        # self.delta = self.load-self.gen
+        # self.delta0 = self.load0-self.gen0
+        # self.delta1 = self.load1-self.gen1
+        # self.delta6 = self.load6-self.gen6
+        # self.delta12 = self.load12-self.gen12
+        # self.delta24 = self.load24-self.gen24
         
         
         self.R=0
@@ -363,8 +454,8 @@ class ShiftEnv(gym.Env):
         
         self.c_T=0
         
-        self.delta_c=(self.load+self.load_s)-self.gen
-        self.delta_s=self.load_s-self.gen
+        self.delta_c=(self.load0+self.load_s)-self.gen0
+        self.delta_s=self.load_s-self.gen0
         
         # self.load_s=self.L_s[0] #initialize with the first element in L_s
         self.load_s=0 #machine starts diconected
@@ -396,12 +487,12 @@ class ShiftEnv(gym.Env):
         # self.I_E = 0.0
         
         
-        (self.load+self.load_s)-self.gen
+        (self.load0+self.load_s)-self.gen0
         self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
         self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
         
-        self.excess=max(0,-self.delta)   
-        self.cost_s_x=max(0,self.load_s-self.excess)*self.tar_buy + min(0,self.load_s-self.excess)*self.tar_sell
+        self.excess=max(0,-self.delta0)   
+        self.cost_s_x=max(0,self.load_s-self.excess0)*self.tar_buy + min(0,self.load_s-self.excess0)*self.tar_sell
         
         
         
@@ -598,31 +689,64 @@ class ShiftEnv(gym.Env):
                          self.minutes,
                          self.sin,
                          self.cos,
-                         self.gen,
                          self.gen0,
                          self.gen1,
+                         self.gen2,
+                         self.gen3,
+                         self.gen4,
+                         self.gen5,
                          self.gen6,
+                         self.gen7,
+                         self.gen8,
+                         self.gen9,
+                         self.gen10,
+                         self.gen11,
                          self.gen12,
-                         self.gen24,
-                         self.load,
                          self.load0,
                          self.load1,
+                         self.load2,
+                         self.load3,
+                         self.load4,
+                         self.load5,
                          self.load6,
+                         self.load7,
+                         self.load8,
+                         self.load9,
+                         self.load10,
+                         self.load11,
                          self.load12,
-                         self.load24,
-                         self.delta,
                          self.delta0,
                          self.delta1,
+                         self.delta2,
+                         self.delta3,
+                         self.delta4,
+                         self.delta5,
                          self.delta6,
+                         self.delta7,
+                         self.delta8,
+                         self.delta9,
+                         self.delta10,
+                         self.delta11,
                          self.delta12,
-                         self.delta24,
+                         self.excess0,
+                         self.excess1,
+                         self.excess2,
+                         self.excess3,
+                         self.excess4,
+                         self.excess5,
+                         self.excess6,
+                         self.excess7,
+                         self.excess8,
+                         self.excess9,
+                         self.excess10,
+                         self.excess11,
+                         self.excess12,
                          self.y,
                          self.y_1,
                          self.y_s,
                          self.tar_buy,
                          self.tar_buy0,
-                         self.E_prof,
-                         self.excess,), 
+                         self.E_prof), 
                          dtype=np.float)
     
     def get_full_obs(self):
@@ -679,7 +803,7 @@ class ShiftEnv(gym.Env):
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
             t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
-            assert self.data[t,2]==0, 'initial timeslot not 0'
+            assert self.data.iloc[t]['minutes']==0, 'initial timeslot not 0'
             
             return t
             
@@ -761,91 +885,115 @@ class ShiftEnv(gym.Env):
         self.y=self.action # what is the ON/OFF state of appliance
         
 
-        
-        
         self.get_tariffs() #update tariffs
         self.get_tariffs0() #update tarifs from next timestep
         
+        #update forecasts
+        self.update_forecast()
+        
+        # for var in self.var_class:
+        #     var_keys=[key for key in self.state_vars.keys() if var in key]
             
+        #     for k in var_keys:
+        #         t=re.findall(r"\d+", k)
+        #         t=t[0]
+        #         setattr(self,k, self.data.iloc[self.tstep+t][var] )
+            
+            
+            
+        
+        # gen_keys=[key for key in self.state_vars.keys() if 'gen' in key]
+        # load_keys=[key for key in self.state_vars.keys() if 'load' in key]
+        # delta_keys=[key for key in self.state_vars.keys() if 'delta' in key]
+        # excess_keys=[key for key in self.state_vars.keys() if 'excess' in key]
+        
+        
+        # for key in gen_keys:
+        #     t=re.findall(r"\d+", key)
+        #     t=t[0]
+        #     setattr(self,key, self.data.iloc[self.tstep+t]['gen'] )
+        
+       
+        
         # O self.data é o data das duas colunas verticais do auxfunctions
-        self.gen=self.data[self.tstep][0] # valor da generation para cada instante
+        # self.gen=self.data[self.tstep][0] # valor da generation para cada instante
         
-        if self.tstep+1 >= self.T:
-            self.gen0 = 0  
-        else:
-            self.gen0=self.data[self.tstep+1][0] #next tstep
+        # if self.tstep+1 >= self.T:
+        #     self.gen0 = 0  
+        # else:
+        #     self.gen0=self.data[self.tstep+1][0] #next tstep
                 
                 
-        if self.tstep+2 >= self.T:
-            self.gen1 = 0  
-        else:
-            self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
+        # if self.tstep+2 >= self.T:
+        #     self.gen1 = 0  
+        # else:
+        #     self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
                 
         
-        if self.tstep+6*2 >= self.T:
-            self.gen6 = 0  
-        else:
-            self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
+        # if self.tstep+6*2 >= self.T:
+        #     self.gen6 = 0  
+        # else:
+        #     self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
                 
 
-        if self.tstep+12*2 >= self.T:
-            self.gen12 = 0  
-        else:
-            self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
+        # if self.tstep+12*2 >= self.T:
+        #     self.gen12 = 0  
+        # else:
+        #     self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
             
-        if self.tstep+24*2 >= self.T:
-            self.gen24 = 0  
-        else:
-            self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
+        # if self.tstep+24*2 >= self.T:
+        #     self.gen24 = 0  
+        # else:
+        #     self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
         
         
-        #Load and load forecast
-        self.load=self.data[self.tstep][1] # valor da load para cada instante
+        # #Load and load forecast
+        # self.load=self.data[self.tstep][1] # valor da load para cada instante
         
-        if self.tstep+1 >= self.T:
-            self.load0 = 0  
-        else:
-            self.load0=self.data[self.tstep+1][1] #next tstep
+        # if self.tstep+1 >= self.T:
+        #     self.load0 = 0  
+        # else:
+        #     self.load0=self.data[self.tstep+1][1] #next tstep
                 
                 
-        if self.tstep+2 >= self.T:
-            self.load1 = 0  
-        else:
-            self.load1=self.data[self.tstep+2][1] #1 hour ahead      
+        # if self.tstep+2 >= self.T:
+        #     self.load1 = 0  
+        # else:
+        #     self.load1=self.data[self.tstep+2][1] #1 hour ahead      
                 
         
-        if self.tstep+6*2 >= self.T:
-            self.load6 = 0  
-        else:
-            self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
+        # if self.tstep+6*2 >= self.T:
+        #     self.load6 = 0  
+        # else:
+        #     self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
                 
 
-        if self.tstep+12*2 >= self.T:
-            self.load12 = 0  
-        else:
-            self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
+        # if self.tstep+12*2 >= self.T:
+        #     self.load12 = 0  
+        # else:
+        #     self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
             
-        if self.tstep+24*2 >= self.T:
-            self.load24 = 0  
-        else:
-            self.load24=self.data[self.tstep+24*2][1] #12 hours ahead
+        # if self.tstep+24*2 >= self.T:
+        #     self.load24 = 0  
+        # else:
+        #     self.load24=self.data[self.tstep+24*2][1] #12 hours ahead
         
         
-        #deltas
-        self.delta = self.load-self.gen
-        self.delta0 = self.load0-self.gen0
-        self.delta1 = self.load1-self.gen1
-        self.delta6 = self.load6-self.gen6
-        self.delta12 = self.load12-self.gen12
-        self.delta24 = self.load24-self.gen24
+        # #deltas
+        # self.delta = self.load-self.gen
+        # self.delta0 = self.load0-self.gen0
+        # self.delta1 = self.load1-self.gen1
+        # self.delta6 = self.load6-self.gen6
+        # self.delta12 = self.load12-self.gen12
+        # self.delta24 = self.load24-self.gen24
         
-        #excesses
-        self.excess=max(0,-self.delta) 
-        # self.excess0=max(0,-self.delta0) 
+        # #excesses
+        # self.excess=max(0,-self.delta) 
+        # # self.excess0=max(0,-self.delta0) 
         
 
-        ##
-        self.minutes=self.data[self.tstep][2]
+        # ##
+        self.minutes=self.data.iloc[self.tstep]['minutes']
         self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
         self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
         
@@ -969,9 +1117,9 @@ class ShiftEnv(gym.Env):
         
         
         #deficit vs excess
-        self.delta_c = (self.load+self.load_s)-self.gen # if positive there is imports from the grid. If negative there are exports to the grid 
+        self.delta_c = (self.load0+self.load_s)-self.gen0 # if positive there is imports from the grid. If negative there are exports to the grid 
         
-        self.delta_s=self.load_s-self.gen
+        self.delta_s=self.load_s-self.gen0
         
 
         #energy cost
@@ -982,12 +1130,34 @@ class ShiftEnv(gym.Env):
         self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
         
         
-        self.excess=max(0,-self.delta)   
-        self.cost_s_x=max(0,self.load_s-self.excess)*self.tar_buy + min(0,self.load_s-self.excess)*self.tar_sell
+        self.excess=max(0,-self.delta0)   
+        self.cost_s_x=max(0,self.load_s-self.excess0)*self.tar_buy + min(0,self.load_s-self.excess0)*self.tar_sell
         
         
 
-        
+    def update_forecast(self):
+        for var in self.var_class:
+            var_keys=[key for key in self.state_vars.keys() if var in key]
+            
+            for k in var_keys:
+                t=re.findall(r"\d+", k)
+                # print(var)
+                # print(t)
+                t=int(t[0])
+                
+                setattr(self,k, self.data.iloc[self.tstep+t][var] )
+                
+                
+            # s=shiftenv
+            # for var in s.var_class:
+            #     var_keys=[key for key in s.state_vars.keys() if var in key]
+            #     print(var_keys)
+                
+            #     for k in var_keys:
+            #         print(k)
+            #         t=re.findall(r"\d+", k)
+            #         t=int(t[0])
+            #         setattr(s,k, s.data.iloc[s.tstep+t][var])
         
         
         

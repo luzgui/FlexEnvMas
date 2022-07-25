@@ -33,13 +33,19 @@ def make_minutes(data, timesteps):
     return minutes
     
 
-def make_env_data(data,timesteps, load_num, pv_factor):
+def make_env_data(data,timesteps, load_id, pv_factor):
     "(data: timeseries, laod_num: house number, pv_factor"
-    load=data[0:timesteps,load_num] # Escolhe timestep (um número) 
-    gen=abs(data[0:timesteps,0]) # Primeira coluna da data
+    
+    df=pd.DataFrame()
+    
+    df['minutes']=data.iloc[0:timesteps]['minutes']
+    df['load']=data.iloc[0:timesteps][load_id]
+    df['gen']=pv_factor*abs(data.iloc[0:timesteps]['PV'])
+    df['delta']=df['load']-df['gen']
+    df['excess']=[max(0,-df['delta'][k]) for k in range(timesteps)] 
+    
     # gen=np.zeros(timesteps)
     # minutes=make_minutes(data,timesteps) # make minutes vector
-    minutes=data[0:timesteps,-1]
-    env_data=np.vstack((gen*pv_factor,1*load,minutes)).T # Duas colunas, a primeira retrata
-    return env_data
+
+    return df
 
