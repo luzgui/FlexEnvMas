@@ -219,7 +219,7 @@ class ShiftEnv(gym.Env):
                         'tar_buy0': #Tariff at the next timestep
                             {'max':1,'min':0},
                         'E_prof': # reamining energy to supply appliance energy need
-                            {'max':self.E_prof,'min':0.0}}
+                            {'max':2*self.E_prof,'min':-0.1}}
                         # 'excess': #PV excess affter supplying baseload (self.load)}
                         #     {'max':10,'min':-10.0},}
                             
@@ -325,15 +325,9 @@ class ShiftEnv(gym.Env):
         :return:
         """
         
-        
-        
+    
         self.done=False
         
-        # We can choose to reset to a random state or to t=0
-        # self.tstep=0 # start at t=0
-        
-        # self.tstep = rnd.randrange(0, self.T-47-1) # a random initial state in the whole year   
-        # print('chamou resert')
         
         self.tstep=self.get_init_tstep()
         
@@ -362,91 +356,9 @@ class ShiftEnv(gym.Env):
         #update forecasts
         self.update_forecast()
         
-        # for var in self.var_class:
-        #     var_keys=[key for key in self.state_vars.keys() if var in key]
-            
-        #     for k in var_keys:
-        #         t=re.findall(r"\d+", k)
-        #         t=int(t[0])
-        #         setattr(self,k, self.data.iloc[self.tstep+t][var] )
-        
-
-        
-        
-        # self.gen=self.data[self.tstep][0] # valor da generation para cada instante
-        
-        # if self.tstep+1 >= self.T:
-        #     self.gen0 = 0  
-        # else:
-        #     self.gen0=self.data[self.tstep+1][0] #next tstep
-                
-                
-        # if self.tstep+2 >= self.T:
-        #     self.gen1 = 0  
-        # else:
-        #     self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
-                
-        
-        # if self.tstep+6*2 >= self.T:
-        #     self.gen6 = 0  
-        # else:
-        #     self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
-                
-
-        # if self.tstep+12*2 >= self.T:
-        #     self.gen12 = 0  
-        # else:
-        #     self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
-            
-        # if self.tstep+24*2 >= self.T:
-        #     self.gen24 = 0  
-        # else:
-        #     self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
-        
-        
-        # #Load and load forecast
-        # self.load=self.data[self.tstep][1] # valor da load para cada instante
-        
-        # if self.tstep+1 >= self.T:
-        #     self.load0 = 0  
-        # else:
-        #     self.load0=self.data[self.tstep+1][1] #next tstep
-                
-                
-        # if self.tstep+2 >= self.T:
-        #     self.load1 = 0  
-        # else:
-        #     self.load1=self.data[self.tstep+2][1] #1 hour ahead      
-                
-        
-        # if self.tstep+6*2 >= self.T:
-        #     self.load6 = 0  
-        # else:
-        #     self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
-                
-
-        # if self.tstep+12*2 >= self.T:
-        #     self.load12 = 0  
-        # else:
-        #     self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
-            
-        # if self.tstep+24*2 >= self.T:
-        #     self.load24 = 0  
-        # else:
-        #     self.load24=self.data[self.tstep+24*2][1] #24 hours ahead
-        
-        
         
         self.get_tariffs() #update tarrifs
         self.get_tariffs0() #update tarifs from next timestep
-        
-        #deltas
-        # self.delta = self.load-self.gen
-        # self.delta0 = self.load0-self.gen0
-        # self.delta1 = self.load1-self.gen1
-        # self.delta6 = self.load6-self.gen6
-        # self.delta12 = self.load12-self.gen12
-        # self.delta24 = self.load24-self.gen24
         
         
         self.R=0
@@ -469,7 +381,7 @@ class ShiftEnv(gym.Env):
         #     self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
         #     self.y_s=0 # means that it has never connected the machine
         
-        self.E_prof=self.profile.sum()*self.dh
+        self.E_prof=self.profile.sum()
         self.y_s=0
         
         
@@ -482,9 +394,7 @@ class ShiftEnv(gym.Env):
         self.hist=[]
         self.hist.append(self.y)
         
-        # self.tstep=0
-        # self.grid=0.0
-        # self.I_E = 0.0
+
         
         
         (self.load0+self.load_s)-self.gen0
@@ -870,7 +780,7 @@ class ShiftEnv(gym.Env):
             
             self.done = True
             
-            return self.obs, reward, self.done, {}
+            return self.obs, reward, self.done, {'episode has ended'}
         
         else:
             self.done = False
@@ -891,105 +801,7 @@ class ShiftEnv(gym.Env):
         #update forecasts
         self.update_forecast()
         
-        # for var in self.var_class:
-        #     var_keys=[key for key in self.state_vars.keys() if var in key]
-            
-        #     for k in var_keys:
-        #         t=re.findall(r"\d+", k)
-        #         t=t[0]
-        #         setattr(self,k, self.data.iloc[self.tstep+t][var] )
-            
-            
-            
         
-        # gen_keys=[key for key in self.state_vars.keys() if 'gen' in key]
-        # load_keys=[key for key in self.state_vars.keys() if 'load' in key]
-        # delta_keys=[key for key in self.state_vars.keys() if 'delta' in key]
-        # excess_keys=[key for key in self.state_vars.keys() if 'excess' in key]
-        
-        
-        # for key in gen_keys:
-        #     t=re.findall(r"\d+", key)
-        #     t=t[0]
-        #     setattr(self,key, self.data.iloc[self.tstep+t]['gen'] )
-        
-       
-        
-        # O self.data é o data das duas colunas verticais do auxfunctions
-        # self.gen=self.data[self.tstep][0] # valor da generation para cada instante
-        
-        # if self.tstep+1 >= self.T:
-        #     self.gen0 = 0  
-        # else:
-        #     self.gen0=self.data[self.tstep+1][0] #next tstep
-                
-                
-        # if self.tstep+2 >= self.T:
-        #     self.gen1 = 0  
-        # else:
-        #     self.gen1=self.data[self.tstep+2][0] #1 hour ahead      
-                
-        
-        # if self.tstep+6*2 >= self.T:
-        #     self.gen6 = 0  
-        # else:
-        #     self.gen6=self.data[self.tstep+6*2][0] #6 hours ahead
-                
-
-        # if self.tstep+12*2 >= self.T:
-        #     self.gen12 = 0  
-        # else:
-        #     self.gen12=self.data[self.tstep+12*2][0] #12 hours ahead
-            
-        # if self.tstep+24*2 >= self.T:
-        #     self.gen24 = 0  
-        # else:
-        #     self.gen24=self.data[self.tstep+24*2][0] #12 hours ahead
-        
-        
-        # #Load and load forecast
-        # self.load=self.data[self.tstep][1] # valor da load para cada instante
-        
-        # if self.tstep+1 >= self.T:
-        #     self.load0 = 0  
-        # else:
-        #     self.load0=self.data[self.tstep+1][1] #next tstep
-                
-                
-        # if self.tstep+2 >= self.T:
-        #     self.load1 = 0  
-        # else:
-        #     self.load1=self.data[self.tstep+2][1] #1 hour ahead      
-                
-        
-        # if self.tstep+6*2 >= self.T:
-        #     self.load6 = 0  
-        # else:
-        #     self.load6=self.data[self.tstep+6*2][1] #6 hours ahead
-                
-
-        # if self.tstep+12*2 >= self.T:
-        #     self.load12 = 0  
-        # else:
-        #     self.load12=self.data[self.tstep+12*2][1] #12 hours ahead
-            
-        # if self.tstep+24*2 >= self.T:
-        #     self.load24 = 0  
-        # else:
-        #     self.load24=self.data[self.tstep+24*2][1] #12 hours ahead
-        
-        
-        # #deltas
-        # self.delta = self.load-self.gen
-        # self.delta0 = self.load0-self.gen0
-        # self.delta1 = self.load1-self.gen1
-        # self.delta6 = self.load6-self.gen6
-        # self.delta12 = self.load12-self.gen12
-        # self.delta24 = self.load24-self.gen24
-        
-        # #excesses
-        # self.excess=max(0,-self.delta) 
-        # # self.excess0=max(0,-self.delta0) 
         
 
         # ##
@@ -1006,8 +818,6 @@ class ShiftEnv(gym.Env):
         
          # how many times the machine have been turned on
 
-        
-        
         self.hist.append(self.action)
         if self.tstep > self.tstep_init+1:
             # print(self.step)
@@ -1101,13 +911,15 @@ class ShiftEnv(gym.Env):
             # #what if the appliance is turned on several times??
         
         #update remaining energy that needs to be consumed
-        if self.E_prof < self.load_s*self.dh:
-            self.E_prof=0.0
-        elif self.minutes==self.min_max:
-            self.E_prof=self.profile.sum()*self.dh
-        else:
-            self.E_prof-=self.load_s*self.dh
         
+        # if self.E_prof < self.profile[0]: #correct numerical imprecisions
+        #     self.E_prof=0.0   
+        if self.minutes==0: #It restarts in the beggining of the day 
+            self.E_prof=self.profile.sum()
+
+        self.E_prof-=self.action*self.profile[0]
+
+        # print('Eprof',self.E_prof)
         
         #restart t_shift for each new day so that appliances may be schedulled again
         if self.minutes ==self.min_max:

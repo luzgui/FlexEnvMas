@@ -119,6 +119,7 @@ config["action_space"]=shiftenv.action_space
 config['model']['custom_model']=ActionMaskModel # define the custom model
 config['model']['custom_model_config']['fcnet_hiddens']=[128,128] # hidden layers in the custom model
 config['model']['fcnet_hiddens']=[128,128]
+# config['model']['fcnet_hiddens']=[256,256]
 
 # config['model']['fcnet_hiddens']=[256,256,256,256,256]
 # config['model']['fcnet_hiddens']=[256]
@@ -130,6 +131,7 @@ config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
 config['lr']=1e-4
+config['train_batch_size']=16000
 
 # config['lr']=tune.grid_search([1e-5,1e-4])
 
@@ -147,7 +149,7 @@ mode="max"
 
 #%%
 
-n_iters=1
+n_iters=50
 
 def experiment(config):
     
@@ -223,7 +225,7 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 test_load_id='id2005'
-test_env_data=make_env_data(data, timesteps, load_id, 0.2)
+test_env_data=make_env_data(data, timesteps, test_load_id, 0.3)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # tenv=ShiftEnv(test_env_config)
@@ -296,16 +298,16 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=1
+n_episodes=10
 
-
+metrics_experiment=pd.DataFrame(columns=['cost','delta_c'], index=range(n_episodes))
 k=0
 while k < n_episodes:
     # action_track=[]
     # state_track_temp=[]
     # full_state_track_temp=[]
     mask_track=[]
-    cost_temp=[]
+
 
     # full_state_track=[]
 
@@ -327,18 +329,18 @@ while k < n_episodes:
     
     for i in range(T):
         # print(i)
-        
-        
+        state_track.iloc[i]=obs['observations']
         
         # print('1_obs_1', obs)
         # state_track_temp.append(obs['observations'])
         # full_state_track_temp.append(tenv.get_full_obs())
         action = tester.compute_single_action(obs)
-        action_reward_track.iloc[i]=[action,reward]
+        
         
         #compute metrics per episode
         cost=max(0,action*tenv.profile[0]-tenv.excess)*tenv.tar_buy
         delta_c=(tenv.load0+action*tenv.profile[0])-tenv.gen0
+        metrics_episode.iloc[i]=[cost,delta_c]
         
         #append cost
         # cost_temp.append(max(0,action*tenv.profile[0]-tenv.excess)*tenv.tar_buy)
@@ -347,8 +349,8 @@ while k < n_episodes:
         obs, reward, done, info = tenv.step(action)
         # full_obs=shiftenv.get_full_obs()
         
-        if i >0:
-            state_track.iloc[i]=obs['observations']
+        action_reward_track.iloc[i]=[action,reward]
+            
         
         # episode_reward += reward
         
@@ -361,62 +363,64 @@ while k < n_episodes:
         
         # rewards_track.append(reward)
         
-        
-        
-        
-        
-        
-        
-        metrics_episode.iloc[i]=[cost,delta_c]
-
-
+    metrics_experiment.iloc[k]=[metrics_episode['cost'].sum(),metrics_episode['delta_c'].mean()] 
+    
+    full_track=pd.concat([state_track, action_reward_track],axis=1)
+    
+    makeplot(T,full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
+    
     k+=1
+    
+    
         
+
+
+
+
         
-        
-    # state_track=np.array(state_track_temp)
-    # full_state_track=np.array(full_state_track_temp)
+#     # state_track=np.array(state_track_temp)
+#     # full_state_track=np.array(full_state_track_temp)
     
-    #Create dataframe state_action
-    state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
+#     #Create dataframe state_action
+#     state_action_track=(state_track,np.reshape(action_track,(T, 1)), np.reshape(np.array(rewards_track),(T, 1)))
     
     
-    state_action_track=np.concatenate(state_action_track, axis=1)
-    state_action_track=pd.DataFrame(state_action_track, columns=list(tenv.state_vars.keys())+['actions','rewards'])
+#     state_action_track=np.concatenate(state_action_track, axis=1)
+#     state_action_track=pd.DataFrame(state_action_track, columns=list(tenv.state_vars.keys())+['actions','rewards'])
     
-    state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','excess','y','y_s','actions','rewards']]
+#     state_action_track_filter=state_action_track[['tstep','minutes','gen','load','delta','excess','y','y_s','actions','rewards']]
     
-    # Episode_reward=state_action_track_filter['cost_s'].sum()
+#     # Episode_reward=state_action_track_filter['cost_s'].sum()
     
-    #Plot
+#     #Plot
 
         
     
-    #get metrics
+#     #get metrics
     
-    # means
-    delta_c_episode=state_action_track_filter['delta'].mean()
+#     # means
+#     delta_c_episode=state_action_track_filter['delta'].mean()
     
-    #sums
-    cost_episode=sum(cost_temp)
-    reward_episode=state_action_track_filter['rewards'].sum()
-    
-    
-    #lists per episode
-    costs.append(cost_episode) 
-    rewards.append(reward_episode)
-    deltas.append(delta_c_episode)
+#     #sums
+#     cost_episode=sum(cost_temp)
+#     reward_episode=state_action_track_filter['rewards'].sum()
     
     
-    makeplot(T,state_action_track['actions']*0.3,state_action_track['gen'],state_action_track['load'],state_action_track['tar_buy'],tenv, cost_episode,reward_episode) # 
+#     #lists per episode
+#     costs.append(cost_episode) 
+#     rewards.append(reward_episode)
+#     deltas.append(delta_c_episode)
+    
+    
+ 
     
     
     
-    k+=1 
-    # print(cost_episode)
+#     k+=1 
+#     # print(cost_episode)
     
 
-R=pd.DataFrame({'c':costs,'r':rewards})
+# R=pd.DataFrame({'c':costs,'r':rewards})
 
     
 
