@@ -25,7 +25,7 @@ class ShiftEnv(gym.Env):
     The objective is to schedulle a cyclic shiftable appliance.
     The environment has the follwoing dynamics:
         - the episode starts at a given timestep
-        - The agent observes the state and takes an action (whether to turn ON or not the appliance IN THE NEXT STATE)
+        - Tprsdhe agent observes the state and takes an action (whether to turn ON or not the appliance IN THE PRESENT STATE)
             - Due to the using of action masking we are able to guarantee that once the appliance is connected it maintains connceted for the required number of timesteps
         - It recieves a reward based on the current state 
         - Evolves into next state
@@ -37,6 +37,7 @@ class ShiftEnv(gym.Env):
     def __init__(self, config):
 
         self.reward_type=config["reward_type"]
+        self.tar_type=config['tar_type']
         self.data=config["data"] # We need to import the unflexible load and PV production.
         # data is an array with load in column 0 and pv production in column 1
         
@@ -219,7 +220,7 @@ class ShiftEnv(gym.Env):
                         'tar_buy0': #Tariff at the next timestep
                             {'max':1,'min':0},
                         'E_prof': # reamining energy to supply appliance energy need
-                            {'max':2*self.E_prof,'min':-0.1}}
+                            {'max':2*self.E_prof,'min':-2*self.E_prof}}
                         # 'excess': #PV excess affter supplying baseload (self.load)}
                         #     {'max':10,'min':-10.0},}
                             
@@ -252,6 +253,8 @@ class ShiftEnv(gym.Env):
         #Training/testing termination condition
         
         self.done_cond=config['done_condition'] # window or horizon mode
+        self.init_cond=config['init_condition'] 
+        
         
         # app conection counter
         self.count=0
@@ -431,7 +434,9 @@ class ShiftEnv(gym.Env):
                     
                     reward=-10*max(0,((self.load+self.action*0.3)-self.gen))*self.tar_buy
                     
+            
                     
+            # :::::::::::::::::::::::
             if self.reward_type == 'excess_cost':
 
                 # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
@@ -444,11 +449,41 @@ class ShiftEnv(gym.Env):
                     # reward=-self.cost*self.delta
                     # reward=(-10*max(0,((self.action*0.3)-self.excess))*self.tar_buy + 0.1*self.excess)*self.action
                     
-                    reward=-((self.action*0.3-self.excess)*self.tar_buy)*self.action
-                               
-                        
+                    reward=-((self.action*self.profile[0]-self.excess0)*self.tar_buy)*self.action
                     
-                    # :::::::::::::::::::::::
+                    
+            # :::::::::::::::::::::::
+            if self.reward_type == 'excess_cost_2':
+
+                # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
+                # The reward should be function of the action
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-1
+                
+                else:
+                    # reward=np.exp(-(self.cost**2)/0.001)-0.5                                           
+                    # reward=-self.cost*self.delta
+                    # reward=(-10*max(0,((self.action*0.3)-self.excess))*self.tar_buy + 0.1*self.excess)*self.action
+                    
+                    reward=-(self.action*self.profile[0]-self.excess0)*self.tar_buy
+                       
+                        
+            # :::::::::::::::::::::::
+            if self.reward_type == 'excess_cost_3':
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-1
+                else:
+                    forcast_sum=self.excess1+self.excess2+self.excess3+self.excess4+self.excess5+self.excess6+self.excess7+self.excess8+self.excess9+self.excess10+self.excess11+self.excess12
+                    print(forcast_sum)
+                    if forcast_sum < self.E_prof: #there is a forecasted excess smaller that the appliance needs
+                        reward=-(((self.action*self.profile[0]-self.excess0)*self.tar_buy))*self.action + 1 
+                    else:
+                        reward=-(((self.action*self.profile[0]-self.excess0)*self.tar_buy))*self.action
+                        
+ 
+            
+            
+            # :::::::::::::::::::::::
             elif self.reward_type == 'next_time_cost':
                 
                 if self.action ==1:
@@ -709,7 +744,7 @@ class ShiftEnv(gym.Env):
            
     def get_init_tstep(self):
         "A function that returns the initial tstep of the episode"
-        if self.done_cond == 'mode_window':
+        if self.init_cond == 'mode_window':
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
             t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
@@ -717,12 +752,12 @@ class ShiftEnv(gym.Env):
             
             return t
             
-        elif self.done_cond=='mode_random':
+        elif self.init_cond=='mode_random':
             t=rnd.randrange(0, self.T-self.Tw-1)
             return t
         
         
-        elif self.done_cond == 'mode_horizon': 
+        elif self.init_cond == 'mode_horizon': 
             #episode starts at t=0
             return 0
         
@@ -890,7 +925,12 @@ class ShiftEnv(gym.Env):
         
         #convert action to power (constant profile)
         self.load_s=self.action*self.profile[0]
+        
+        
         self.y_s+=self.action
+        if self.minutes ==0: #the number of connected timeslots resets when a new day starts
+            self.t_shift=0
+            self.y_s=0
             
             
             # print('L_s',self.L_s)
@@ -922,9 +962,7 @@ class ShiftEnv(gym.Env):
         # print('Eprof',self.E_prof)
         
         #restart t_shift for each new day so that appliances may be schedulled again
-        if self.minutes ==self.min_max:
-            self.t_shift=0
-            self.y_s=0
+
         
         
         
@@ -957,7 +995,11 @@ class ShiftEnv(gym.Env):
                 # print(t)
                 t=int(t[0])
                 
-                setattr(self,k, self.data.iloc[self.tstep+t][var] )
+                if self.tstep+t > self.T: #if forecast values fall outside horizon
+                    setattr(self,k, 0)
+                else:
+                    # print('OLHA AQUI SOCIO!!!!',self.tstep+t,var)
+                    setattr(self,k, self.data.iloc[self.tstep+t][var] )
                 
                 
             # s=shiftenv
@@ -978,14 +1020,20 @@ class ShiftEnv(gym.Env):
         # Tarifa bi-horaria
         # if self.minutes >= 240 and self.minutes <=540:
         #Tarifa bi-horaria
-        if self.minutes >= self.tstep_size*2*8 and self.minutes <=self.tstep_size*2*22:
-            self.tar_buy=0.1393
-        else:
-            self.tar_buy=0.0615
-        # self.tar_buy=0.17*(1-(self.gen/1.764)) #PV indexed tariff 
-            
-        self.tar_sell=0.0 # remuneration for excess production
-    
+        
+        if  self.tar_type=='bi':
+        
+            if self.minutes >= self.tstep_size*2*8 and self.minutes <=self.tstep_size*2*22:
+                self.tar_buy=0.1393
+            else:
+                self.tar_buy=0.0615
+            # self.tar_buy=0.17*(1-(self.gen/1.764)) #PV indexed tariff 
+                
+            self.tar_sell=0.0 # remuneration for excess production
+        
+        elif self.tar_type=='flat':
+            self.tar_buy=0.10
+            self.tar_sell=0.0
         
         
     def get_tariffs0(self):

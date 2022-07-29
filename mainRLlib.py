@@ -79,7 +79,7 @@ num_days=7 #number of days
 timesteps=len(data)-1
 load_id='id2000' #ISDDA id of the load to consider
 
-env_data=make_env_data(data, timesteps, load_id, 2)
+env_data=make_env_data(data, timesteps, load_id, 0.5)
 
 ## Shiftable profile example
 
@@ -97,14 +97,23 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 # reward_type='next_shift_cost'
 # reward_type='gauss_shift_cost'
 reward_type='excess_cost'
+# reward_type='excess_cost_3'
 
-env_config={"step_size": tstep_size,'window_size':tstep_per_day, "data": env_data,"reward_type": reward_type, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'mode_window'}
+env_config={"step_size": tstep_size,
+            'window_size':tstep_per_day, 
+            "data": env_data,
+            "reward_type": reward_type, 
+            "profile": shiftprof, 
+            "time_deliver": 37*tstep_size, 
+            'done_condition': 'mode_window',
+            'init_condition': 'mode_window',
+            'tar_type':'bi'}
 
 shiftenv=ShiftEnv(env_config)
 
 env.check_env(shiftenv)
 
-#%% Model
+#%% Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 #%% Make config
@@ -119,10 +128,7 @@ config["action_space"]=shiftenv.action_space
 config['model']['custom_model']=ActionMaskModel # define the custom model
 config['model']['custom_model_config']['fcnet_hiddens']=[128,128] # hidden layers in the custom model
 config['model']['fcnet_hiddens']=[128,128]
-# config['model']['fcnet_hiddens']=[256,256]
 
-# config['model']['fcnet_hiddens']=[256,256,256,256,256]
-# config['model']['fcnet_hiddens']=[256]
 # config['model']['fcnet_activation']='relu'
 config['seed']=1024 #define random seed
 config["horizon"]=shiftenv.Tw
@@ -133,7 +139,8 @@ config['evaluation_num_workers']=1
 config['lr']=1e-4
 config['train_batch_size']=16000
 
-# config['lr']=tune.grid_search([1e-5,1e-4])
+
+config['lr']=tune.grid_search([1e-5,1e-4])
 
 #Tune esperiments
 #experiment name
@@ -147,9 +154,11 @@ metric="_metric/episode_reward_mean"
 mode="max"
 
 
-#%%
+#%% Train
 
-n_iters=50
+
+n_iters=1
+
 
 def experiment(config):
     
@@ -225,11 +234,12 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 test_load_id='id2005'
-test_env_data=make_env_data(data, timesteps, test_load_id, 0.3)
+test_env_data=make_env_data(data, timesteps, test_load_id, 0.2)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # tenv=ShiftEnv(test_env_config)
 
+#we can only update the data. not the environment
 tenv=shiftenv
 test_env_config=env_config
 tenv.data=test_env_data
@@ -258,15 +268,16 @@ tester=PPOTrainer(config, env=ShiftEnv)
 #Recover the tune object from the dir
 # The trainable must be initialized # reuslts must be stored in the same analysis object
 # metric='training_iteration'
-analysis = ExperimentAnalysis(os.path.join(raylog, exp_name), default_metric=metric, default_mode=mode)
+
+experiment_path=os.path.join(raylog, exp_name)
+# experiment_path=os.path.join(raylog, 'GoodExperiments')
+
+
+analysis = ExperimentAnalysis(experiment_path, default_metric=metric, default_mode=mode)
 df=analysis.dataframe(metric,mode) #get de dataframe results
 
 #identify the dir where is the best checkpoint according to metric and mode
 bestdir=analysis.get_best_logdir(metric,mode)
-
-# bestdir='Exp-PPO-SQR/PPOTrainer_ShiftEnv_6f381_00000_0_2022-05-24_10-25-21/'
-
-# bestdir='/home/omega/Documents/FCUL/Projects/FlexEnv/raylog/Exp-WIN-TAR-AM/PPOTrainer_ShiftEnv_f3e03_00000_0_2022-06-23_17-10-08'
 
 #get the best trial checkpoint
 trial=analysis.get_best_checkpoint(bestdir,metric,mode)
@@ -278,10 +289,12 @@ print(mode,checkpoint)
 tester.restore(checkpoint)
 
 
+conf=tester.get_config()
+
+
 
 
 #%%
-
 from plotutils import makeplot
 # PLot Solutions
 
@@ -293,12 +306,11 @@ from plotutils import makeplot
 # A[69:75]=1
 
 
-
 costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=10
+n_episodes=100
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c'], index=range(n_episodes))
 k=0
@@ -307,7 +319,6 @@ while k < n_episodes:
     # state_track_temp=[]
     # full_state_track_temp=[]
     mask_track=[]
-
 
     # full_state_track=[]
 
@@ -367,7 +378,7 @@ while k < n_episodes:
     
     full_track=pd.concat([state_track, action_reward_track],axis=1)
     
-    makeplot(T,full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
+    makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
     
     k+=1
     
