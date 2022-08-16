@@ -310,7 +310,7 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=100
+n_episodes=1
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c'], index=range(n_episodes))
 k=0

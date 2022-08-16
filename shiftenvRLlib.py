@@ -49,7 +49,7 @@ class ShiftEnv(gym.Env):
         self.Tw=config["window_size"] #window horizon
         self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
         self.tstep_init=0 #initial timestep in each episode
-        
+        self.t_ahead=4 #number of timeslots that each actual timeslot is loloking ahead (used in update_forecast) 
         
         #Appliance profile
         
@@ -995,11 +995,12 @@ class ShiftEnv(gym.Env):
                 # print(t)
                 t=int(t[0])
                 
-                if self.tstep+t > self.T: #if forecast values fall outside horizon
+                if self.tstep+self.t_ahead*t >= self.T: #if forecast values fall outside horizon
                     setattr(self,k, 0)
                 else:
                     # print('OLHA AQUI SOCIO!!!!',self.tstep+t,var)
-                    setattr(self,k, self.data.iloc[self.tstep+t][var] )
+                    # What is happening: the "number" in the variable name (example: gen2, gen3 ) is used as the time (t) that is incremented in the current timestep (self.tstep). We can multiply t*4 to make it span 24 hours with 2h intervals
+                    setattr(self,k, self.data.iloc[self.tstep+self.t_ahead*t][var] )
                 
                 
             # s=shiftenv
@@ -1010,8 +1011,9 @@ class ShiftEnv(gym.Env):
             #     for k in var_keys:
             #         print(k)
             #         t=re.findall(r"\d+", k)
+            #         print(t)
             #         t=int(t[0])
-            #         setattr(s,k, s.data.iloc[s.tstep+t][var])
+            #         setattr(s,k, s.data.iloc[s.tstep+2*t][var])
         
         
         
