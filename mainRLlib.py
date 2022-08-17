@@ -96,7 +96,8 @@ shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
 # reward_type='shift_cost'
 # reward_type='next_shift_cost'
 # reward_type='gauss_shift_cost'
-reward_type='excess_cost'
+# reward_type='excess_cost'
+reward_type='excess_cost_max'
 # reward_type='excess_cost_3'
 
 env_config={"step_size": tstep_size,
@@ -117,7 +118,7 @@ env.check_env(shiftenv)
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 #%% Make config
-exp_name='Exp-NewState'
+exp_name='Exp-r-max'
 
 config=ppo.DEFAULT_CONFIG.copy()
 
@@ -136,7 +137,7 @@ config["horizon"]=shiftenv.Tw
 config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
-config['lr']=1e-4
+# config['lr']=1e-4
 config['train_batch_size']=16000
 
 

@@ -432,10 +432,24 @@ class ShiftEnv(gym.Env):
                     # reward=-self.cost*self.delta
                     # reward=-10*self.cost_s*self.delta
                     
-                    reward=-10*max(0,((self.load+self.action*0.3)-self.gen))*self.tar_buy
+                    # reward=-10*max(0,((self.load+self.action*0.3)-self.gen))*self.tar_buy
+                    reward=-(self.load0+self.action*self.profile[0]-self.gen)*self.tar_buy
                     
             
+            
+            
+            
+            # :::::::::::::::::::::::
+            if self.reward_type == 'excess_cost_max':
+
+                # reward=np.exp(-(self.cost_s**2)/0.01)+np.exp(-(((self.y_s-self.T_prof)**2)/0.001))
+                # The reward should be function of the action
+                if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
+                    reward=-1
+                else:
+                    reward=-max(0,((self.action*self.profile[0])-self.excess))*self.tar_buy
                     
+            
             # :::::::::::::::::::::::
             if self.reward_type == 'excess_cost':
 
