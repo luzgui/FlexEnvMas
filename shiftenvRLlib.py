@@ -47,6 +47,7 @@ class ShiftEnv(gym.Env):
         self.tstep_size=config["step_size"]
         self.T=len(self.data) # Time horizon
         self.Tw=config["window_size"] #window horizon
+        self.tstep_per_day=config["tstep_per_day"]
         self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
         self.tstep_init=0 #initial timestep in each episode
         self.t_ahead=4 #number of timeslots that each actual timeslot is loloking ahead (used in update_forecast) 
@@ -447,7 +448,7 @@ class ShiftEnv(gym.Env):
                 if self.minutes == self.min_max-self.T_prof*self.tstep_size and self.y_s!=self.T_prof:
                     reward=-1
                 else:
-                    reward=-max(0,((self.action*self.profile[0])-self.excess))*self.tar_buy
+                    reward=-max(0,((self.action*self.profile[0])-self.excess0))*self.tar_buy
                     
             
             # :::::::::::::::::::::::
@@ -1062,6 +1063,10 @@ class ShiftEnv(gym.Env):
             
         self.tar_sell0=0.0 # remuneration for excess production
     
+        
+        
+
+        
         
         
         

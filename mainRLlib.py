@@ -101,7 +101,8 @@ reward_type='excess_cost_max'
 # reward_type='excess_cost_3'
 
 env_config={"step_size": tstep_size,
-            'window_size':tstep_per_day, 
+            'window_size':tstep_per_day,
+            'tstep_per_day':tstep_per_day,
             "data": env_data,
             "reward_type": reward_type, 
             "profile": shiftprof, 
@@ -118,7 +119,9 @@ env.check_env(shiftenv)
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 #%% Make config
-exp_name='Exp-r-max'
+# exp_name='Exp-r-max'
+# exp_name='Exp-NewState'
+exp_name='GoodExperiments'
 
 config=ppo.DEFAULT_CONFIG.copy()
 
@@ -137,11 +140,11 @@ config["horizon"]=shiftenv.Tw
 config['evaluation_interval']=1
 config['evaluation_num_episodes']=10
 config['evaluation_num_workers']=1
-# config['lr']=1e-4
+
 config['train_batch_size']=16000
 
-
-config['lr']=tune.grid_search([1e-5,1e-4])
+config['lr']=1e-5
+# config['lr']=tune.grid_search([1e-5,1e-4])
 
 #Tune esperiments
 #experiment name
@@ -295,7 +298,7 @@ conf=tester.get_config()
 
 
 
-#%%
+#%% Run Agent (plotting+analytics)
 from plotutils import makeplot
 # PLot Solutions
 
@@ -311,9 +314,9 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=1
+n_episodes=1000
 
-metrics_experiment=pd.DataFrame(columns=['cost','delta_c'], index=range(n_episodes))
+metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(n_episodes))
 k=0
 while k < n_episodes:
     # action_track=[]
@@ -330,11 +333,12 @@ while k < n_episodes:
     episode_reward=0
 
     T=tenv.Tw
+    num_days_test=T/tenv.tstep_per_day
     
     #create a dataframe to store observations
     state_track=pd.DataFrame(columns=tenv.state_vars.keys(), index=range(T))
     action_reward_track=pd.DataFrame(columns=['action','reward'], index=range(T))
-    metrics_episode=pd.DataFrame(columns=['cost','delta_c'], index=range(T))
+    metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
 
     state_track.iloc[0]=obs['observations']
     
@@ -350,9 +354,12 @@ while k < n_episodes:
         
         
         #compute metrics per episode
-        cost=max(0,action*tenv.profile[0]-tenv.excess)*tenv.tar_buy
+        cost=max(0,action*tenv.profile[0]-tenv.excess0)*tenv.tar_buy
         delta_c=(tenv.load0+action*tenv.profile[0])-tenv.gen0
-        metrics_episode.iloc[i]=[cost,delta_c]
+        gamma=self_suf(tenv,action)
+        
+        
+        metrics_episode.iloc[i]=[cost,delta_c,gamma]
         
         #append cost
         # cost_temp.append(max(0,action*tenv.profile[0]-tenv.excess)*tenv.tar_buy)
@@ -374,17 +381,34 @@ while k < n_episodes:
         mask_track.append(obs['action_mask'])
         
         # rewards_track.append(reward)
-        
-    metrics_experiment.iloc[k]=[metrics_episode['cost'].sum(),metrics_episode['delta_c'].mean()] 
+     
+    # we are summing the total cost and making a mean for delta    
     
-    full_track=pd.concat([state_track, action_reward_track],axis=1)
     
-    makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
+    full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
+    full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
+
+    #gamma per epsidode is beying divided by the total amount of energy that appliances need to consume.
+    metrics_experiment.iloc[k]=[metrics_episode['cost'].sum(),
+                                metrics_episode['delta_c'].mean(), 
+                                metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof)] 
+    
+    # print(metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof))
+    # print(full_track['load0'].sum())
+    
+    #PLots
+    # makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
     
     k+=1
     
     
         
+# boxplot
+fig = plt.figure(figsize =(10, 7))
+plt.boxplot(metrics_experiment, labels=['appliance cost','delta','self-sufficiency'])
+plt.show()
+
+
 
 
 

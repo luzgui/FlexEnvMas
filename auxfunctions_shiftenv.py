@@ -49,3 +49,23 @@ def make_env_data(data,timesteps, load_id, pv_factor):
 
     return df
 
+
+def self_suf(env,action):
+    # if var > 0 and env.gen0 != 0:
+        # g=var
+    # elif var <= 0:
+        # g=env.load0
+    if env.gen0 != 0:
+        # g=min(env.load0+action*env.profile[0],env.gen0) #for the total load 
+        g=min(action*env.profile[0],env.excess0) #self sufficency just for the load
+    elif env.gen0 ==0:
+        g=0
+    
+    return g
+
+
+
+
+
+
+
