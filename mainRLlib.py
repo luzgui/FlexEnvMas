@@ -238,7 +238,7 @@ Results=tuneobject.results_df
 
 #%% instantiate test environment
 test_load_id='id2005'
-test_env_data=make_env_data(data, timesteps, test_load_id, 0.2)
+test_env_data=make_env_data(data, timesteps, test_load_id, 0.5)
 # test_env_config={"step_size": tstep_size,'window_size':24*2*1, "data": test_env_data ,"reward_type": 2, "profile": shiftprof, "time_deliver": 37*tstep_size, 'done_condition': 'test'}
 
 # tenv=ShiftEnv(test_env_config)
@@ -314,7 +314,7 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=1000
+n_episodes=1
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(n_episodes))
 k=0
@@ -397,16 +397,17 @@ while k < n_episodes:
     # print(full_track['load0'].sum())
     
     #PLots
-    # makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
+    makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
     
     k+=1
     
     
         
 # boxplot
-fig = plt.figure(figsize =(10, 7))
-plt.boxplot(metrics_experiment, labels=['appliance cost','delta','self-sufficiency'])
-plt.show()
+# fig = plt.figure(figsize =(10, 7))
+# plt.boxplot(metrics_experiment, labels=['appliance cost','delta','self-sufficiency'])
+# plt.title(' N={}'.format(round(n_episodes)))
+# plt.show()
 
 
 
