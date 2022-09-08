@@ -69,7 +69,7 @@ def makeplot(T,delta,sol,gen,load,tar,env,var_1,var_2):
     
     kc=0
     for k in tar_vals:
-        print(k)
+        # print(k)
         ax1.fill_between(t, 0, 1, where=(tar>=k),color=colors[kc], alpha=0.5,transform=ax1.get_xaxis_transform())
         kc+=10
         # ax1.fill_between(t, 0, 1, where=tar<=k, alpha=0.03, transform=ax1.get_xaxis_transform())
@@ -121,13 +121,13 @@ def makeplot(T,delta,sol,gen,load,tar,env,var_1,var_2):
     
 
 #%%
-    #PLots
+    # #PLots
     
-    tarifa=full_track['tar_buy']
-    # tarifa=np.random.uniform(low = 0.0, high = 0.5, size = 48) 
-    # tarifa=pd.DataFrame(tarifa, columns=['tar_buy'])
+    # tarifa=full_track['tar_buy']
+    # # tarifa=np.random.uniform(low = 0.0, high = 0.5, size = 48) 
+    # # tarifa=pd.DataFrame(tarifa, columns=['tar_buy'])
     
-    makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],tarifa,tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #    
+    # makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],tarifa,tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #    
     
     
 

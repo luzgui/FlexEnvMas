@@ -314,7 +314,7 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=1
+n_episodes=50
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(n_episodes))
 k=0
@@ -397,17 +397,18 @@ while k < n_episodes:
     # print(full_track['load0'].sum())
     
     #PLots
-    makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
+    # makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
     
     k+=1
     
     
         
 # boxplot
-# fig = plt.figure(figsize =(10, 7))
-# plt.boxplot(metrics_experiment, labels=['appliance cost','delta','self-sufficiency'])
-# plt.title(' N={}'.format(round(n_episodes)))
-# plt.show()
+fig = plt.figure(figsize =(10, 7))
+plt.boxplot(metrics_experiment, labels=['App Daily cost (€)','Daily mean delta','App Daily self-sufficiency'])
+plt.grid('minor')
+plt.title(' N={}'.format(round(n_episodes)))
+plt.show()
 
 
 
