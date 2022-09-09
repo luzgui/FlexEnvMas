@@ -1,23 +1,20 @@
 import gym
 
-import ray
+import ray #ray2.0 implementation
+
 from ray import tune
-from ray.tune import Analysis
+# from ray.tune import Analysis
+from ray.tune import analysis
 from ray.tune import ExperimentAnalysis
 from pathlib import Path
 
-from ray.rllib.agents import ppo
-from ray.rllib.agents.ppo import PPOTrainer
+#PPO algorithm
+from ray.rllib.algorithms.ppo import PPO #trainer
+from ray.rllib.algorithms.ppo import PPOConfig #config
 
-from ray.rllib.agents import dqn
-from ray.rllib.agents.dqn import DQNTrainer
+
 from ray.rllib.env.env_context import EnvContext
 
-from ray.rllib.agents import a3c
-from ray.rllib.agents.a3c import A3CTrainer
-
-
-from ray.rllib.agents.a3c import A2CTrainer
 
 #models
 from ray.rllib.models import ModelCatalog
@@ -121,29 +118,66 @@ ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 #%% Make config
 # exp_name='Exp-r-max'
 # exp_name='Exp-NewState'
-exp_name='GoodExperiments'
+exp_name='ray2'
 
-config=ppo.DEFAULT_CONFIG.copy()
+# config=ppo.DEFAULT_CONFIG.copy()
 
-config["env"]=ShiftEnv
-config["env_config"]=env_config
-config["observation_space"]=shiftenv.observation_space
-config["action_space"]=shiftenv.action_space
-config['model']['custom_model']=ActionMaskModel # define the custom model
-config['model']['custom_model_config']['fcnet_hiddens']=[128,128] # hidden layers in the custom model
-config['model']['fcnet_hiddens']=[128,128]
+# config = PPOConfig()\
+#                 .training(lr=1e-5,
+#                           model={'custom_model':ActionMaskModel,
+#                                  'custom_model_config': 
+#                                      {'fcnet_hiddens': [128,128]}})\
+#                 .environment(
+#                     env=ShiftEnv,           
+#                     observation_space=shiftenv.observation_space,
+#                     action_space=shiftenv.action_space,
+#                     env_config=env_config)\
+#                 .evaluation(evaluation_interval=1,evaluation_num_workers=1) 
 
-# config['model']['fcnet_activation']='relu'
-config['seed']=1024 #define random seed
-config["horizon"]=shiftenv.Tw
-#evaluation
-config['evaluation_interval']=1
-config['evaluation_num_episodes']=10
-config['evaluation_num_workers']=1
 
-config['train_batch_size']=16000
 
-config['lr']=1e-5
+config = PPOConfig()\
+                .training(lr=1e-5,
+                          train_batch_size=16000,
+                          model={'custom_model':ActionMaskModel,
+                                 'fcnet_hiddens': [128,128],
+                                 'custom_model_config': 
+                                     {'fcnet_hiddens': [128,128]}})\
+                .environment(
+                    env=ShiftEnv,           
+                    observation_space=shiftenv.observation_space,
+                    action_space=shiftenv.action_space,
+                    env_config=env_config)
+
+
+# algo=config.build()
+# algo.train()
+
+    
+# res=config.resources()
+    
+# config_dict=config.to_dict()
+
+
+# config["env"]=ShiftEnv
+# config["env_config"]=env_config
+# config["observation_space"]=shiftenv.observation_space
+# config["action_space"]=shiftenv.action_space
+# config['model']['custom_model']=ActionMaskModel # define the custom model
+# config['model']['custom_model_config']['fcnet_hiddens']=[128,128] # hidden layers in the custom model
+# config['model']['fcnet_hiddens']=[128,128]
+
+# # config['model']['fcnet_activation']='relu'
+# config['seed']=1024 #define random seed
+# config["horizon"]=shiftenv.Tw
+# #evaluation
+# config['evaluation_interval']=1
+# config['evaluation_num_episodes']=10
+# config['evaluation_num_workers']=1
+
+# config['train_batch_size']=16000
+
+# config['lr']=1e-5
 # config['lr']=tune.grid_search([1e-5,1e-4])
 
 #Tune esperiments
@@ -152,25 +186,25 @@ config['lr']=1e-5
 # exp_name='Exp-FullCost'   
 # exp_name='Exp-LowPV'
 #allocate resources
-resources = PPOTrainer.default_resource_request(config)
+# resources = PPO.default_resource_request(config)
 #define the metric and the mode criteria for identifying the best checkpoint
 metric="_metric/episode_reward_mean"
 mode="max"
 
-
 #%% Train
 
-
-n_iters=1
+n_iters=3
 
 
 def experiment(config):
     
-    trainer=PPOTrainer(config, env=config["env"])
+    trainer=PPO(config, env=config["env"])
+    # trainer=config.build()
     weights={}
     
     # setting the seed
-    seed=config['seed']
+    # seed=config.seed
+    seed=1024
     np.random.seed(seed)
     random.seed(seed)    
     
@@ -200,12 +234,12 @@ def experiment(config):
 
         #evaluate agent
         print('evaluating...')
-        eval_results=trainer.evaluate()
+        # eval_results=trainer.evaluate()
         eval_metrics={'episode_reward_max', 
               'episode_reward_mean',
               'episode_reward_min',}
         eval_logs={'evaluation':{}}
-        eval_logs['evaluation']={k: eval_results['evaluation'][k] for k in eval_metrics}
+        # eval_logs['evaluation']={k: eval_results['evaluation'][k] for k in eval_metrics}
 
         results={**logs,**weights,**eval_logs}
         # results={**eval_logs}
@@ -218,8 +252,8 @@ def experiment(config):
 
 tuneobject=tune.run(
     experiment,
-    config=config,
-    resources_per_trial=resources,
+    config=config.to_dict(),
+    resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}]*2),
     local_dir=raylog,
     # num_samples=4,
     # stop={'training_iteration': 10},
@@ -227,7 +261,7 @@ tuneobject=tune.run(
     checkpoint_freq=10,
     # resume=True,
     name=exp_name,
-    verbose=0,
+    verbose=3,
     # keep_checkpoints_num=10, 
     # checkpoint_score_attr=metric, 
     # mode='max'
@@ -243,7 +277,10 @@ test_env_data=make_env_data(data, timesteps, test_load_id, 0.5)
 
 # tenv=ShiftEnv(test_env_config)
 
+
+#%% !BUG!
 #we can only update the data. not the environment
+# bug - ned to come back here and figure out how to make two different environments with different data 
 tenv=shiftenv
 test_env_config=env_config
 tenv.data=test_env_data
@@ -254,15 +291,28 @@ tenv.data=test_env_data
 # we must eliminate some parameters otw 
 # TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
 
-config=ppo.DEFAULT_CONFIG.copy()
-config["env"]=ShiftEnv
-config["env_config"]=test_env_config
-config["observation_space"]=tenv.observation_space
-config["action_space"]=tenv.action_space
-# config["framework"]="tf2"
 
-# tester=DQNTrainer(config, env=ShiftEnv)
+
+#update config for test_env
+config.environment(env=ShiftEnv,           
+                   observation_space=tenv.observation_space,
+                   action_space=tenv.action_space,
+                   env_config=test_env_config)
+
+
+# config=ppo.DEFAULT_CONFIG.copy()
+# config["env"]=ShiftEnv
+# config["env_config"]=test_env_config
+# config["observation_space"]=tenv.observation_space
+# config["action_space"]=tenv.action_space
+
+
+
 tester=PPOTrainer(config, env=ShiftEnv)
+
+tester=config.build()
+
+
 
 # analyse policy
 # policy=tester.get_policy()
@@ -284,13 +334,12 @@ df=analysis.dataframe(metric,mode) #get de dataframe results
 bestdir=analysis.get_best_logdir(metric,mode)
 
 #get the best trial checkpoint
-trial=analysis.get_best_checkpoint(bestdir,metric,mode)
-#get the string
-checkpoint=trial.local_path
+checkpoint=analysis.get_best_checkpoint(bestdir,metric,mode)
+
 print(mode,checkpoint)
 
 #recover best agent for testing
-tester.restore(checkpoint)
+tester.restore(trial)
 
 
 conf=tester.get_config()
@@ -397,18 +446,18 @@ while k < n_episodes:
     # print(full_track['load0'].sum())
     
     #PLots
-    # makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
+    makeplot(T,metrics_episode['delta_c'],full_track['action']*0.3,full_track['gen0'],full_track['load0'],full_track['tar_buy'],tenv, metrics_episode['cost'].sum(),full_track['reward'].sum()) #
     
     k+=1
     
     
         
 # boxplot
-fig = plt.figure(figsize =(10, 7))
-plt.boxplot(metrics_experiment, labels=['App Daily cost (€)','Daily mean delta','App Daily self-sufficiency'])
-plt.grid('minor')
-plt.title(' N={}'.format(round(n_episodes)))
-plt.show()
+# fig = plt.figure(figsize =(10, 7))
+# plt.boxplot(metrics_experiment, labels=['App Daily cost (€)','Daily mean delta','App Daily self-sufficiency'])
+# plt.grid('minor')
+# plt.title(' N={}'.format(round(n_episodes)))
+# plt.show()
 
 
 
