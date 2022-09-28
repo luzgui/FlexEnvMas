@@ -120,73 +120,45 @@ ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 # exp_name='Exp-NewState'
 exp_name='ray2'
 
-# config=ppo.DEFAULT_CONFIG.copy()
-
-# config = PPOConfig()\
-#                 .training(lr=1e-5,
-#                           model={'custom_model':ActionMaskModel,
-#                                  'custom_model_config': 
-#                                      {'fcnet_hiddens': [128,128]}})\
-#                 .environment(
-#                     env=ShiftEnv,           
-#                     observation_space=shiftenv.observation_space,
-#                     action_space=shiftenv.action_space,
-#                     env_config=env_config)\
-#                 .evaluation(evaluation_interval=1,evaluation_num_workers=1) 
-
-
-
 config = PPOConfig()\
                 .training(lr=1e-5,
                           train_batch_size=16000,
                           model={'custom_model':ActionMaskModel,
                                  'fcnet_hiddens': [128,128],
+                                 'fcnet_activation':'relu',
                                  'custom_model_config': 
                                      {'fcnet_hiddens': [128,128]}})\
                 .environment(
                     env=ShiftEnv,           
                     observation_space=shiftenv.observation_space,
                     action_space=shiftenv.action_space,
-                    env_config=env_config)
+                    env_config=env_config)\
+                .resources()\
+                .rollouts(num_rollout_workers=7)
+                    
+                # .evaluation(evaluation_interval=1,
+                #             evaluation_num_workers=1,
+                #             evaluation_num_episodes=10,) 
+                
+
+
+config_dict=config.to_dict()
 
 
 # algo=config.build()
 # algo.train()
 
     
-# res=config.resources()
+
     
-# config_dict=config.to_dict()
 
 
-# config["env"]=ShiftEnv
-# config["env_config"]=env_config
-# config["observation_space"]=shiftenv.observation_space
-# config["action_space"]=shiftenv.action_space
-# config['model']['custom_model']=ActionMaskModel # define the custom model
-# config['model']['custom_model_config']['fcnet_hiddens']=[128,128] # hidden layers in the custom model
-# config['model']['fcnet_hiddens']=[128,128]
-
-# # config['model']['fcnet_activation']='relu'
 # config['seed']=1024 #define random seed
 # config["horizon"]=shiftenv.Tw
-# #evaluation
-# config['evaluation_interval']=1
-# config['evaluation_num_episodes']=10
-# config['evaluation_num_workers']=1
 
-# config['train_batch_size']=16000
 
-# config['lr']=1e-5
-# config['lr']=tune.grid_search([1e-5,1e-4])
 
-#Tune esperiments
-#experiment name
 
-# exp_name='Exp-FullCost'   
-# exp_name='Exp-LowPV'
-#allocate resources
-# resources = PPO.default_resource_request(config)
 #define the metric and the mode criteria for identifying the best checkpoint
 metric="_metric/episode_reward_mean"
 mode="max"
@@ -199,7 +171,6 @@ n_iters=3
 def experiment(config):
     
     trainer=PPO(config, env=config["env"])
-    # trainer=config.build()
     weights={}
     
     # setting the seed
@@ -230,8 +201,8 @@ def experiment(config):
         
         #save checkpoint
         checkpoint=trainer.save(tune.get_trial_dir())
-
-
+        
+        
         #evaluate agent
         print('evaluating...')
         # eval_results=trainer.evaluate()
@@ -240,7 +211,7 @@ def experiment(config):
               'episode_reward_min',}
         eval_logs={'evaluation':{}}
         # eval_logs['evaluation']={k: eval_results['evaluation'][k] for k in eval_metrics}
-
+        
         results={**logs,**weights,**eval_logs}
         # results={**eval_logs}
         tune.report(results)
@@ -253,7 +224,8 @@ def experiment(config):
 tuneobject=tune.run(
     experiment,
     config=config.to_dict(),
-    resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}]*2),
+    # resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}]*2),
+    resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0}]),
     local_dir=raylog,
     # num_samples=4,
     # stop={'training_iteration': 10},
@@ -283,15 +255,12 @@ test_env_data=make_env_data(data, timesteps, test_load_id, 0.5)
 # bug - ned to come back here and figure out how to make two different environments with different data 
 tenv=shiftenv
 test_env_config=env_config
+#I believe that this solves the bug
+test_env_config['data']=test_env_data
 tenv.data=test_env_data
 # tenv=shiftenv
 
 #%% Recover checkpoints
-
-# we must eliminate some parameters otw 
-# TypeError: Failed to convert elements of {'grid_search': [1e-05, 0.0001]} to Tensor. Consider casting elements to a supported type. See https://www.tensorflow.org/api_docs/python/tf/dtypes for supported TF dtypes.
-
-
 
 #update config for test_env
 config.environment(env=ShiftEnv,           
@@ -299,19 +268,8 @@ config.environment(env=ShiftEnv,
                    action_space=tenv.action_space,
                    env_config=test_env_config)
 
-
-# config=ppo.DEFAULT_CONFIG.copy()
-# config["env"]=ShiftEnv
-# config["env_config"]=test_env_config
-# config["observation_space"]=tenv.observation_space
-# config["action_space"]=tenv.action_space
-
-
-
-tester=PPOTrainer(config, env=ShiftEnv)
-
+# create agent for testing
 tester=config.build()
-
 
 
 # analyse policy
@@ -325,8 +283,6 @@ tester=config.build()
 
 experiment_path=os.path.join(raylog, exp_name)
 # experiment_path=os.path.join(raylog, 'GoodExperiments')
-
-
 analysis = ExperimentAnalysis(experiment_path, default_metric=metric, default_mode=mode)
 df=analysis.dataframe(metric,mode) #get de dataframe results
 
@@ -335,17 +291,10 @@ bestdir=analysis.get_best_logdir(metric,mode)
 
 #get the best trial checkpoint
 checkpoint=analysis.get_best_checkpoint(bestdir,metric,mode)
-
 print(mode,checkpoint)
-
 #recover best agent for testing
-tester.restore(trial)
-
-
-conf=tester.get_config()
-
-
-
+tester.restore(checkpoint)
+# conf=tester.get_config()
 
 #%% Run Agent (plotting+analytics)
 from plotutils import makeplot
@@ -363,7 +312,7 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=50
+n_episodes=10
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(n_episodes))
 k=0
