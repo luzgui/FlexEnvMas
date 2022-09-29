@@ -259,6 +259,9 @@ class ShiftEnv(gym.Env):
         
         # app conection counter
         self.count=0
+        
+        #seed 
+        # self.seed=config['seed']
 
 
     def step(self, action):

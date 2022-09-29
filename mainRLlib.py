@@ -106,7 +106,8 @@ env_config={"step_size": tstep_size,
             "time_deliver": 37*tstep_size, 
             'done_condition': 'mode_window',
             'init_condition': 'mode_window',
-            'tar_type':'bi'}
+            'tar_type':'bi',
+            'seed':1024}
 
 shiftenv=ShiftEnv(env_config)
 
@@ -118,11 +119,13 @@ ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 #%% Make config
 # exp_name='Exp-r-max'
 # exp_name='Exp-NewState'
-exp_name='ray2'
+exp_name='ray8-seed'
+
+
 
 config = PPOConfig()\
                 .training(lr=1e-5,
-                          train_batch_size=16000,
+                          train_batch_size=4000,
                           model={'custom_model':ActionMaskModel,
                                  'fcnet_hiddens': [128,128],
                                  'fcnet_activation':'relu',
@@ -134,7 +137,8 @@ config = PPOConfig()\
                     action_space=shiftenv.action_space,
                     env_config=env_config)\
                 .resources()\
-                .rollouts(num_rollout_workers=7)
+                .rollouts(num_rollout_workers=2)\
+                .debugging(seed=1024)
                     
                 # .evaluation(evaluation_interval=1,
                 #             evaluation_num_workers=1,
@@ -165,17 +169,16 @@ mode="max"
 
 #%% Train
 
-n_iters=3
-
+n_iters=4
+checkpoint_freq=2
 
 def experiment(config):
     
     trainer=PPO(config, env=config["env"])
     weights={}
     
-    # setting the seed
-    # seed=config.seed
-    seed=1024
+    #set the seed
+    seed=config['seed']
     np.random.seed(seed)
     random.seed(seed)    
     
@@ -200,7 +203,8 @@ def experiment(config):
                     weights["FCC/{}".format(k)] = v
         
         #save checkpoint
-        checkpoint=trainer.save(tune.get_trial_dir())
+        if i % checkpoint_freq == 0: 
+            checkpoint=trainer.save(tune.get_trial_dir())
         
         
         #evaluate agent
@@ -225,7 +229,14 @@ tuneobject=tune.run(
     experiment,
     config=config.to_dict(),
     # resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}]*2),
-    resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0},{'CPU': 1.0}]),
+    resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0},
+                                                    {'CPU': 1.0},
+                                                    {'CPU': 1.0},
+                                                    {'CPU': 1.0},
+                                                    {'CPU': 1.0},
+                                                    {'CPU': 1.0},
+                                                    {'CPU': 1.0},
+                                                    {'CPU': 1.0}]),
     local_dir=raylog,
     # num_samples=4,
     # stop={'training_iteration': 10},
@@ -312,7 +323,7 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=10
+n_episodes=1
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(n_episodes))
 k=0
