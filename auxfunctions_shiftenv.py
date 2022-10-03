@@ -14,6 +14,10 @@ import numpy.random as rnd
 import time
 import random as rnd
 
+from ray.tune import analysis
+from ray.tune import ExperimentAnalysis
+from pathlib import Path
+
 
 
 
@@ -64,7 +68,26 @@ def self_suf(env,action):
     return g
 
 
+def get_checkpoint(log_dir,exp_name,metric,mode):
+    #Recover the tune object from the dir
+    # The trainable must be initialized # reuslts must be stored in the same analysis object
+    # metric='training_iteration'
 
+    experiment_path=os.path.join(log_dir, exp_name)
+    # experiment_path=os.path.join(raylog, 'GoodExperiments')
+    analysis_object = ExperimentAnalysis(experiment_path, default_metric=metric, default_mode=mode)
+    df=analysis_object.dataframe(metric,mode) #get de dataframe results
+
+    #identify the dir where is the best checkpoint according to metric and mode
+    bestdir=analysis_object.get_best_logdir(metric,mode)
+
+    #get the best trial checkpoint
+    checkpoint=analysis_object.get_best_checkpoint(bestdir,metric,mode)
+    print(mode,checkpoint)
+    #recover best agent for te
+    
+    return checkpoint, df
+    
 
 
 

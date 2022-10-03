@@ -35,6 +35,8 @@ class ShiftEnv(gym.Env):
     """
 
     def __init__(self, config):
+        
+        self.info = config['env_info']
 
         self.reward_type=config["reward_type"]
         self.tar_type=config['tar_type']
