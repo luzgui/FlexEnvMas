@@ -207,6 +207,12 @@ metric="_metric/episode_reward_mean"
 mode="max"
 #get the checkpoint
 checkpoint, df = get_checkpoint(raylog, exp_name, metric, mode)
+
+# cp_folder='3Oct/trainable_ShiftEnv_448b6_00000_0_2022-10-03_15-54-23'
+
+
+
+# checkpoint, df = get_checkpoint(raylog,cp_folder, metric, mode)
 #restore checkpoint
 tester.restore(checkpoint)
 # conf=tester.get_config()
@@ -227,7 +233,7 @@ costs=[]
 rewards=[]
 deltas=[]
 
-n_episodes=300
+n_episodes=1
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(n_episodes))
 k=0
@@ -245,7 +251,7 @@ while k < n_episodes:
     # rewards_track = []
     episode_reward=0
     
-    T=tenv.Tw*2
+    T=tenv.Tw*1
     num_days_test=T/tenv.tstep_per_day
     
     #create a dataframe to store observations
@@ -254,6 +260,7 @@ while k < n_episodes:
     metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
 
     state_track.iloc[0]=obs['observations']
+    
     
     
     for i in range(T):
@@ -298,6 +305,7 @@ while k < n_episodes:
     # we are summing the total cost and making a mean for delta    
     
     
+    
     full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
     full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
 
@@ -308,6 +316,8 @@ while k < n_episodes:
     
     # print(metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof))
     # print(full_track['load0'].sum())
+    
+    print(tenv.E_prof/full_track['excess0'].sum())
     
     #PLots
     makeplot(T,
@@ -325,15 +335,15 @@ while k < n_episodes:
 
        
 # boxplot
-fig = plt.figure(figsize =(10, 7))
-plot_vals=plt.boxplot(metrics_experiment, meanline=True, showmeans=True, labels=['App Daily cost (€)','Daily mean delta','App Daily self-sufficiency'])
-medians=[item.get_ydata() for item in plot_vals['medians']] #get the median values
-medians=[round(meds[0],3) for meds in medians]
-means=[item.get_ydata() for item in plot_vals['means']] #get the median values
-means=[round(meds[0],3) for meds in means]   
-plt.grid('minor')
-plt.title(' N={}'.format(round(n_episodes)))
-plt.show()
+# fig = plt.figure(figsize =(10, 7))
+# plot_vals=plt.boxplot(metrics_experiment, meanline=True, showmeans=True, labels=['App Daily cost (€)','Daily mean delta','App Daily self-sufficiency'])
+# medians=[item.get_ydata() for item in plot_vals['medians']] #get the median values
+# medians=[round(meds[0],3) for meds in medians]
+# means=[item.get_ydata() for item in plot_vals['means']] #get the median values
+# means=[round(meds[0],3) for meds in means]   
+# plt.grid('minor')
+# plt.title(' N={}'.format(round(n_episodes)))
+# plt.show()
 
 
 

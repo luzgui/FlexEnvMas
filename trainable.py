@@ -1,5 +1,13 @@
 # this should be a class!!!
 
+
+from ray.rllib.algorithms.ppo import PPO #trainer
+from ray.rllib.algorithms.ppo import PPOConfig #config
+import pandas as pd
+import numpy as np
+import random
+
+
 n_iters=200
 checkpoint_freq=10
 

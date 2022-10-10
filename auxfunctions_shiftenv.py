@@ -37,15 +37,17 @@ def make_minutes(data, timesteps):
     return minutes
     
 
-def make_env_data(data,timesteps, load_id, pv_factor):
+def make_env_data(data,timesteps, load_id, pv_factor, num_agents):
     "(data: timeseries, laod_num: house number, pv_factor"
     
     df=pd.DataFrame()
     
+    load_names=['load'+str(k) for k in range(num_agents)]
+    
     df['minutes']=data.iloc[0:timesteps]['minutes']
-    df['load']=data.iloc[0:timesteps][load_id]
+    df[load_names]=data.iloc[0:timesteps][load_id]
     df['gen']=pv_factor*abs(data.iloc[0:timesteps]['PV'])
-    df['delta']=df['load']-df['gen']
+    df['delta']=df[load_names].sum(axis=1)-df['gen']
     df['excess']=[max(0,-df['delta'][k]) for k in range(timesteps)] 
     
     # gen=np.zeros(timesteps)
@@ -76,6 +78,7 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     experiment_path=os.path.join(log_dir, exp_name)
     # experiment_path=os.path.join(raylog, 'GoodExperiments')
     analysis_object = ExperimentAnalysis(experiment_path, default_metric=metric, default_mode=mode)
+    
     df=analysis_object.dataframe(metric,mode) #get de dataframe results
 
     #identify the dir where is the best checkpoint according to metric and mode
