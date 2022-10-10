@@ -91,7 +91,7 @@ timesteps=len(data)-1
 
 load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
 
-env_data=make_env_data(data, timesteps, load_id, 0.5, num_agents)
+env_data=make_env_data_mas(data, timesteps, load_id, 0.5, num_agents)
 
 ## Shiftable profile example
 
