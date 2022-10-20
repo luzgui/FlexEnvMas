@@ -1,6 +1,7 @@
 import gym
 from gym import spaces
 import numpy as np
+import pandas as pd
 import random as rnd
 import re
 
@@ -10,19 +11,675 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
 from shiftenvRLlib import ShiftEnv
 
 
-class ShiftEnvMas(ShiftEnv,MultiAgentEnv):
+class ShiftEnvMas(MultiAgentEnv):
     def __init__(self,config):
-        super().__init__(config)
-        self.num_agents=config['num_agents']
+        super().__init__()
         
-        self.agents_id=['ag'+str(k) for k in range(config['num_agents'])]
+        
+        #COMMUNITY /COMMON parameters
+        self.num_agents=config['num_agents']
+        self.agents_id=config['agents_id']
+
+        self.info = config['env_info']
+
+        self.reward_type=config["reward_type"]
+        self.tar_type=config['tar_type']
+        
+        
+        self.data=config["data"]
+          
+        self.tstep_size=config["step_size"]
+        self.T=len(self.data.loc['ag0']) # Time horizon 
+        self.Tw=config["window_size"] #window horizon
+        self.tstep_per_day=config["tstep_per_day"]
+        self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
+        self.tstep_init=0 #initial timestep in each episode
+        self.t_ahead=4 #number of timeslots that each actual timeslot is loloking ahead (used in update_forecast) 
+        
+        self.min_max=self.data['minutes'].max() #maximum timeslot??
+        
+        
+        #AGENTS INDIVIDUAL parameters
+        #Appliance profile
+        self.profile=config["profile"]
+        
+        
+        #dataframes from dictionaries
+        # self.T_prof={ag:[len(self.profile[ag])] for ag in self.agents_id}
+        self.T_prof={ag:len(self.profile[ag]) for ag in self.agents_id}
+        self.T_prof=pd.DataFrame.from_dict(self.T_prof, orient='index', columns=['T_prof'])
+        
+        self.E_prof={ag:sum(self.profile[ag])*self.dh for ag in self.agents_id}#energy needed for the appliance
+        self.E_prof=pd.DataFrame.from_dict(self.E_prof, orient='index', columns=['E_prof'])
+        
+        #this must be set as a moving variable that updates the deliver time according to the day
+        self.t_deliver=config["time_deliver"]
+        self.t_deliver=pd.DataFrame.from_dict(self.t_deliver, orient='index', columns=['t_deliver'])
+        
+        self.agents_params=pd.concat([self.T_prof,self.E_prof,self.t_deliver],axis=1)
+        
+        
+        
+        self.R=0
+        self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained
+        self.n_episodes=0
+        
+        
+        #new vars
+        self.L_s=np.zeros(self.T) # we make a vector of zeros to store the shiftable load profile
+        # self.l_s=self.L_s[0] 
+        
+        #initialize with the first element in 
+        self.t_shift=0
+        
+        
+        
+        
+        
+                
+        
+        # defining the state variables
+        
+        
+        
+        self.state_vars={'tstep':
+                                {'max':10000,'min':0},
+                        'minutes':
+                                {'max':1440,'min':0},
+                        'sin':
+                                {'max':1.0,'min':-1.0},
+                        'cos':
+                                {'max':1.0,'min':-1.0},
+                        'gen0':# g : PV generation at timeslot
+                                {'max':10.0,'min':0},
+                        'gen1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'gen2':# g : PV generation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'gen3':# g : PV generation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'gen4':# g : PV generation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'gen5':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'gen6':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'gen7':# g : PV generation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'gen8':# g : PV generation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'gen9':# g : PV generation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'gen10':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'gen11':# g : PV generation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'gen12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'load0':# g : PV generation at timeslot
+                                {'max':10.0,'min':0},
+                        'load1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'load2':# g : PV loaderation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'load3':# g : PV loaderation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'load4':# g : PV loaderation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'load5':# g : PV loaderation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'load6':# g : PV loaderation forecast next timeslot
+                                {'max':10.0,'min':0},
+                        'load7':# g : PV loaderation forecast 1h ahead
+                                {'max':10.0,'min':0},
+                        'load8':# g : PV loaderation forecast 6h ahead
+                                {'max':10.0,'min':0},
+                        'load9':# g : PV loaderation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'load10':# g : PV loaderation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'load11':# g : PV loaderation forecast 12h ahead
+                                {'max':10.0,'min':0},
+                        'load12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':0},
+                        'delta0':# g : PV generation at timeslot
+                                {'max':10.0,'min':-10.0},
+                        'delta1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'delta2':# g : PV deltaeration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta3':# g : PV deltaeration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta4':# g : PV deltaeration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta5':# g : PV deltaeration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta6':# g : PV deltaeration forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'delta7':# g : PV deltaeration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta8':# g : PV deltaeration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta9':# g : PV deltaeration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta10':# g : PV deltaeration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta11':# g : PV deltaeration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'delta12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess0':# g : PV generation at timeslot
+                                {'max':10.0,'min':-10.0},
+                        'excess1':# g : PV generation forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'excess2':# g : PV excesseration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess3':# g : PV excesseration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess4':# g : PV excesseration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess5':# g : PV excesseration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess6':# g : PV excesseration forecast next timeslot
+                                {'max':10.0,'min':-10.0},
+                        'excess7':# g : PV excesseration forecast 1h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess8':# g : PV excesseration forecast 6h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess9':# g : PV excesseration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess10':# g : PV excesseration forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess11':# g : PV excesseration forecast 12h ahead
+                                {'max':10.0,'min':-10.0},
+                        'excess12':# g : PV generation forecast 24h ahead
+                                {'max':10.0,'min':-10.0},
+                        'y': # =1 if ON at t, 0 OTW
+                            {'max':1.0,'min':0.0},
+                        'y_1': # =1 if ON in t-1
+                            {'max':1.0,'min':0.0},
+                        'y_s':  # +1 if app is schedulled at t (incremental) 
+                                #(how many times it was connected)
+                            {'max':self.T,'min':0.0},
+                        'tar_buy':
+                            {'max':1,'min':0},
+                        'tar_buy0': #Tariff at the next timestep
+                            {'max':1,'min':0},
+                        'E_prof_rem': # reamining energy to supply appliance energy need
+                            # {'max':2*self.E_prof,'min':-2*self.E_prof}}
+                            {'max':2*5,'min':-2*5}}
+
+                    
+        
+        #extract the names of variables in env.data and take out the minutes that we dont need    
+        self.ag_var_class=[k for k in self.data.keys() if 'ag' in k]
+
+        
+        self.var_class={'gen','load','delta','excess'}
+        
+        self.obs=None   
+            
+        #Number of variables to be used
+        self.var_dim=len(self.state_vars.keys())
+                
+        
+                
+        self.highlim=np.array([value['max'] for key, value in self.state_vars.items()])
+        self.lowlim=np.array([value['min'] for key, value in self.state_vars.items()])
+            
+        
+        #Action space
+        self.action_space = spaces.Discrete(2) # ON/OFF
+        
+        # Observation space      
+        self.observation_space = spaces.Dict({
+            "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),
+            "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))})
+        
+                
+        #Training/testing termination condition
+        
+        self.done_cond=config['done_condition'] # window or horizon mode
+        self.init_cond=config['init_condition'] 
+        
+        
+        # app conection counter
+        self.count=0
+        
+        #seed 
+        # self.seed=config['seed']
+        
+        
+        
+        
+        #VARIABLE INITIATIATIONS
+        #initiate N X var_dim dataframe for storing state
+        self.state=pd.DataFrame(index = self.agents_id+['global'],columns=self.state_vars.keys())
+        
+        #Auxiliary variables used to compute intermediary quantities
+        self.cost_aux=pd.DataFrame(index = self.agents_id+['global'],columns=['cost','cost_s','cost_s_x'])
+        
+        self.delta_aux=pd.DataFrame(index = self.agents_id+['global'],columns=['cost','cost_s','cost_s_x'])
+        
+        #Mask
+        #we have a dataframe cell for each action mask
+        self.mask=pd.DataFrame(index = self.agents_id, columns=np.arange(self.action_space.n))
+        
+        
+        # self.state_aux=pd.DataFrame(index = self.agents_id)
+        
+        
+        
+        print(f'Created an MAS environment with {self.num_agents} agents')
+        
+        
+        
     
     def reset(self):
-        print('implememtar reset')
+        """
+        Reset the environment state and returns an initial observation
         
-    def step():
-        print('implememtar step')
+        Returns:
+        -------
+        observation (object): The initial observation for the new episode after reset
+        :return:
+        """
+        
+        #COMMUNITY /COMMON variables (intialization equal for all agents)
+        self.done=pd.DataFrame([False]*self.num_agents, index=self.agents_id,columns=['done'])
+        # self.done.loc['__all__']=all(self.done.values) #does RLLIB need this in the environment or only at the output dictionary??
+        
+        #initial timestep
+        self.tstep=self.get_init_tstep()
+        self.tstep_init=self.tstep # initial timestep
+        self.state['tstep']=self.tstep
+        #minutes
+        self.minutes=self.data.iloc[self.tstep]['minutes']
+        self.state['minutes']=self.minutes
+        #sine/cosine
+        self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
+        self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
+        self.state['sin']=self.sin
+        self.state['cos']=self.cos
+        #tariffs (for now all agents get the same tariff)
+        self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
+        self.state['tar_buy']=self.tar_buy
+        self.state['tar_buy0'], _ =self.get_tariffs(1)
+    
+        #inititialize binary variables
+        self.state[['y','y_1','y_s']]=0
+        
+        
+        # Initialize history of actions
+        # self.hist=pd.DataFrame(index = range(self.Tw),columns=self.agents_id)
+        # self.hist=pd.DataFrame(index=tuple([(a,t) for a in self.agents_id for t in range(self.tstep,self.tstep+self.Tw)]), columns=['hist'])
+        
+        
+        
+        # self.hist.append(self.y) # CHECK IF NEEDED
+        
+        #Initial energy to consume
+        self.state['E_prof_rem'].update(self.agents_params['E_prof'])
+
+        
+        #update forecasts
+        self.update_forecast()
+        
+        
+        #Initial mask: # we concede full freedom for the appliance 
+        self.mask.loc[:,:]=np.ones([self.num_agents,self.action_space.n])
+        
+        
+        
+        # self.obs={"action_mask": np.array([1,1]), # we concede full freedom for the appliance 
+        #       "observations": self.get_obs()
+        #       }
+
+
+
+###########   Things I dont know exactly what they make or if are important ####
+
+
+        # self.L_s=np.zeros(self.T)
+        # self.load_s=0   
+        # self.R=0
+        # self.r=0
+        # self.c_T=0
+        # self.t_shift=0
+        # self.load_s=0 #machine starts diconected
+        
+        
+        
+        # #Costs and deltas that depend on the action are not used in observation
+        
+        # self.delta_c=(self.load0+self.load_s)-self.gen0
+        # self.delta_s=self.load_s-self.gen0
+        
+        # # self.load_s=self.L_s[0] #initialize with the first element in L_s
         
         
 
+        # (self.load0+self.load_s)-self.gen0
+        # self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
+        # self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
+        
+        # self.excess=max(0,-self.delta0)   
+        # self.cost_s_x=max(0,self.load_s-self.excess0)*self.tar_buy + min(0,self.load_s-self.excess0)*self.tar_sell
+        
+        
+        
+        ### Conditions for random timsetep @ start
+        
+        # if the random initial time step is after the delivery time it must not turn on
+        # if self.minutes >= self.t_deliver-self.T_prof*self.tstep_size:
+        #     self.E_prof=0 #means that there is no more energy to consume 
+        #     self.y_s=self.T_prof #means taht it connected allready the machine T_prof times
+        # else:
+        #     self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
+        #     self.y_s=0 # means that it has never connected the machine
+        
+        
+        
+        #Create histories
+        # self.state_hist=pd.DataFrame(index=tuple([(a,t) for a in self.agents_id+['global'] for t in range(self.tstep,self.tstep+self.Tw)]), columns=list(self.state_vars.keys())+['action','reward'])
+        
+        #initialy history is just the all history
+        self.state_hist=self.state.copy()
 
+        
+        return self.get_env_obs()
+        
+        
+
+        
+    def step(self, action):
+        """
+        Runs one time-step of the environment's dynamics. The reset() method is called at the end of every episode
+        :param action: The action to be executed in the environment
+        :return: (observation, reward, done, info)
+            observation (object):
+                Observation from the environment at the current time-step
+            reward (float):
+                Reward from the environment due to the previous action performed
+            done (bool):
+                a boolean, indicating whether the episode has ended
+            info (dict):
+                a dictionary containing additional information about the previous action
+        """
+        
+        
+        #action will come as a dcitionary {aid:action,.....}
+        self.action=pd.DataFrame.from_dict(action,orient='index',columns=['action'])
+        #reward as a dictionary for alll agents
+        self.reward=self.get_env_reward()
+        
+        #saving history state in state_hist
+        # self.state_hist.update(self.state.set_index([self.state.index,'tstep']))
+        # self.state_hist=pd.concat([self.state_hist,self.state])
+        
+        self.check_term() #check weather to end or not the episode
+        print('AQUI')
+        
+        self.tstep+=1 # update timestep
+        print(self.tstep)
+        #update state variables  
+        self.state_update() 
+        #update all masks
+        self.update_all_masks() 
+        
+        # self.R+=self.reward
+        # self.r=self.reward
+        
+        self.state_hist=pd.concat([self.state_hist,self.state])
+        
+        
+        
+        ###########   Things I dont know exactly what they make or if are important ####
+        #accumulated total cost
+        # self.c_T+=self.cost_s
+        
+        return self.get_env_obs(), self.reward, self.get_env_done(), {'learning ongoing'}
+        
+        
+    
+        
+    def get_agent_reward(self, agent):
+        "Computes the reward for each agent as a float"
+        
+        if self.reward_type == 'excess_cost_max':
+
+            # The reward should be function of the action
+            for aid in self.agents_id:
+                if self.minutes == self.min_max-self.agents_params.loc[aid]['T_prof']*self.tstep_size and self.state.loc[aid]['y_s']  !=self.agents_params.loc[aid]['T_prof']:
+                    agent_reward=-1
+                else:
+                    agent_reward=-max(0,((self.action.loc[aid]['action']*self.profile[aid][0])-self.state.loc[aid]['excess0']))*self.state.loc[aid]['tar_buy']
+                                    
+                return agent_reward
+        
+    
+    def get_env_reward(self):
+        "Returns the current state of a specific agent (observation, mask) in a    dictionary"
+        return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
+    
+    def get_agent_obs(self, agent):
+        assert agent in self.agents_id, 'Agent does not exist in this community'
+        return np.array(self.state.loc[agent])
+    
+    
+    def get_env_obs(self):
+        "Returns the current state of the environment (observations, mask) in a    dictionary"
+        obs={aid:{'action_mask':np.array(self.mask.loc[aid]), 
+                  'observation': self.get_agent_obs(aid)} 
+             for aid in self.agents_id}
+        
+        return obs
+    
+
+    def get_env_done(self):
+        "Returns the current done for all agents in a dictionary (observation, mask)"
+        done_dict={aid:self.done.loc[aid]['done'] for aid in self.agents_id}
+        done_dict['__all__']=all(self.done.values) #RLlib needs this
+        
+        return done_dict
+                
+
+    def get_init_tstep(self):
+        "A function that returns the initial tstep of the episode"
+        if self.init_cond == 'mode_window':
+            
+            # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
+            t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
+            assert self.data.iloc[t]['minutes']==0, 'initial timeslot not 0'
+            
+            return t
+            
+        elif self.init_cond=='mode_random':
+            t=rnd.randrange(0, self.T-self.Tw-1)
+            return t
+        
+        
+        elif self.init_cond == 'mode_horizon': 
+            #episode starts at t=0
+            return 0
+
+        
+        
+    def update_forecast(self):
+        "What is happening: the 'number' in the variable name (example: gen2, gen3 ) is used as the time (t) that is incremented in the current timestep (self.tstep). We can multiply t*4 to make it span 24 hours with 2h intervals"
+        
+        for agent in self.agents_id:
+        
+            for var in self.var_class:
+                var_keys=[key for key in self.state_vars.keys() if var in key]
+                
+                for k in var_keys:
+                    t=re.findall(r"\d+", k)
+                    # print(var)
+                    # print(t)
+                    t=int(t[0])
+                    
+                    if self.tstep+self.t_ahead*t >= self.T: #if forecast values fall outside horizon
+                        # setattr(self,k, 0)
+                        self.state.loc[agent][k]=0
+                    else:
+                        # setattr(self,k, self.data.iloc[self.tstep+self.t_ahead*t][var] )
+                        
+                        tstep_to_use=self.tstep+self.t_ahead*t
+                        self.state.loc[agent,k]=self.data.loc[agent,tstep_to_use][var]
+                
+
+    
+
+
+    def state_update(self):
+        
+        #Variables update
+        self.state['tstep']=self.tstep
+
+        #Tariffs
+        self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
+        self.state['tar_buy']=self.tar_buy
+        self.state['tar_buy0'], _ =self.get_tariffs(1)
+    
+        #update forecasts
+        self.update_forecast()
+        
+        #Minutes
+        self.minutes=self.data.iloc[self.tstep]['minutes']
+        self.state['minutes']=self.minutes
+        #sine/cosine
+        self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
+        self.cos=np.cos(2*np.pi*(self.minutes/self.min_max))
+        self.state['sin']=self.sin
+        self.state['cos']=self.cos
+        
+        # Binary variables
+        
+        #y update
+        self.state['y'].update(self.action['action']) #matches by index
+        #y_1 and y_s update
+        for aid in self.agents_id:
+            self.state.loc[aid,'y_s']+=self.action.loc[aid]['action'] #update y_s
+            
+            if self.tstep > self.tstep_init+1:
+                # self.y_1=self.hist[-2] #penultiumate element to get the previous action
+                # self.state.loc[aid,'y_1']=self.state_hist.loc[aid,self.tstep-1]['y']
+                # self.state.copy().loc[aid]['y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
+                
+                self.state.at[aid,'y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']    
+            else:
+                self.state.loc[aid,'y_1']=0
+
+
+        # E_pro_rem and y_s
+        if self.minutes==0: #It restarts in the beggining of the day 
+            self.state['E_prof_rem'].update(self.agents_params['E_prof'])
+            self.state['y_s'].update(0)
+            
+
+        #update remaining energy that needs to be consumed
+        for aid in self.agents_id:
+            self.state.loc[aid,'E_prof_rem']-=self.action.loc[aid]['action']*self.profile[aid][0] 
+
+        # self.E_prof-=self.action*self.profile[0]
+
+
+        
+        # #convert action to power (constant profile)
+        # self.load_s=self.action*self.profile[0]
+        
+        
+        
+        # if self.minutes ==0: #the number of connected timeslots resets when a new day starts
+        #     self.t_shift=0
+        #     self.y_s=0
+            
+            
+        
+        
+        
+        # #deficit vs excess
+        # self.delta_c = (self.load0+self.load_s)-self.gen0 # if positive there is imports from the grid. If negative there are exports to the grid 
+        
+        # self.delta_s=self.load_s-self.gen0
+        
+
+        # #energy cost
+        
+        # # cost considering the full load
+        # self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
+        # #cost considering only the appliance
+        # self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
+        
+        
+        # self.excess=max(0,-self.delta0)   
+        # self.cost_s_x=max(0,self.load_s-self.excess0)*self.tar_buy + min(0,self.load_s-self.excess0)*self.tar_sell
+
+
+    def update_all_masks(self):
+        "loops over agents and updates individual masks. Returns all masks"
+        
+        for aid in self.agents_id:
+
+            if self.action.loc[aid]['action']==1 and self.state.loc[aid]['y_s'] < self.agents_params.loc[aid]['T_prof']:
+                self.mask.loc[aid]=[0,1]
+    
+            elif self.state.loc[aid]['y_s'] >= self.agents_params.loc[aid]['T_prof']:
+                self.mask.loc[aid]=[1,0]
+                
+            else:
+                self.mask.loc[aid] = np.ones(self.action_space.n)
+            
+        
+        return self.mask
+        
+        
+
+    def get_tariffs(self, tsteps_ahead):
+        "get tarrifs in €/kWh for argument tstep_ahead (integer number of timesteps) ahead of self.minutes" 
+        
+        if  self.tar_type=='bi':
+        
+            if self.minutes + tsteps_ahead*self.tstep_size >= self.tstep_size*2*8 and self.minutes <=self.tstep_size*2*22:
+                tar_buy=0.1393
+            else:
+                tar_buy=0.0615
+            # self.tar_buy=0.17*(1-(self.gen/1.764)) #PV indexed tariff 
+                
+            tar_sell=0.0 # remuneration for excess production
+        
+        elif self.tar_type=='flat':
+            tar_buy=0.10
+            tar_sell=0.0
+        
+        return tar_buy, tar_sell
+        
+        
+    def check_term(self):
+        if self.tstep==self.get_term_cond(): 
+            self.R_Total.append(self.R)
+            # print('sparse', self.R)
+            print(self.R)
+
+            self.n_episodes+=1
+            
+            self.done.loc[self.agents_id] = True #update done for all agents
+            # self.done.loc['__all__']=all(self.done.values)
+            
+            return self.get_env_obs(), self.reward, self.get_env_done(), {'episode has ended'}
+        
+        else:
+            self.done.loc[self.agents_id] = False
+    
+    def get_term_cond(self):
+        "A function to get the correct episode termination condition according to weather it is in window or horizon mode defined in the self.done_cond variable"
+        
+        if self.done_cond == 'mode_window': # episode ends when when Tw timeslots passed
+            return self.tstep_init+self.Tw-1
+        elif self.done_cond == 'mode_horizon': #episode ends in the end of the data length
+            return self.T
+        
+    def get_state(self):
+        return self.state
+    

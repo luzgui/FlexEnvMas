@@ -64,7 +64,8 @@ raylog=cwd + '/raylog'
 
 
 #%% Number of agents
-num_agents=2
+num_agents=4
+agents_id=['ag'+str(k) for k in range(num_agents)]
 
 
 #%% Make Shiftable loads environment
@@ -89,15 +90,27 @@ num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 timesteps=len(data)-1
 
-load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
+load_id=['id2000', 'id2001','id2002', 'id2004'] #ISDDA id of the load to consider
 
-env_data=make_env_data_mas(data, timesteps, load_id, 0.5, num_agents)
+env_data=make_env_data_mas(data, timesteps, load_id, 0.5, num_agents,agents_id)
+
+
 
 ## Shiftable profile example
 
 # shiftprof=0.5*np.ones(6)
 # shiftprof=np.array([0.5,0.3,0.2,0.4,0.8,0.3])
-shiftprof=np.array([0.3,0.3,0.3,0.3,0.3,0.3])
+
+##Agents appliance profiles
+AgentsProfiles=np.array([[0.3,0.3,0.3,0.3,0.3,0.3],
+                   [0.5,0.5,0.5,0.5,0.5],
+                   [0.6,0.6,0.6,0.6,0.6],
+                   [0.9,0.9,0.9,0.9,0.9]], dtype=object)
+
+shiftprof={agent:profile for (agent,profile) in zip(agents_id,AgentsProfiles)}
+
+#Agents delivery times
+delivery_times={ag:37*tstep_size for ag in agents_id }
 
 
 #%% make train env
@@ -120,33 +133,37 @@ env_config={"step_size": tstep_size,
             "data": env_data,
             "reward_type": reward_type, 
             "profile": shiftprof, 
-            "time_deliver": 37*tstep_size, 
+            "time_deliver": delivery_times, 
             'done_condition': 'mode_window',
             'init_condition': 'mode_window',
             'tar_type':'bi',
-            'env_info': 'training environment'}
+            'env_info': 'training environment',
+            'num_agents':num_agents,
+            'agents_id':agents_id}
 
-env_config['num_agents']=8
 
 
 
 from shiftenvRLlib_mas import ShiftEnvMas
-shiftenvmas=ShiftEnvMas(env_config)
+env=ShiftEnvMas(env_config)
+obs=env.reset()
 
-shiftenvmas.agents_id
+for k in range(47):
+    action={aid:random.randint(0,1) for aid,a in zip(env.agents_id,[1,0,0,1])}
+    obs=env.step(action)
+    print(k)
+
+state=env.state
+
+state_hist=env.state_hist
+ag0_hist=state_hist.loc['ag0']
 
 
 
 
-shiftenvmas.t_ahead
-
-
-obs=shiftenvmas.reset()
 
 
 
-
-###################
 
 
 
