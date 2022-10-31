@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import random as rnd
 import re
+import math
 
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
@@ -19,6 +20,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #COMMUNITY /COMMON parameters
         self.num_agents=config['num_agents']
         self.agents_id=config['agents_id']
+        self._agent_ids=self.agents_id
 
         self.info = config['env_info']
 
@@ -60,7 +62,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         
         
-        self.R=0
+
         self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained
         self.n_episodes=0
         
@@ -82,134 +84,259 @@ class ShiftEnvMas(MultiAgentEnv):
         
         
         
+        # self.state_vars={'tstep':
+        #                         {'max':10000,'min':0},
+        #                 'minutes':
+        #                         {'max':1440,'min':0},
+        #                 'sin':
+        #                         {'max':1.0,'min':-1.0},
+        #                 'cos':
+        #                         {'max':1.0,'min':-1.0},
+        #                 'gen0':# g : PV generation at timeslot
+        #                         {'max':10.0,'min':0},
+        #                 'gen1':# g : PV generation forecast next timeslot
+        #                         {'max':10.0,'min':0},
+        #                 'gen2':# g : PV generation forecast 1h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen3':# g : PV generation forecast 6h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen4':# g : PV generation forecast 12h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen5':# g : PV generation forecast 24h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen6':# g : PV generation forecast next timeslot
+        #                         {'max':10.0,'min':0},
+        #                 'gen7':# g : PV generation forecast 1h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen8':# g : PV generation forecast 6h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen9':# g : PV generation forecast 12h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen10':# g : PV generation forecast 24h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen11':# g : PV generation forecast 12h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'gen12':# g : PV generation forecast 24h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load0':# g : PV generation at timeslot
+        #                         {'max':10.0,'min':0},
+        #                 'load1':# g : PV generation forecast next timeslot
+        #                         {'max':10.0,'min':0},
+        #                 'load2':# g : PV loaderation forecast 1h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load3':# g : PV loaderation forecast 6h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load4':# g : PV loaderation forecast 12h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load5':# g : PV loaderation forecast 24h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load6':# g : PV loaderation forecast next timeslot
+        #                         {'max':10.0,'min':0},
+        #                 'load7':# g : PV loaderation forecast 1h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load8':# g : PV loaderation forecast 6h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load9':# g : PV loaderation forecast 12h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load10':# g : PV loaderation forecast 24h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load11':# g : PV loaderation forecast 12h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'load12':# g : PV generation forecast 24h ahead
+        #                         {'max':10.0,'min':0},
+        #                 'delta0':# g : PV generation at timeslot
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta1':# g : PV generation forecast next timeslot
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta2':# g : PV deltaeration forecast 1h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta3':# g : PV deltaeration forecast 6h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta4':# g : PV deltaeration forecast 12h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta5':# g : PV deltaeration forecast 24h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta6':# g : PV deltaeration forecast next timeslot
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta7':# g : PV deltaeration forecast 1h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta8':# g : PV deltaeration forecast 6h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta9':# g : PV deltaeration forecast 12h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta10':# g : PV deltaeration forecast 24h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta11':# g : PV deltaeration forecast 12h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'delta12':# g : PV generation forecast 24h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess0':# g : PV generation at timeslot
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess1':# g : PV generation forecast next timeslot
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess2':# g : PV excesseration forecast 1h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess3':# g : PV excesseration forecast 6h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess4':# g : PV excesseration forecast 12h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess5':# g : PV excesseration forecast 24h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess6':# g : PV excesseration forecast next timeslot
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess7':# g : PV excesseration forecast 1h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess8':# g : PV excesseration forecast 6h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess9':# g : PV excesseration forecast 12h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess10':# g : PV excesseration forecast 24h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess11':# g : PV excesseration forecast 12h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'excess12':# g : PV generation forecast 24h ahead
+        #                         {'max':10.0,'min':-10.0},
+        #                 'y': # =1 if ON at t, 0 OTW
+        #                     {'max':1.0,'min':0.0},
+        #                 'y_1': # =1 if ON in t-1
+        #                     {'max':1.0,'min':0.0},
+        #                 'y_s':  # +1 if app is schedulled at t (incremental) 
+        #                         #(how many times it was connected)
+        #                     {'max':self.T,'min':0.0},
+        #                 'tar_buy':
+        #                     {'max':1,'min':0},
+        #                 'tar_buy0': #Tariff at the next timestep
+        #                     {'max':1,'min':0},
+        #                 'E_prof_rem': # reamining energy to supply appliance energy need
+        #                     # {'max':2*self.E_prof,'min':-2*self.E_prof}}
+        #                     {'max':100,'min':-100}}
+
         self.state_vars={'tstep':
-                                {'max':10000,'min':0},
+                                {'max':100000,'min':-1.0},
                         'minutes':
-                                {'max':1440,'min':0},
+                                {'max':1440,'min':-1.0},
                         'sin':
                                 {'max':1.0,'min':-1.0},
                         'cos':
                                 {'max':1.0,'min':-1.0},
                         'gen0':# g : PV generation at timeslot
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen1':# g : PV generation forecast next timeslot
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen2':# g : PV generation forecast 1h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen3':# g : PV generation forecast 6h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen4':# g : PV generation forecast 12h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen5':# g : PV generation forecast 24h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen6':# g : PV generation forecast next timeslot
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen7':# g : PV generation forecast 1h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen8':# g : PV generation forecast 6h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen9':# g : PV generation forecast 12h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen10':# g : PV generation forecast 24h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen11':# g : PV generation forecast 12h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'gen12':# g : PV generation forecast 24h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load0':# g : PV generation at timeslot
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load1':# g : PV generation forecast next timeslot
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load2':# g : PV loaderation forecast 1h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load3':# g : PV loaderation forecast 6h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load4':# g : PV loaderation forecast 12h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load5':# g : PV loaderation forecast 24h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load6':# g : PV loaderation forecast next timeslot
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load7':# g : PV loaderation forecast 1h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load8':# g : PV loaderation forecast 6h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load9':# g : PV loaderation forecast 12h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load10':# g : PV loaderation forecast 24h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load11':# g : PV loaderation forecast 12h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'load12':# g : PV generation forecast 24h ahead
-                                {'max':10.0,'min':0},
+                                {'max':10.0,'min':-1.0},
                         'delta0':# g : PV generation at timeslot
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta1':# g : PV generation forecast next timeslot
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta2':# g : PV deltaeration forecast 1h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta3':# g : PV deltaeration forecast 6h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta4':# g : PV deltaeration forecast 12h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta5':# g : PV deltaeration forecast 24h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta6':# g : PV deltaeration forecast next timeslot
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta7':# g : PV deltaeration forecast 1h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta8':# g : PV deltaeration forecast 6h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta9':# g : PV deltaeration forecast 12h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta10':# g : PV deltaeration forecast 24h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta11':# g : PV deltaeration forecast 12h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'delta12':# g : PV generation forecast 24h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess0':# g : PV generation at timeslot
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess1':# g : PV generation forecast next timeslot
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess2':# g : PV excesseration forecast 1h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess3':# g : PV excesseration forecast 6h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess4':# g : PV excesseration forecast 12h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess5':# g : PV excesseration forecast 24h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess6':# g : PV excesseration forecast next timeslot
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess7':# g : PV excesseration forecast 1h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess8':# g : PV excesseration forecast 6h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess9':# g : PV excesseration forecast 12h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess10':# g : PV excesseration forecast 24h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess11':# g : PV excesseration forecast 12h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'excess12':# g : PV generation forecast 24h ahead
-                                {'max':10.0,'min':-10.0},
+                                {'max':100.0,'min':-100.0},
                         'y': # =1 if ON at t, 0 OTW
-                            {'max':1.0,'min':0.0},
+                            {'max':1.0,'min':-1.0},
                         'y_1': # =1 if ON in t-1
-                            {'max':1.0,'min':0.0},
+                            {'max':1.0,'min':-1.0},
                         'y_s':  # +1 if app is schedulled at t (incremental) 
                                 #(how many times it was connected)
-                            {'max':self.T,'min':0.0},
+                            {'max':self.T,'min':-1.0},
                         'tar_buy':
-                            {'max':1,'min':0},
+                            {'max':1,'min':-1.0},
                         'tar_buy0': #Tariff at the next timestep
-                            {'max':1,'min':0},
+                            {'max':1,'min':-1.0},
                         'E_prof_rem': # reamining energy to supply appliance energy need
                             # {'max':2*self.E_prof,'min':-2*self.E_prof}}
-                            {'max':2*5,'min':-2*5}}
-
-                    
+                            {'max':100,'min':-100}}           
         
         #extract the names of variables in env.data and take out the minutes that we dont need    
         self.ag_var_class=[k for k in self.data.keys() if 'ag' in k]
@@ -229,13 +356,31 @@ class ShiftEnvMas(MultiAgentEnv):
             
         
         #Action space
+        # self.action_space = spaces.Discrete(2) # ON/OFF
+        
         self.action_space = spaces.Discrete(2) # ON/OFF
         
-        # Observation space      
-        self.observation_space = spaces.Dict({
-            "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),
-            "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))})
         
+        # Observation space      
+        # self.observation_space =spaces.Dict({
+        #     aid: spaces.Dict({
+        #         "action_mask": spaces.Box(0.0, 1.0, shape=(self.action_space.n,)),
+        #         "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,))}) for aid in self.agents_id})
+        
+        # self.observation_space = spaces.Dict({
+        #     "action_mask": spaces.Box(-10.0, 10.0, shape=(self.action_space.n,)),
+        #     "observations": spaces.Box(low=self.lowlim, high=self.highlim, shape=(self.var_dim,))})
+        
+        
+        self.observation_space = spaces.Dict({
+            "action_mask": spaces.Box(-10.0, 10.0, shape=(self.action_space.n,),dtype=np.float32),
+            "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,), dtype=np.float32)})
+        
+        
+        #debbuging
+        
+        # self.observation_space = spaces.Dict({
+        #     "observations": spaces.Box(low=np.float32(self.lowlim), high=np.float32(self.highlim), shape=(self.var_dim,), dtype=np.float32)})
                 
         #Training/testing termination condition
         
@@ -288,6 +433,8 @@ class ShiftEnvMas(MultiAgentEnv):
         #COMMUNITY /COMMON variables (intialization equal for all agents)
         self.done=pd.DataFrame([False]*self.num_agents, index=self.agents_id,columns=['done'])
         # self.done.loc['__all__']=all(self.done.values) #does RLLIB need this in the environment or only at the output dictionary??
+        
+        self.R={aid:0 for aid in self.agents_id}
         
         #initial timestep
         self.tstep=self.get_init_tstep()
@@ -410,6 +557,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         #action will come as a dcitionary {aid:action,.....}
         self.action=pd.DataFrame.from_dict(action,orient='index',columns=['action'])
+        
         #reward as a dictionary for alll agents
         self.reward=self.get_env_reward()
         
@@ -418,16 +566,18 @@ class ShiftEnvMas(MultiAgentEnv):
         # self.state_hist=pd.concat([self.state_hist,self.state])
         
         self.check_term() #check weather to end or not the episode
-        print('AQUI')
         
         self.tstep+=1 # update timestep
-        print(self.tstep)
+        # print(self.tstep)
         #update state variables  
         self.state_update() 
         #update all masks
         self.update_all_masks() 
         
+        # print(self.state['E_prof_rem'])
         # self.R+=self.reward
+        self.R={aid:self.R[aid]+self.reward[aid] for aid in self.agents_id}
+        
         # self.r=self.reward
         
         self.state_hist=pd.concat([self.state_hist,self.state])
@@ -438,7 +588,15 @@ class ShiftEnvMas(MultiAgentEnv):
         #accumulated total cost
         # self.c_T+=self.cost_s
         
-        return self.get_env_obs(), self.reward, self.get_env_done(), {'learning ongoing'}
+        
+        # info=[{aid:'learning ongoing'} for aid in self.agents_id]
+        # info={info[k] for k in info}
+        
+        obs=self.get_env_obs()
+        
+        # self.assert_type(obs)
+        
+        return obs, self.reward, self.get_env_done(), {}
         
         
     
@@ -464,14 +622,23 @@ class ShiftEnvMas(MultiAgentEnv):
     
     def get_agent_obs(self, agent):
         assert agent in self.agents_id, 'Agent does not exist in this community'
-        return np.array(self.state.loc[agent])
+        # return np.array(self.state.loc[agent], dtype=np.float32)
+        return np.array(self.state.loc[agent], dtype=np.float32)
     
     
     def get_env_obs(self):
         "Returns the current state of the environment (observations, mask) in a    dictionary"
+        # obs={aid:{'action_mask':np.array(self.mask.loc[aid], dtype=np.float32), 
+        #           'observation': self.get_agent_obs(aid)} 
         obs={aid:{'action_mask':np.array(self.mask.loc[aid]), 
-                  'observation': self.get_agent_obs(aid)} 
-             for aid in self.agents_id}
+                  'observations': self.get_agent_obs(aid)} 
+              for aid in self.agents_id}
+        
+        
+        #debugging
+        # obs={aid:{'observations': self.get_agent_obs(aid)} for aid in self.agents_id}
+        
+        
         
         return obs
     
@@ -535,7 +702,7 @@ class ShiftEnvMas(MultiAgentEnv):
     def state_update(self):
         
         #Variables update
-        self.state['tstep']=self.tstep
+        self.state['tstep']=float(self.tstep)
 
         #Tariffs
         self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
@@ -623,10 +790,10 @@ class ShiftEnvMas(MultiAgentEnv):
         for aid in self.agents_id:
 
             if self.action.loc[aid]['action']==1 and self.state.loc[aid]['y_s'] < self.agents_params.loc[aid]['T_prof']:
-                self.mask.loc[aid]=[0,1]
+                self.mask.loc[aid]=[0.0,1.0]
     
             elif self.state.loc[aid]['y_s'] >= self.agents_params.loc[aid]['T_prof']:
-                self.mask.loc[aid]=[1,0]
+                self.mask.loc[aid]=[1.0,0.0]
                 
             else:
                 self.mask.loc[aid] = np.ones(self.action_space.n)
@@ -661,6 +828,7 @@ class ShiftEnvMas(MultiAgentEnv):
             self.R_Total.append(self.R)
             # print('sparse', self.R)
             print(self.R)
+            # print(self.mask)
 
             self.n_episodes+=1
             
@@ -683,3 +851,20 @@ class ShiftEnvMas(MultiAgentEnv):
     def get_state(self):
         return self.state
     
+    
+    def action_space_sample(self,keys):
+        return {aid:rnd.randint(0,1) for aid,a in zip(self.agents_id,[1,0,0,1])}
+    
+    
+    def assert_type(self,obs):
+        for key in obs.keys():
+            for key2 in obs[key]:
+                for k in range(len(obs[key][key2])):
+                    val=obs[key][key2][k]
+                    # print('tipos')
+                    # print('ta-se bem')
+                    assert  math.isnan(val) != True, 'there is a nan'
+                    assert type(val)==np.float32, 'other type'
+                    # print(val)
+                    # print(type(val))
+            

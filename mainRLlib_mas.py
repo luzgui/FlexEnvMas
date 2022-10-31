@@ -1,4 +1,4 @@
-import gym
+spaceimport gym
 
 import ray #ray2.0 implementation
 
@@ -47,26 +47,17 @@ import random
 from trainable import trainable
 
 # from ray.tune.registry import register_env
-
-
-
 from ray.rllib.examples.env.multi_agent import MultiAgentCartPole, make_multi_agent
-
 from shiftenvRLlib_mas import ShiftEnvMas
+# Custom Model
+ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
 
-
+#
 cwd=os.getcwd()
 datafolder=cwd + '/Data'
-
 raylog=cwd + '/raylog'
 #Add this folder to path
-
-
-#%% Number of agents
-num_agents=4
-agents_id=['ag'+str(k) for k in range(num_agents)]
-
 
 #%% Make Shiftable loads environment
 #import raw data
@@ -82,7 +73,6 @@ data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
 'id2046', 'id2047', 'id2048', 'id2049', 'id2052', 'id2053', 'id2054',
 'id2055', 'id2056', 'id2057', 'id2058', 'id2059', 'id2062', 'id2064']]
 
-
 tstep_size=30 # number of minutes in each timestep
 # %% convert to env data
 tstep_per_day=48 #number of timesteps per day
@@ -90,11 +80,14 @@ num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 timesteps=len(data)-1
 
-load_id=['id2000', 'id2001','id2002', 'id2004'] #ISDDA id of the load to consider
+# load_id=['id2000', 'id2001','id2002', 'id2004'] #ISDDA id of the load to consider
+load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
+
+#%% Number of agents
+num_agents=len(load_id)
+agents_id=['ag'+str(k) for k in range(num_agents)]
 
 env_data=make_env_data_mas(data, timesteps, load_id, 0.5, num_agents,agents_id)
-
-
 
 ## Shiftable profile example
 
@@ -114,17 +107,7 @@ delivery_times={ag:37*tstep_size for ag in agents_id }
 
 
 #%% make train env
-
-# reward_type='next_time_cost'
-# reward_type='simple_cost'
-# reward_type='shift_cost'
-# reward_type='next_shift_cost'
-# reward_type='gauss_shift_cost'
-# reward_type='excess_cost'
 reward_type='excess_cost_max'
-# reward_type='excess_cost_3'
-
-
 
 
 env_config={"step_size": tstep_size,
@@ -142,15 +125,188 @@ env_config={"step_size": tstep_size,
             'agents_id':agents_id}
 
 
+#%% Make config
 
+exp_name='mas_0'
+
+#Multi-Agent Setup
 
 from shiftenvRLlib_mas import ShiftEnvMas
-env=ShiftEnvMas(env_config)
-obs=env.reset()
+shiftenv_mas=ShiftEnvMas(env_config) 
+env.check_env(shiftenv_mas)
+
+
+obs_space=shiftenv_mas.observation_space
+action_space=shiftenv_mas.action_space
+
+
+    
+config={}    
+
+policies={'pol_0':(None,
+                   obs_space,
+                   action_space,
+                   config,),
+          'pol_1':(None,
+                   obs_space,
+                   action_space,
+                   config)}
+
+
+def policy_mapping_fn(agent_id):
+    if agent_id=='ag0':
+        return 'pol_0'
+    elif agent_id == 'ag1':
+        return 'pol_1'
+
+
+
+#Config
+config = PPOConfig()\
+                .training(lr=1e-5,
+                          num_sgd_iter=1,
+                          train_batch_size=8000,
+                          model={'custom_model':ActionMaskModel,
+                                'fcnet_hiddens': [128,128],
+                                'fcnet_activation':'relu',
+                                'custom_model_config': 
+                                    {'fcnet_hiddens': [128,128]}})\
+                .environment(
+                    env=ShiftEnvMas,           
+                    observation_space=shiftenv_mas.observation_space,
+                    action_space=shiftenv_mas.action_space,
+                    env_config=env_config)\
+                .debugging(seed=1024,log_level='WARN')\
+                .rollouts(num_rollout_workers=1)\
+                .multi_agent(policies=policies,
+                              policy_mapping_fn=policy_mapping_fn)
+
+
+#%% Train
+trainer=config.build() 
+trainer.train()
+
+pol=trainer.get_policy()
+
+#%% Deploy
+def get_actions(obs,trainer,agents_id, map_func):
+    if type(obs)==dict:
+        actions = {aid:trainer.compute_single_action(obs[aid],policy_id=map_func(aid)) for aid in agents_id}
+    elif type(obs)==tuple:
+        actions = {aid:trainer.compute_single_action(obs[0][aid],policy_id=map_func(aid)) for aid in agents_id}
+    return actions
+
+
+
+obs=shiftenv_mas.reset()
+print(obs)
+for k in range(48):  
+    # action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
+    actions=get_actions(obs, trainer, shiftenv_mas.agents_id,policy_mapping_fn)
+    obs=shiftenv_mas.step(actions)
+
+
+history=shiftenv_mas.state_hist
+
+hist_ag0=history.loc['ag0']
+hist_ag1=history.loc['ag1']
+
+action_profs=pd.concat([hist_ag0['y'],hist_ag1['y']], axis=0)
+
+
+
+
+
+                
+                # .evaluation(evaluation_interval=1,
+                #             evaluation_num_workers=1,
+                #             evaluation_num_episodes=10,) 
+                # .resources(placement_strategy=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 1))
+                
+  
+
+                
+# config = PPOConfig()\
+#                 .training(lr=1e-5,
+#                           num_sgd_iter=1,
+#                           train_batch_size=8000,
+#                           model={'fcnet_hiddens': [128,128],
+#                                  'fcnet_activation':'relu',
+#                                  'custom_model_config': 
+#                                      {'fcnet_hiddens': [128,128]}})\
+#                 .environment(
+#                     env=ShiftEnvMas,           
+#                     observation_space=shiftenv_mas.observation_space,
+#                     action_space=shiftenv_mas.action_space,
+#                     env_config=env_config)\
+#                 .rollouts(num_rollout_workers=1)
+
+
+
+
+#%% stuff
+
+
+
+
+
+action=trainer.compute_single_action(obs['ag1'])
+
+
+
+obs_space=shiftenv_mas.observation_space
+obs_space
+type(obs_space)
+# obs_sample=obs_space.sample()
+
+obs_space.contains(obs[0]['ag0'])
+
+obs=shiftenv_mas.reset()
+print(obs)
+for k in range(20):    
+    action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
+    obs=shiftenv_mas.step(action)
+
+
+
+type(obs)
+
+shiftenv_mas.assert_type(obs2)
+
+
+
+
+def trainable(config):
+    # trainer=config.build()
+    trainer=PPO(config, env=config["env"])
+    trainer.train()
+    
+    
+    
+
+tune.run(trainable, config=config.to_dict(),resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4))
+
+
+
+ray.shutdown()
+
+
+
+
+
+obs_space=shiftenv_mas.observation_space
+
+obs_space.contains(obs)
+
+
+
+
+
+
+
 
 for k in range(47):
-    action={aid:random.randint(0,1) for aid,a in zip(env.agents_id,[1,0,0,1])}
-    obs=env.step(action)
+
     print(k)
 
 state=env.state

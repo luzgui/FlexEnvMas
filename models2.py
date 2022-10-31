@@ -48,6 +48,8 @@ class ActionMaskModel(TFModelV2):
             name + "_internal",
         )
 
+        
+
         # disable action masking --> will likely lead to invalid actions
         self.no_masking = model_config["custom_model_config"].get("no_masking", False)
 
