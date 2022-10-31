@@ -533,6 +533,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #initialy history is just the all history
         self.state_hist=self.state.copy()
 
+
         
         return self.get_env_obs()
         
@@ -555,11 +556,25 @@ class ShiftEnvMas(MultiAgentEnv):
         """
         
         
+
+        
         #action will come as a dcitionary {aid:action,.....}
         self.action=pd.DataFrame.from_dict(action,orient='index',columns=['action'])
         
         #reward as a dictionary for alll agents
         self.reward=self.get_env_reward()
+        
+        
+        
+        #Register action and reward histories
+        if self.tstep==self.tstep_init:
+            self.action_hist=self.action.copy()
+            self.reward_hist=pd.DataFrame.from_dict(self.reward, orient='index',columns=['reward'])
+            
+        else:
+            self.action_hist=pd.concat([self.action_hist,self.action])
+            self.reward_hist=pd.concat([self.reward_hist, pd.DataFrame.from_dict(self.reward, orient='index',columns=['reward'])])
+            
         
         #saving history state in state_hist
         # self.state_hist.update(self.state.set_index([self.state.index,'tstep']))
@@ -579,6 +594,9 @@ class ShiftEnvMas(MultiAgentEnv):
         self.R={aid:self.R[aid]+self.reward[aid] for aid in self.agents_id}
         
         # self.r=self.reward
+        
+        
+        
         
         self.state_hist=pd.concat([self.state_hist,self.state])
         
@@ -605,15 +623,13 @@ class ShiftEnvMas(MultiAgentEnv):
         "Computes the reward for each agent as a float"
         
         if self.reward_type == 'excess_cost_max':
-
             # The reward should be function of the action
-            for aid in self.agents_id:
-                if self.minutes == self.min_max-self.agents_params.loc[aid]['T_prof']*self.tstep_size and self.state.loc[aid]['y_s']  !=self.agents_params.loc[aid]['T_prof']:
-                    agent_reward=-1
-                else:
-                    agent_reward=-max(0,((self.action.loc[aid]['action']*self.profile[aid][0])-self.state.loc[aid]['excess0']))*self.state.loc[aid]['tar_buy']
-                                    
-                return agent_reward
+            if self.minutes == self.min_max-self.agents_params.loc[agent]['T_prof']*self.tstep_size and self.state.loc[agent]['y_s']  !=self.agents_params.loc[agent]['T_prof']:
+                agent_reward=-1
+            else:
+                agent_reward=-max(0,((self.action.loc[agent]['action']*self.profile[agent][0])-self.state.loc[agent]['excess0']))*self.state.loc[agent]['tar_buy']
+                                
+            return agent_reward
         
     
     def get_env_reward(self):
@@ -747,7 +763,7 @@ class ShiftEnvMas(MultiAgentEnv):
 
         #update remaining energy that needs to be consumed
         for aid in self.agents_id:
-            self.state.loc[aid,'E_prof_rem']-=self.action.loc[aid]['action']*self.profile[aid][0] 
+            self.state.loc[aid,'E_prof_rem']-=self.action.loc[aid]['action']*self.profile[aid][0]*self.dh
 
         # self.E_prof-=self.action*self.profile[0]
 

@@ -186,7 +186,6 @@ config = PPOConfig()\
 trainer=config.build() 
 trainer.train()
 
-pol=trainer.get_policy()
 
 #%% Deploy
 def get_actions(obs,trainer,agents_id, map_func):
@@ -199,20 +198,126 @@ def get_actions(obs,trainer,agents_id, map_func):
 
 
 obs=shiftenv_mas.reset()
-print(obs)
+# print(obs)
 for k in range(48):  
     # action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
     actions=get_actions(obs, trainer, shiftenv_mas.agents_id,policy_mapping_fn)
     obs=shiftenv_mas.step(actions)
 
 
-history=shiftenv_mas.state_hist
+# history=shiftenv_mas.state_hist
 
-hist_ag0=history.loc['ag0']
-hist_ag1=history.loc['ag1']
+# hist_ag0=history.loc['ag0']
+# hist_ag1=history.loc['ag1']
 
-action_profs=pd.concat([hist_ag0['y'],hist_ag1['y']], axis=0)
 
+
+
+#%% Run Agent (plotting+analytics)
+from plotutils import makeplot
+# PLot Solutions
+
+tenv=shiftenv_mas
+
+costs=[]
+rewards=[]
+deltas=[]
+
+n_episodes=1
+
+metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], 
+                                index=range(n_episodes))
+k=0
+
+while k < n_episodes:
+
+    mask_track=[]
+    
+    # full_state_track=[]
+    
+    obs = tenv.reset()
+    
+    
+    # rewards_track = []
+    # episode_reward=0
+    
+    T=tenv.Tw*1
+    # num_days_test=T/tenv.tstep_per_day
+    
+    # #create a dataframe to store observations
+    # state_track=pd.DataFrame(columns=tenv.state_vars.keys(), index=range(T))
+    # action_reward_track=pd.DataFrame(columns=['action','reward'], index=range(T))
+    # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
+
+    # state_track.iloc[0]=obs['observations']
+    
+    
+    
+    for i in range(T-1):
+        actions=get_actions(obs, trainer, tenv.agents_id,policy_mapping_fn)
+        
+        
+        #compute metrics per episode
+        # cost=max(0,action*tenv.profile[0]-tenv.excess0)*tenv.tar_buy
+        # delta_c=(tenv.load0+action*tenv.profile[0])-tenv.gen0
+        # gamma=self_suf(tenv,action)
+        
+        
+        # metrics_episode.iloc[i]=[cost,delta_c,gamma]
+        
+        obs, reward, done, info = tenv.step(actions)
+
+        
+        # action_reward_track.iloc[i]=[action,reward]
+            
+        # mask_track.append(obs['action_mask'])
+        
+        # rewards_track.append(reward)
+     
+    # we are summing the total cost and making a mean for delta    
+    
+    
+    state_hist=tenv.state_hist
+    action_hist=tenv.action_hist    
+    reward_hist=tenv.reward    
+
+    shift_loads=pd.DataFrame()
+    base_loads=pd.DataFrame()
+    
+    for aid in tenv.agents_id:
+        shift_loads=pd.concat([shift_loads,pd.DataFrame(action_hist.loc[aid].values*tenv.profile[aid][0], columns=[aid])], axis=1)
+        base_loads=pd.concat([base_loads,pd.DataFrame(state_hist.loc[aid,'load0'].values, columns=[aid])], axis=1)
+        
+                
+    shift_loads_global=shift_loads.sum(axis=1)    
+    base_loads_global=base_loads.sum(axis=1)
+    
+    # full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
+    # full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
+
+    # #gamma per epsidode is beying divided by the total amount of energy that appliances need to consume.
+    # metrics_experiment.iloc[k]=[metrics_episode['cost'].sum(),
+    #                             metrics_episode['delta_c'].mean(), 
+    #                             metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof)] 
+    
+    # # print(metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof))
+    # # print(full_track['load0'].sum())
+    
+    # print(tenv.E_prof/full_track['excess0'].sum())
+    
+    #PLots
+    from plotutils import makeplot
+    makeplot(T,
+             [],
+             shift_loads_global,
+             pd.DataFrame(state_hist.loc['ag0','gen0'].values),
+             base_loads_global,
+             state_hist.loc['ag0','tar_buy'],
+             tenv, 
+             0,
+             0) #
+    
+    k+=1
 
 
 
@@ -250,7 +355,7 @@ action_profs=pd.concat([hist_ag0['y'],hist_ag1['y']], axis=0)
 
 
 
-action=trainer.compute_single_action(obs['ag1'])
+# action=trainer.compute_single_action(obs['ag1'])
 
 
 
