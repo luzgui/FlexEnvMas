@@ -38,7 +38,7 @@ def make_minutes(data, timesteps):
     
 
 def make_env_data_mas(data,timesteps, load_id, pv_factor,num_agents, agents_id):
-    "(data: timeseries, laod_num: house number, pv_factor"
+    "(data: timeseries, load_num: house number, pv_factor, num_agents, agents_id (list string)"
     
 
   
@@ -127,6 +127,58 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     return checkpoint, df
     
 
-
-
+def get_post_data(menv):
+    df=pd.DataFrame()
+    T=menv.Tw
+    for aid in menv.agents_id:
+        #we need to take out the last observation because its allways one timestep ahead
+        state_hist=menv.state_hist.loc[aid][0:T] 
+        action_hist=menv.action_hist.loc[aid]    
+        reward_hist=menv.reward_hist.loc[aid]
+    
+        # df=pd.concat([state_hist,action_hist, reward_hist],axis=1)
+    
+        df=pd.concat([df,
+                       pd.concat([state_hist,action_hist, reward_hist],
+                    axis=1)])
+    
+    #names for variables
+    columns_names=[]
+    shift_columns_names=['shift_'+aid for aid in menv.agents_id]
+    reward_columns_names=['reward_'+aid for aid in menv.agents_id]
+    load_columns_names=['load_'+aid for aid in menv.agents_id]
+    
+   
+    columns_names.extend(load_columns_names)
+    columns_names.extend(shift_columns_names)
+    columns_names.extend(reward_columns_names)
+    
+    columns_names.extend(['shift_T','load_T','gen0','reward_T','tar_buy'])
+    
+    #make a new dataframe to store the solutions
+    df_post=pd.DataFrame(columns=columns_names)
+    
+    for aid in menv.agents_id:
+        var_ag=[v for v in df_post.columns if aid in v]
+        
+        for var in var_ag:
+            if 'load' in var:
+                df_post[var]=df.loc[aid,'load0'].values
+            
+            if 'shift' in var:
+                df_post[var]=df.loc[aid,'action'].values*menv.profile[aid][0]
+                
+            if 'reward' in var:
+                df_post[var]=df.loc[aid,'reward'].values
+    
+    
+    df_post['shift_T']=df_post[shift_columns_names].sum(axis=1)
+    df_post['load_T']=df_post[load_columns_names].sum(axis=1)
+    df_post['reward_T']=df_post[reward_columns_names].sum(axis=1)
+    
+    df_post['gen0']=df.loc['ag0','gen0'].values #pv production is the same for all and collective
+    df_post['tar_buy']=df.loc['ag0','tar_buy'].values
+    
+                
+    return df, df_post
 

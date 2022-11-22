@@ -565,6 +565,7 @@ class ShiftEnvMas(MultiAgentEnv):
         self.reward=self.get_env_reward()
         
         
+       
         
         #Register action and reward histories
         if self.tstep==self.tstep_init:
@@ -576,11 +577,13 @@ class ShiftEnvMas(MultiAgentEnv):
             self.reward_hist=pd.concat([self.reward_hist, pd.DataFrame.from_dict(self.reward, orient='index',columns=['reward'])])
             
         
+        #check weather to end or not the episode
+        self.check_term() 
+        
         #saving history state in state_hist
         # self.state_hist.update(self.state.set_index([self.state.index,'tstep']))
         # self.state_hist=pd.concat([self.state_hist,self.state])
-        
-        self.check_term() #check weather to end or not the episode
+       
         
         self.tstep+=1 # update timestep
         # print(self.tstep)
@@ -607,14 +610,17 @@ class ShiftEnvMas(MultiAgentEnv):
         # self.c_T+=self.cost_s
         
         
-        # info=[{aid:'learning ongoing'} for aid in self.agents_id]
+        # info={aid:'learning ongoing' for aid in self.agents_id}
         # info={info[k] for k in info}
         
-        obs=self.get_env_obs()
+        # obs=self.get_env_obs()
         
         # self.assert_type(obs)
         
-        return obs, self.reward, self.get_env_done(), {}
+        
+        
+        
+        return self.get_env_obs(), self.reward, self.get_env_done(), {}
         
         
     
@@ -840,7 +846,8 @@ class ShiftEnvMas(MultiAgentEnv):
         
         
     def check_term(self):
-        if self.tstep==self.get_term_cond(): 
+        if self.tstep==self.get_term_cond():
+
             self.R_Total.append(self.R)
             # print('sparse', self.R)
             print(self.R)
@@ -849,9 +856,9 @@ class ShiftEnvMas(MultiAgentEnv):
             self.n_episodes+=1
             
             self.done.loc[self.agents_id] = True #update done for all agents
-            # self.done.loc['__all__']=all(self.done.values)
+
             
-            return self.get_env_obs(), self.reward, self.get_env_done(), {'episode has ended'}
+            # return self.get_env_obs(), self.reward, self.get_env_done(), {'episode has ended'}
         
         else:
             self.done.loc[self.agents_id] = False

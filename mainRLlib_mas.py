@@ -1,4 +1,4 @@
-spaceimport gym
+import gym
 
 import ray #ray2.0 implementation
 
@@ -44,7 +44,7 @@ from ray.rllib.utils.pre_checks import env
 
 import random
 
-from trainable import trainable
+from trainable import *
 
 # from ray.tune.registry import register_env
 from ray.rllib.examples.env.multi_agent import MultiAgentCartPole, make_multi_agent
@@ -87,7 +87,12 @@ load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
 num_agents=len(load_id)
 agents_id=['ag'+str(k) for k in range(num_agents)]
 
-env_data=make_env_data_mas(data, timesteps, load_id, 0.5, num_agents,agents_id)
+
+#What are agents data?
+
+
+
+env_data=make_env_data_mas(data, timesteps, load_id, 2, num_agents,agents_id)
 
 ## Shiftable profile example
 
@@ -106,7 +111,7 @@ shiftprof={agent:profile for (agent,profile) in zip(agents_id,AgentsProfiles)}
 delivery_times={ag:37*tstep_size for ag in agents_id }
 
 
-#%% make train env
+#%% make env config
 reward_type='excess_cost_max'
 
 
@@ -127,45 +132,32 @@ env_config={"step_size": tstep_size,
 
 #%% Make config
 
-exp_name='mas_0'
+exp_name='2Ag'
 
 #Multi-Agent Setup
 
 from shiftenvRLlib_mas import ShiftEnvMas
-shiftenv_mas=ShiftEnvMas(env_config) 
-env.check_env(shiftenv_mas)
-
-
-obs_space=shiftenv_mas.observation_space
-action_space=shiftenv_mas.action_space
-
+menv=ShiftEnvMas(env_config) 
+env.check_env(menv)
 
     
 config={}    
 
-policies={'pol_0':(None,
-                   obs_space,
-                   action_space,
-                   config,),
-          'pol_1':(None,
-                   obs_space,
-                   action_space,
-                   config)}
+policies={'pol_'+aid:(None,
+                   menv.observation_space,
+                   menv.action_space,
+                   config,) for aid in menv.agents_id }
 
 
 def policy_mapping_fn(agent_id):
-    if agent_id=='ag0':
-        return 'pol_0'
-    elif agent_id == 'ag1':
-        return 'pol_1'
-
-
+    return 'pol_' + agent_id
+    
 
 #Config
 config = PPOConfig()\
                 .training(lr=1e-5,
                           num_sgd_iter=1,
-                          train_batch_size=8000,
+                          train_batch_size=1000,
                           model={'custom_model':ActionMaskModel,
                                 'fcnet_hiddens': [128,128],
                                 'fcnet_activation':'relu',
@@ -173,18 +165,79 @@ config = PPOConfig()\
                                     {'fcnet_hiddens': [128,128]}})\
                 .environment(
                     env=ShiftEnvMas,           
-                    observation_space=shiftenv_mas.observation_space,
-                    action_space=shiftenv_mas.action_space,
+                    observation_space=menv.observation_space,
+                    action_space=menv.action_space,
                     env_config=env_config)\
                 .debugging(seed=1024,log_level='WARN')\
                 .rollouts(num_rollout_workers=1)\
                 .multi_agent(policies=policies,
                               policy_mapping_fn=policy_mapping_fn)
 
+                # .evaluation(evaluation_interval=1,
+                #             evaluation_num_workers=1,
+                #             evaluation_num_episodes=10,) 
+                # .resources(placement_strategy=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 1))
 
 #%% Train
-trainer=config.build() 
-trainer.train()
+# trainer=config.build() 
+# trainer.train()
+    
+from trainable import *
+
+tuneResults=tune.run(trainable_mas,
+         config=config.to_dict(),
+         resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4),
+         local_dir=raylog,
+         name=exp_name,
+         verbose=3)
+
+# Results=tuneResult
+
+
+#%% Intatatiate test environment
+
+# !BUG!
+#we can only update the data. not the environment
+# bug - ned to come back here and figure out how to make two different environments with different data 
+# tenv=shiftenv # this makes the objects connceted
+test_load_id=['id2002', 'id2004']
+test_env_data=make_env_data_mas(data, timesteps, test_load_id, 2, num_agents,agents_id)
+test_env_config=env_config
+#I believe that this solves the bug
+test_env_config['data']=test_env_data
+test_env_config['env_info']='testing environment'
+#instantiate a new environment for testing
+tenv=ShiftEnvMas(test_env_config)
+
+#%% Instatntiate a testing trainer
+config.environment(env=ShiftEnvMas,           
+                   observation_space=tenv.observation_space,
+                   action_space=tenv.action_space,
+                   env_config=test_env_config)
+
+tester=config.build() # create agent for testing
+# tester_config=tester.config
+policy=tester.get_policy()
+# policy.model.internal_model.base_model.summary()
+
+#%% Recover and load checkpoints
+#define the metric and the mode criteria for identifying the best checkpoint
+metric="_metric/episode_reward_mean"
+mode="max"
+#get the checkpoint
+checkpoint, df = get_checkpoint(raylog, exp_name, metric, mode)
+
+tester.restore(checkpoint)
+
+p0=tester.get_policy('pol_ag0')
+p1=tester.get_policy('pol_ag1')
+
+w0=p0.get_weights()
+w1=p1.get_weights()
+
+m1=p1.model.internal_model.base_model.summary()
+
+
 
 
 #%% Deploy
@@ -196,33 +249,13 @@ def get_actions(obs,trainer,agents_id, map_func):
     return actions
 
 
+# tenv=menv
 
-obs=shiftenv_mas.reset()
-# print(obs)
-for k in range(48):  
-    # action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
-    actions=get_actions(obs, trainer, shiftenv_mas.agents_id,policy_mapping_fn)
-    obs=shiftenv_mas.step(actions)
-
-
-# history=shiftenv_mas.state_hist
-
-# hist_ag0=history.loc['ag0']
-# hist_ag1=history.loc['ag1']
-
-
-
+# action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
 
 #%% Run Agent (plotting+analytics)
 from plotutils import makeplot
 # PLot Solutions
-
-tenv=shiftenv_mas
-
-costs=[]
-rewards=[]
-deltas=[]
-
 n_episodes=1
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], 
@@ -232,29 +265,18 @@ k=0
 while k < n_episodes:
 
     mask_track=[]
-    
-    # full_state_track=[]
-    
+
     obs = tenv.reset()
     
     
-    # rewards_track = []
-    # episode_reward=0
-    
     T=tenv.Tw*1
     # num_days_test=T/tenv.tstep_per_day
-    
-    # #create a dataframe to store observations
-    # state_track=pd.DataFrame(columns=tenv.state_vars.keys(), index=range(T))
-    # action_reward_track=pd.DataFrame(columns=['action','reward'], index=range(T))
+
     # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
 
-    # state_track.iloc[0]=obs['observations']
-    
-    
-    
-    for i in range(T-1):
-        actions=get_actions(obs, trainer, tenv.agents_id,policy_mapping_fn)
+    for i in range(T):
+        actions=get_actions(obs, tester, tenv.agents_id,policy_mapping_fn)
+        obs, reward, done, info = tenv.step(actions)
         
         
         #compute metrics per episode
@@ -265,32 +287,29 @@ while k < n_episodes:
         
         # metrics_episode.iloc[i]=[cost,delta_c,gamma]
         
-        obs, reward, done, info = tenv.step(actions)
-
         
-        # action_reward_track.iloc[i]=[action,reward]
-            
-        # mask_track.append(obs['action_mask'])
-        
-        # rewards_track.append(reward)
-     
     # we are summing the total cost and making a mean for delta    
     
+    full_state, env_state=get_post_data(tenv)
     
-    state_hist=tenv.state_hist
-    action_hist=tenv.action_hist    
-    reward_hist=tenv.reward    
+    
 
-    shift_loads=pd.DataFrame()
-    base_loads=pd.DataFrame()
-    
-    for aid in tenv.agents_id:
-        shift_loads=pd.concat([shift_loads,pd.DataFrame(action_hist.loc[aid].values*tenv.profile[aid][0], columns=[aid])], axis=1)
-        base_loads=pd.concat([base_loads,pd.DataFrame(state_hist.loc[aid,'load0'].values, columns=[aid])], axis=1)
+    from plotutils import makeplot
+    makeplot(T,
+             [],
+             env_state['shift_T'],
+             env_state['gen0'],
+             env_state['load_T'],
+             env_state['tar_buy'],
+             tenv, 
+             0,
+             0) #
         
-                
-    shift_loads_global=shift_loads.sum(axis=1)    
-    base_loads_global=base_loads.sum(axis=1)
+    k+=1
+
+
+
+
     
     # full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
     # full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
@@ -306,158 +325,5 @@ while k < n_episodes:
     # print(tenv.E_prof/full_track['excess0'].sum())
     
     #PLots
-    from plotutils import makeplot
-    makeplot(T,
-             [],
-             shift_loads_global,
-             pd.DataFrame(state_hist.loc['ag0','gen0'].values),
-             base_loads_global,
-             state_hist.loc['ag0','tar_buy'],
-             tenv, 
-             0,
-             0) #
-    
-    k+=1
-
-
-
-
-                
-                # .evaluation(evaluation_interval=1,
-                #             evaluation_num_workers=1,
-                #             evaluation_num_episodes=10,) 
-                # .resources(placement_strategy=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 1))
-                
-  
-
-                
-# config = PPOConfig()\
-#                 .training(lr=1e-5,
-#                           num_sgd_iter=1,
-#                           train_batch_size=8000,
-#                           model={'fcnet_hiddens': [128,128],
-#                                  'fcnet_activation':'relu',
-#                                  'custom_model_config': 
-#                                      {'fcnet_hiddens': [128,128]}})\
-#                 .environment(
-#                     env=ShiftEnvMas,           
-#                     observation_space=shiftenv_mas.observation_space,
-#                     action_space=shiftenv_mas.action_space,
-#                     env_config=env_config)\
-#                 .rollouts(num_rollout_workers=1)
-
-
-
-
-#%% stuff
-
-
-
-
-
-# action=trainer.compute_single_action(obs['ag1'])
-
-
-
-obs_space=shiftenv_mas.observation_space
-obs_space
-type(obs_space)
-# obs_sample=obs_space.sample()
-
-obs_space.contains(obs[0]['ag0'])
-
-obs=shiftenv_mas.reset()
-print(obs)
-for k in range(20):    
-    action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
-    obs=shiftenv_mas.step(action)
-
-
-
-type(obs)
-
-shiftenv_mas.assert_type(obs2)
-
-
-
-
-def trainable(config):
-    # trainer=config.build()
-    trainer=PPO(config, env=config["env"])
-    trainer.train()
-    
-    
-    
-
-tune.run(trainable, config=config.to_dict(),resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4))
-
-
-
-ray.shutdown()
-
-
-
-
-
-obs_space=shiftenv_mas.observation_space
-
-obs_space.contains(obs)
-
-
-
-
-
-
-
-
-for k in range(47):
-
-    print(k)
-
-state=env.state
-
-state_hist=env.state_hist
-ag0_hist=state_hist.loc['ag0']
-
-
-
-
-
-
-
-
-
-
-
-
-# def env_creator(config):
-#     return ShiftEnv(config)
-
-# mas_cls=make_multi_agent(env_creator)
-# masenv=mas_cls(env_config)
-
-
-# action={k:random.randint(0,1) for k in range(env_config['num_agents'])}
-
-
-# obs=masenv.reset()
-# ob2=masenv.step(action)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 

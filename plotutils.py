@@ -50,7 +50,7 @@ def makeplot(T,delta,sol,gen,load,tar,env,var_1,var_2):
     
     useful_pv = pd.concat([load + sol, gen],axis=1).min(axis=1)
     surplus_pv = ((load+sol)-gen).clip(upper=0) # negative, saturates at 0
-    print(surplus_pv[0:T][0].values.astype('float64'))
+
     
     # Create two subplots, with the first one being 3 times taller than the second
     f, (ax1, ax2) = plt.subplots(nrows=2, ncols=1, sharex=True,
@@ -77,7 +77,7 @@ def makeplot(T,delta,sol,gen,load,tar,env,var_1,var_2):
         # ax1.fill_between(t, 0, 1, where=tar<=k, alpha=0.03, transform=ax1.get_xaxis_transform())
 
     # os plotN servem depois para a legenda
-    plot1, = ax1.plot(t[0:T-1],sol.values.astype('float64')+load[0:T-1].values.astype('float64'),label='Total load',color='#1f77b4')
+    plot1, = ax1.plot(t[0:T],sol.values.astype('float64')+load[0:T].values.astype('float64'),label='Total load',color='#1f77b4')
 
     plot3, = ax1.plot(t,gen[0:T].values.astype('float64'),label='PV generation',color='#FF8b00')
     
@@ -89,11 +89,11 @@ def makeplot(T,delta,sol,gen,load,tar,env,var_1,var_2):
     
     
     
-    plot5 = ax1.fill_between(t[0:T],surplus_pv[0:T][0].values.astype('float64'),label='PV surplus',facecolor="none",hatch='..',edgecolor='#FFB300')
+    plot5 = ax1.fill_between(t[0:T],surplus_pv[0:T].values.astype('float64'),label='PV surplus',facecolor="none",hatch='..',edgecolor='#FFB300')
     
     
     
-    plot2 = ax1.fill_between(t[0:T-1],sol.values.astype('float64'),facecolor="none",hatch="////", edgecolor='k',alpha=0.4) # , linewidth=0.0
+    plot2 = ax1.fill_between(t[0:T],sol.values.astype('float64'),facecolor="none",hatch="////", edgecolor='k',alpha=0.4) # , linewidth=0.0
     
     ax2.plot(t,tar[0:T],label='tariff',color='k')
     
