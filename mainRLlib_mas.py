@@ -61,9 +61,9 @@ raylog=cwd + '/raylog'
 
 #%% Make Shiftable loads environment
 #import raw data
-# data=pd.read_csv(datafolder + '/env_data.csv', header = None).to_numpy()
-# data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv').to_numpy()
 data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv')
+
+# data_raw=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Consumers')
 
 data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
 'id2006', 'id2007', 'id2008', 'id2009', 'id2010', 'id2011', 'id2013',
@@ -89,7 +89,6 @@ agents_id=['ag'+str(k) for k in range(num_agents)]
 
 
 #What are agents data?
-
 
 
 env_data=make_env_data_mas(data, timesteps, load_id, 2, num_agents,agents_id)
