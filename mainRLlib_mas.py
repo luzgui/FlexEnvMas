@@ -70,7 +70,6 @@ data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers
 data = get_raw_data('Dataset_gecad.xlsx', datafolder)
 # data=data_raw[['minutes','PV0','Ag0','Ag1']]
 
-
 # data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
 # 'id2006', 'id2007', 'id2008', 'id2009', 'id2010', 'id2011', 'id2013',
 # 'id2015', 'id2017', 'id2018', 'id2019', 'id2022', 'id2023', 'id2024',
@@ -89,7 +88,8 @@ timesteps=len(data)-1
 # load_id=['id2000', 'id2001','id2002', 'id2004'] #ISDDA id of the load to consider
 # load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
 
-load_id=['ag0','ag1']
+# load_id=['ag1','ag2']
+load_id=['ag1']
 
 
 #%% Number of agents
@@ -100,7 +100,7 @@ agents_id=load_id
 #What are agents data?
 
 
-env_data=make_env_data_mas(data, timesteps, load_id, 2, num_agents,agents_id)
+env_data=make_env_data_mas(data, timesteps, load_id, 4, num_agents,agents_id)
 
 # df=env_data.loc[(slice('ag0', 'ag1'), slice(0, 0)), :]
 
@@ -110,8 +110,8 @@ env_data=make_env_data_mas(data, timesteps, load_id, 2, num_agents,agents_id)
 # shiftprof=np.array([0.5,0.3,0.2,0.4,0.8,0.3])
 
 ##Agents appliance profiles
-AgentsProfiles=np.array([[0.3,0.3,0.3,0.3,0.3,0.3],
-                   [0.5,0.5,0.5,0.5,0.5],
+AgentsProfiles=np.array([[1.2,1.2,1.2,1.2,1.2,1.2,1.2],
+                   [1.5,1.5,1.5,1.5,1.5],
                    [0.6,0.6,0.6,0.6,0.6],
                    [0.9,0.9,0.9,0.9,0.9]], dtype=object)
 
@@ -142,7 +142,7 @@ env_config={"step_size": tstep_size,
             'agents_id':agents_id}
 
 
-#%% Make config
+#%% Make config + Environment
 
 exp_name='2Ag'
 
@@ -308,11 +308,11 @@ while k < n_episodes:
         
         
     # we are summing the total cost and making a mean for delta    
-    
+    from auxfunctions_shiftenv import get_post_data
     full_state, env_state=get_post_data(tenv)
     
     
-
+    
     from plotutils import makeplot
     makeplot(T,
              [],

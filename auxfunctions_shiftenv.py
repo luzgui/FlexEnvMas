@@ -191,8 +191,10 @@ def get_post_data(menv):
     df_post['load_T']=df_post[load_columns_names].sum(axis=1)
     df_post['reward_T']=df_post[reward_columns_names].sum(axis=1)
     
-    df_post['gen0']=df.loc['ag0','gen0'].values #pv production is the same for all and collective
-    df_post['tar_buy']=df.loc['ag0','tar_buy'].values
+    
+    
+    df_post['gen0']=df.loc[menv.agents_id[0],'gen0'].values #pv production is the same for all and it is collective. So we can use any agent on the agents_id list
+    df_post['tar_buy']=df.loc[menv.agents_id[0],'tar_buy'].values
     
                 
     return df, df_post
