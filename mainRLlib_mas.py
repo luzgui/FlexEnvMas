@@ -61,37 +61,48 @@ raylog=cwd + '/raylog'
 
 #%% Make Shiftable loads environment
 #import raw data
-data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv')
+# data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv')
 
-# data_raw=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Consumers')
+# data_raw_cons=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Consumers')
+data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers')
 
-data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
-'id2006', 'id2007', 'id2008', 'id2009', 'id2010', 'id2011', 'id2013',
-'id2015', 'id2017', 'id2018', 'id2019', 'id2022', 'id2023', 'id2024',
-'id2025', 'id2027', 'id2028', 'id2029', 'id2032', 'id2034', 'id2035',
-'id2036', 'id2037', 'id2038', 'id2039', 'id2041', 'id2042', 'id2045',
-'id2046', 'id2047', 'id2048', 'id2049', 'id2052', 'id2053', 'id2054',
-'id2055', 'id2056', 'id2057', 'id2058', 'id2059', 'id2062', 'id2064']]
 
-tstep_size=30 # number of minutes in each timestep
+data = get_raw_data('Dataset_gecad.xlsx', datafolder)
+# data=data_raw[['minutes','PV0','Ag0','Ag1']]
+
+
+# data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
+# 'id2006', 'id2007', 'id2008', 'id2009', 'id2010', 'id2011', 'id2013',
+# 'id2015', 'id2017', 'id2018', 'id2019', 'id2022', 'id2023', 'id2024',
+# 'id2025', 'id2027', 'id2028', 'id2029', 'id2032', 'id2034', 'id2035',
+# 'id2036', 'id2037', 'id2038', 'id2039', 'id2041', 'id2042', 'id2045',
+# 'id2046', 'id2047', 'id2048', 'id2049', 'id2052', 'id2053', 'id2054',
+# 'id2055', 'id2056', 'id2057', 'id2058', 'id2059', 'id2062', 'id2064']]
+
+tstep_size=15 # number of minutes in each timestep
 # %% convert to env data
-tstep_per_day=48 #number of timesteps per day
+tstep_per_day=96 #number of timesteps per day
 num_days=7 #number of days
 # timesteps=tstep_per_day*num_days #number of timesteps to feed the agent
 timesteps=len(data)-1
 
 # load_id=['id2000', 'id2001','id2002', 'id2004'] #ISDDA id of the load to consider
-load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
+# load_id=['id2000', 'id2001'] #ISDDA id of the load to consider
+
+load_id=['ag0','ag1']
+
 
 #%% Number of agents
 num_agents=len(load_id)
-agents_id=['ag'+str(k) for k in range(num_agents)]
+agents_id=load_id
 
-
+# agents_id=['ag'+str(k) for k in range(num_agents)]
 #What are agents data?
 
 
 env_data=make_env_data_mas(data, timesteps, load_id, 2, num_agents,agents_id)
+
+# df=env_data.loc[(slice('ag0', 'ag1'), slice(0, 0)), :]
 
 ## Shiftable profile example
 
@@ -107,6 +118,8 @@ AgentsProfiles=np.array([[0.3,0.3,0.3,0.3,0.3,0.3],
 shiftprof={agent:profile for (agent,profile) in zip(agents_id,AgentsProfiles)}
 
 #Agents delivery times
+
+# time=20 #time of delivery
 delivery_times={ag:37*tstep_size for ag in agents_id }
 
 
@@ -199,8 +212,15 @@ tuneResults=tune.run(trainable_mas,
 #we can only update the data. not the environment
 # bug - ned to come back here and figure out how to make two different environments with different data 
 # tenv=shiftenv # this makes the objects connceted
-test_load_id=['id2002', 'id2004']
-test_env_data=make_env_data_mas(data, timesteps, test_load_id, 2, num_agents,agents_id)
+# test_load_id=['id2002', 'id2004']
+
+test_load_id=load_id
+test_env_data=make_env_data_mas(data, 
+                                timesteps, 
+                                test_load_id, 
+                                4, 
+                                num_agents,
+                                agents_id)
 test_env_config=env_config
 #I believe that this solves the bug
 test_env_config['data']=test_env_data
@@ -216,7 +236,7 @@ config.environment(env=ShiftEnvMas,
 
 tester=config.build() # create agent for testing
 # tester_config=tester.config
-policy=tester.get_policy()
+# policy=tester.get_policy()
 # policy.model.internal_model.base_model.summary()
 
 #%% Recover and load checkpoints
@@ -228,13 +248,13 @@ checkpoint, df = get_checkpoint(raylog, exp_name, metric, mode)
 
 tester.restore(checkpoint)
 
-p0=tester.get_policy('pol_ag0')
-p1=tester.get_policy('pol_ag1')
+# p0=tester.get_policy('pol_ag0')
+# p1=tester.get_policy('pol_ag1')
 
-w0=p0.get_weights()
-w1=p1.get_weights()
+# w0=p0.get_weights()
+# w1=p1.get_weights()
 
-m1=p1.model.internal_model.base_model.summary()
+# m1=p1.model.internal_model.base_model.summary()
 
 
 
@@ -254,7 +274,7 @@ def get_actions(obs,trainer,agents_id, map_func):
 
 #%% Run Agent (plotting+analytics)
 from plotutils import makeplot
-# PLot Solutions
+# Plot Solutions
 n_episodes=1
 
 metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], 

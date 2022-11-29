@@ -36,7 +36,11 @@ class ShiftEnvMas(MultiAgentEnv):
         self.tstep_per_day=config["tstep_per_day"]
         self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
         self.tstep_init=0 #initial timestep in each episode
-        self.t_ahead=4 #number of timeslots that each actual timeslot is loloking ahead (used in update_forecast) 
+        
+        #
+        self.t_ahead_hours=2 #number of hours to look ahead
+        self.t_ahead=self.t_ahead_hours*(60/self.tstep_size) #number of timeslots that each actual timeslot is loloking ahead (used in update_forecast) 
+        #
         
         self.min_max=self.data['minutes'].max() #maximum timeslot??
         
@@ -708,7 +712,7 @@ class ShiftEnvMas(MultiAgentEnv):
                     # print(t)
                     t=int(t[0])
                     
-                    if self.tstep+self.t_ahead*t >= self.T: #if forecast values fall outside horizon
+                    if self.tstep+self.t_ahead*t >= self.T: #if forecast values fall outside global horizon T
                         # setattr(self,k, 0)
                         self.state.loc[agent][k]=0
                     else:
@@ -828,9 +832,13 @@ class ShiftEnvMas(MultiAgentEnv):
     def get_tariffs(self, tsteps_ahead):
         "get tarrifs in €/kWh for argument tstep_ahead (integer number of timesteps) ahead of self.minutes" 
         
-        if  self.tar_type=='bi':
         
-            if self.minutes + tsteps_ahead*self.tstep_size >= self.tstep_size*2*8 and self.minutes <=self.tstep_size*2*22:
+        if  self.tar_type=='bi':
+            
+            hour_start=8
+            hour_end=22
+            
+            if self.minutes + tsteps_ahead*self.tstep_size >= self.tstep_size*(60/self.tstep_size)*hour_start and self.minutes <=self.tstep_size*(60/self.tstep_size)*hour_end:
                 tar_buy=0.1393
             else:
                 tar_buy=0.0615
