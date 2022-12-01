@@ -640,7 +640,9 @@ class ShiftEnvMas(MultiAgentEnv):
         if self.reward_type == 'excess_cost_max':
             # The reward should be function of the action
             if self.minutes == self.min_max-self.agents_params.loc[agent]['T_prof']*self.tstep_size and self.state.loc[agent]['y_s']  !=self.agents_params.loc[agent]['T_prof']:
-                agent_reward=-1
+                agent_reward=-5.0
+#This agent specific reward must variable according to the situation (machines invlved and time horizon)
+                
             else:
                 agent_reward=-max(0,((self.action.loc[agent]['action']*self.profile[agent][0])-self.state.loc[agent]['excess0']))*self.state.loc[agent]['tar_buy']
                                 
