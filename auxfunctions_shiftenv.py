@@ -124,18 +124,39 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     #Recover the tune object from the dir
     # The trainable must be initialized # reuslts must be stored in the same analysis object
     # metric='training_iteration'
-
+    
     experiment_path=os.path.join(log_dir, exp_name)
     # experiment_path=os.path.join(raylog, 'GoodExperiments')
-    analysis_object = ExperimentAnalysis(experiment_path, default_metric=metric, default_mode=mode)
+    analysis_object = ExperimentAnalysis(experiment_path,
+                                         default_metric=metric, 
+                                         default_mode=mode)
     
-    df=analysis_object.dataframe(metric,mode) #get de dataframe results
+    
 
-    #identify the dir where is the best checkpoint according to metric and mode
-    bestdir=analysis_object.get_best_logdir(metric,mode)
-
+    # state=os.path.join(experiment_path, 'experiment_state-2022-12-05_11-03-59.json')
+    # state_dict={}
+    
+    # state=local_trial.get_json_state
+    
+    # trial2=_load_trial_from_checkpoint(state)
+        
+    
     #get the best trial checkpoint
-    checkpoint=analysis_object.get_best_checkpoint(bestdir,metric,mode)
+    local_trial=analysis_object.get_best_trial()
+    
+    #identify the dir where is the best checkpoint according to metric and mode
+    best_local_dir=analysis_object.get_best_logdir(metric,mode)
+    
+    checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
+    
+    #dataframes
+    df=analysis_object.dataframe(metric,mode) #get de dataframe results
+    best_df=analysis_object.best_result
+    
+    # bestdir=local_best_dir    
+    checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
+    
+    
     print(mode,checkpoint)
     #recover best agent for te
     

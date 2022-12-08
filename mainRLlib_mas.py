@@ -6,6 +6,12 @@ from ray import tune, air
 # from ray.tune import Analysis
 from ray.tune import analysis
 from ray.tune import ExperimentAnalysis
+from ray.tune import TuneConfig
+from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
+from ray.tune.experiment import trial
+
+
+
 from pathlib import Path
 
 #PPO algorithm
@@ -92,7 +98,7 @@ timesteps=len(data)-1
 load_id=['ag1']
 
 
-#%% Number of agents
+#%% Make env data
 num_agents=len(load_id)
 agents_id=load_id
 
@@ -144,7 +150,7 @@ env_config={"step_size": tstep_size,
 
 #%% Make config + Environment
 
-exp_name='2Ag'
+exp_name='1_Ag_new'
 
 #Multi-Agent Setup
 
@@ -196,6 +202,7 @@ config = PPOConfig()\
     
 from trainable import *
 
+
 tuneResults=tune.run(trainable_mas,
          config=config.to_dict(),
          resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4),
@@ -244,15 +251,34 @@ tester=config.build() # create agent for testing
 metric="_metric/episode_reward_mean"
 mode="max"
 #get the checkpoint
+
+
+# exp_name='1Ag_0512'
+exp_name='1_Ag_new'
+# exp_name='3Oct'
+# exp_name='1Ag'
+# log_dir=raylog
+
+# log_dir='/home/omega/Downloads/ShareIST'
+
+
+# log_dir=raylog
+# checkpoint, df = get_checkpoint(log_dir, exp_name, metric, mode)
+
+
 checkpoint, df = get_checkpoint(raylog, exp_name, metric, mode)
 
 tester.restore(checkpoint)
 
+# tester.from_checkpoint(checkpoint)
+
 # p0=tester.get_policy('pol_ag0')
 # p1=tester.get_policy('pol_ag1')
 
-# w0=p0.get_weights()
+# # w0=p0.get_weights()
 # w1=p1.get_weights()
+
+# weights_file=
 
 # m1=p1.model.internal_model.base_model.summary()
 

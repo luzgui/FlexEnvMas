@@ -68,7 +68,7 @@ def trainable(config):
 def trainable_mas(config):
     
     n_iters=1
-    checkpoint_freq=100
+    checkpoint_freq=1
     
     trainer=PPO(config, env=config["env"])
     weights={}
