@@ -131,11 +131,6 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
                                          default_metric=metric, 
                                          default_mode=mode)
     
-    
-
-    # state=os.path.join(experiment_path, 'experiment_state-2022-12-05_11-03-59.json')
-    # state_dict={}
-    
     # state=local_trial.get_json_state
     
     # trial2=_load_trial_from_checkpoint(state)
@@ -149,18 +144,20 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     
     checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
     
+    # checkpoint=analysis_object.get_best_checkpoint(local_trial.logdir,metric,mode)
+    
     #dataframes
     df=analysis_object.dataframe(metric,mode) #get de dataframe results
     best_df=analysis_object.best_result
     
     # bestdir=local_best_dir    
-    checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
+    # checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
     
     
     print(mode,checkpoint)
     #recover best agent for te
     
-    return checkpoint, df
+    return checkpoint, df, local_trial
     
 
 def get_post_data(menv):
@@ -220,3 +217,19 @@ def get_post_data(menv):
                 
     return df, df_post
 
+
+#%% Functions for MAS environment
+
+def policy_mapping_fn(agent_id):
+    'Policy mapping function'
+    return 'pol_' + agent_id
+
+
+
+def get_actions(obs,trainer,agents_id, map_func):
+    'resturns the actions of the agents'
+    if type(obs)==dict:
+        actions = {aid:trainer.compute_single_action(obs[aid],policy_id=map_func(aid)) for aid in agents_id}
+    elif type(obs)==tuple:
+        actions = {aid:trainer.compute_single_action(obs[0][aid],policy_id=map_func(aid)) for aid in agents_id}
+    return actions

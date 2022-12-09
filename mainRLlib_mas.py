@@ -167,9 +167,7 @@ policies={'pol_'+aid:(None,
                    config,) for aid in menv.agents_id }
 
 
-def policy_mapping_fn(agent_id):
-    return 'pol_' + agent_id
-    
+
 
 #Config
 config = PPOConfig()\
@@ -213,64 +211,55 @@ tuneResults=tune.run(trainable_mas,
 # Results=tuneResult
 
 
-#%% Intatatiate test environment
-
-# !BUG!
-#we can only update the data. not the environment
-# bug - ned to come back here and figure out how to make two different environments with different data 
-# tenv=shiftenv # this makes the objects connceted
-# test_load_id=['id2002', 'id2004']
-
-test_load_id=load_id
-test_env_data=make_env_data_mas(data, 
-                                timesteps, 
-                                test_load_id, 
-                                4, 
-                                num_agents,
-                                agents_id)
-test_env_config=env_config
-#I believe that this solves the bug
-test_env_config['data']=test_env_data
-test_env_config['env_info']='testing environment'
-#instantiate a new environment for testing
-tenv=ShiftEnvMas(test_env_config)
-
-#%% Instatntiate a testing trainer
-config.environment(env=ShiftEnvMas,           
-                   observation_space=tenv.observation_space,
-                   action_space=tenv.action_space,
-                   env_config=test_env_config)
-
-tester=config.build() # create agent for testing
-# tester_config=tester.config
-# policy=tester.get_policy()
-# policy.model.internal_model.base_model.summary()
 
 #%% Recover and load checkpoints
 #define the metric and the mode criteria for identifying the best checkpoint
 metric="_metric/episode_reward_mean"
 mode="max"
-#get the checkpoint
 
-
-# exp_name='1Ag_0512'
-exp_name='1_Ag_new'
+exp_name='1Ag_0512'
+# exp_name='1_Ag_new'
 # exp_name='3Oct'
 # exp_name='1Ag'
 # log_dir=raylog
 
-# log_dir='/home/omega/Downloads/ShareIST'
+#get best checkpoint info
+best_checkpoint, df, best_trial = get_checkpoint(raylog, exp_name, metric, mode)
+
+#config for best trial
+best_config=best_trial.config
 
 
-# log_dir=raylog
-# checkpoint, df = get_checkpoint(log_dir, exp_name, metric, mode)
+#%% Generate data for testing
+
+#indezx for load and for agent is also 'ag'
+test_load_id=['ag2'] #selct new loads for testing 
+test_agents_id=['ag1'] #choose which agents are in play
+
+test_env_data=make_env_data_mas(data, 
+                                len(data)-1, 
+                                test_load_id, 
+                                4, 
+                                num_agents,
+                                test_agents_id)
+
+#%% Update config with test data
+# !BUG!
+#we can only update the data. not the environment
+# bug - ned to come back here and figure out how to make two different environments with different data 
+best_config['env_config']['data']=test_env_data #update data
+best_config['env_config']['env_info']='testing environment' 
+#Make the testing environment
+tenv=ShiftEnvMas(best_config['env_config'])
+
+#Instantiate and restore agent
+tester=PPO(best_config,env=best_config['env'])
+tester.restore(best_checkpoint)
 
 
-checkpoint, df = get_checkpoint(raylog, exp_name, metric, mode)
-
-tester.restore(checkpoint)
-
-# tester.from_checkpoint(checkpoint)
+# tester_config=tester.config
+# policy=tester.get_policy()
+# policy.model.internal_model.base_model.summary()
 
 # p0=tester.get_policy('pol_ag0')
 # p1=tester.get_policy('pol_ag1')
@@ -286,18 +275,6 @@ tester.restore(checkpoint)
 
 
 #%% Deploy
-def get_actions(obs,trainer,agents_id, map_func):
-    if type(obs)==dict:
-        actions = {aid:trainer.compute_single_action(obs[aid],policy_id=map_func(aid)) for aid in agents_id}
-    elif type(obs)==tuple:
-        actions = {aid:trainer.compute_single_action(obs[0][aid],policy_id=map_func(aid)) for aid in agents_id}
-    return actions
-
-
-# tenv=menv
-
-# action={aid:random.randint(0,1) for aid,a in zip(shiftenv_mas.agents_id,[1,0,0,1])}
-
 #%% Run Agent (plotting+analytics)
 from plotutils import makeplot
 # Plot Solutions
