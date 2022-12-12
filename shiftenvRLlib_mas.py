@@ -19,7 +19,7 @@ class ShiftEnvMas(MultiAgentEnv):
         super().__init__()
         
 
-        
+        self.env_config=config
         
         #COMMUNITY /COMMON parameters
         self.num_agents=config['num_agents']

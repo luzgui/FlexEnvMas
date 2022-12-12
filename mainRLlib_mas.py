@@ -76,13 +76,6 @@ data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers
 data = get_raw_data('Dataset_gecad.xlsx', datafolder)
 # data=data_raw[['minutes','PV0','Ag0','Ag1']]
 
-# data=data_raw[['minutes','PV','id2000', 'id2001', 'id2002', 'id2004', 'id2005',
-# 'id2006', 'id2007', 'id2008', 'id2009', 'id2010', 'id2011', 'id2013',
-# 'id2015', 'id2017', 'id2018', 'id2019', 'id2022', 'id2023', 'id2024',
-# 'id2025', 'id2027', 'id2028', 'id2029', 'id2032', 'id2034', 'id2035',
-# 'id2036', 'id2037', 'id2038', 'id2039', 'id2041', 'id2042', 'id2045',
-# 'id2046', 'id2047', 'id2048', 'id2049', 'id2052', 'id2053', 'id2054',
-# 'id2055', 'id2056', 'id2057', 'id2058', 'id2059', 'id2062', 'id2064']]
 
 tstep_size=15 # number of minutes in each timestep
 # %% convert to env data
