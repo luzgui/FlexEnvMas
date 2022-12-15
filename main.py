@@ -90,7 +90,7 @@ import experiment_build
 config=experiment_build.make_train_config(menv)
 
 #%% Train
-exp_name='script_test'
+exp_name='ray22'
 
 from trainable import *
 
@@ -104,10 +104,16 @@ tuneResults=tune.run(trainable_mas,
 
 # Results=tuneResult
 
-
+######################################################
+# TESTING
+#########################################################
 #%% Test
 import test_build
-tenv, tester = test_build.make_tester(exp_name,raylog,datafolder)
+
+# test_exp_name='test_ist_2ag_gs'
+test_exp_name=exp_name
+
+tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
 
 #%% Plot
