@@ -408,8 +408,11 @@ class ShiftEnvMas(MultiAgentEnv):
     
     
     def get_env_reward(self):
-        "Returns the current state of a specific agent (observation, mask) in a    dictionary"
-        return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
+        "Returns the current state of a specific agent (observation, mask) in a dictionary"
+        
+        R=sum([self.get_agent_reward(aid) for aid in self.agents_id])
+        return {aid: R for aid in self.agents_id}
+        # return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
     
     def get_agent_obs(self, agent):
         assert agent in self.agents_id, 'Agent does not exist in this community'

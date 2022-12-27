@@ -24,14 +24,13 @@ def make_env_config(datafolder):
     timesteps=len(data)-1
     
     
-    # load_id=['ag1','ag2']
-    load_id=['ag1']
+    load_id=['ag1','ag2']
+    # load_id=['ag1']
     
     
     #%% Make env data
     num_agents=len(load_id)
     agents_id=load_id
-    
     # agents_id=['ag'+str(k) for k in range(num_agents)]
     #What are agents data?
     

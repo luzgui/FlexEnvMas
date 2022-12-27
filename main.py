@@ -95,7 +95,7 @@ config=experiment_build.make_train_config(menv)
 # config.observation_filter='MeanStdFilter'
 
 #%% Train
-exp_name='test-all-kwh'
+exp_name='test-2ag-comReward'
 
 from trainable import *
 
@@ -124,9 +124,9 @@ tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,data
 
 #%% Plot
 import test_agents
-full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=1)
-print(metrics)
+full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=5)
+# print(metrics)
 
 # actions=full_state['action']
 
-df=full_state.loc['ag1'][['minutes','tar_buy','load','excess0','selfsuf','cost_pos']]
+# df=full_state.loc['ag1'][['minutes','tar_buy','load','excess0','selfsuf','cost_pos']]

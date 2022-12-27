@@ -52,7 +52,7 @@ def test(tenv, tester, n_episodes):
             
         # we are summing the total cost and making a mean for delta    
 
-        print('bo')
+
         full_state, env_state=get_post_data(tenv)
         
         episode_metrics=pd.concat([get_episode_metrics(full_state, tenv),episode_metrics])
@@ -90,8 +90,7 @@ def get_episode_metrics(full_state,environment):
         # Self-Sufficiency
         full_state.loc[ag,'load']=full_state.loc[ag]['action']*environment.profile[ag][0]
         
-        #BUG need to solve the self.dh factor problem
-        full_state.loc[ag,'selfsuf']=full_state.loc[ag][['load','excess0']].min(axis=1)/environment.E_prof.loc[ag]['E_prof']*environment.dh #dh its just here as a patch
+        full_state.loc[ag,'selfsuf']=full_state.loc[ag][['load','excess0']].min(axis=1)/environment.E_prof.loc[ag]['E_prof'] #dh its just here as a patch
         
         #group everything
         metrics.loc[ag,'cost']=full_state.loc[ag,'cost_pos'].sum()
