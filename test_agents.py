@@ -55,7 +55,7 @@ def test(tenv, tester, n_episodes):
 
         full_state, env_state=get_post_data(tenv)
         
-        episode_metrics=pd.concat([get_episode_metrics(full_state, tenv),episode_metrics])
+        episode_metrics=pd.concat([get_episode_metrics(full_state, tenv,k),episode_metrics])
         
         makeplot(T,
                  [],
@@ -75,7 +75,7 @@ def test(tenv, tester, n_episodes):
 
 
 
-def get_episode_metrics(full_state,environment):
+def get_episode_metrics(full_state,environment,k):
     agents_id=full_state.index.unique()
     metrics=pd.DataFrame(index=full_state.index.unique())
     for ag in agents_id:
@@ -99,11 +99,15 @@ def get_episode_metrics(full_state,environment):
         #community
         metrics.loc['com','selfsuf']=full_state['selfsuf'].sum()/environment.num_agents
         metrics.loc['com','cost']=full_state['cost_pos'].sum()
+        
+        #create index for test episode number
+        metrics['test_epi']=k
+        metrics_out=metrics.set_index('test_epi',drop=True, append=True)
     
-    return metrics
+    return metrics_out
         
     
-        
+    
     # full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
     # full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
 
