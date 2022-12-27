@@ -61,7 +61,11 @@ class ShiftEnvMas(MultiAgentEnv):
         self.T_prof={ag:len(self.profile[ag]) for ag in self.agents_id}
         self.T_prof=pd.DataFrame.from_dict(self.T_prof, orient='index', columns=['T_prof'])
         
-        self.E_prof={ag:sum(self.profile[ag])*self.dh for ag in self.agents_id}#energy needed for the appliance
+        
+        # total energy needed for the appliance
+        self.E_prof={ag:sum(self.profile[ag]) for ag in self.agents_id}
+        
+        
         self.E_prof=pd.DataFrame.from_dict(self.E_prof, orient='index', columns=['E_prof'])
         
         #this must be set as a moving variable that updates the deliver time according to the day
@@ -398,6 +402,11 @@ class ShiftEnvMas(MultiAgentEnv):
             return agent_reward
         
     
+    def reward_shapping(self,agent):
+        return self.action.loc[agent]['action']*10*self.state.loc[agent]['excess0']
+    
+    
+    
     def get_env_reward(self):
         "Returns the current state of a specific agent (observation, mask) in a    dictionary"
         return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
@@ -529,7 +538,7 @@ class ShiftEnvMas(MultiAgentEnv):
 
         #update remaining energy that needs to be consumed
         for aid in self.agents_id:
-            self.state.loc[aid,'E_prof_rem']-=self.action.loc[aid]['action']*self.profile[aid][0]*self.dh
+            self.state.loc[aid,'E_prof_rem']-=self.action.loc[aid]['action']*self.profile[aid][0]
 
         # self.E_prof-=self.action*self.profile[0]
 

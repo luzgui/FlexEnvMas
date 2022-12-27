@@ -84,13 +84,18 @@ env_config=data_process.make_env_config(datafolder)
 #%% Make environment instance
 import environment_build
 menv=environment_build.make_env(env_config)
+# menv=environment_build.make_env(env_config)
+
+# menv=gym.wrappers.NormalizeObservation(menv0)
+
 
 #%% Make experiment/train Tune config
 import experiment_build
 config=experiment_build.make_train_config(menv)
+# config.observation_filter='MeanStdFilter'
 
 #%% Train
-exp_name='ray22'
+exp_name='test-all-kwh'
 
 from trainable import *
 
@@ -111,6 +116,7 @@ tuneResults=tune.run(trainable_mas,
 import test_build
 
 # test_exp_name='test_ist_2ag_gs'
+# test_exp_name='2Ag_3000'
 test_exp_name=exp_name
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
@@ -118,7 +124,9 @@ tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,data
 
 #%% Plot
 import test_agents
-full_state, env_state=test_agents.test(tenv, tester, n_episodes=1)
+full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=1)
+print(metrics)
 
+# actions=full_state['action']
 
-
+df=full_state.loc['ag1'][['minutes','tar_buy','load','excess0','selfsuf','cost_pos']]

@@ -39,8 +39,8 @@ def make_train_config(menv):
     #Config
     config = PPOConfig()\
                     .training(lr=1e-5,
-                              num_sgd_iter=1,
-                              train_batch_size=1000,
+                              num_sgd_iter=100,
+                              train_batch_size=8000,
                               model={'custom_model':ActionMaskModel,
                                     'fcnet_hiddens': [128,128],
                                     'fcnet_activation':'relu',

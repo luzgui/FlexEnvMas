@@ -10,13 +10,18 @@ import pandas as pd
 from auxfunctions_shiftenv import *
 from shiftenvRLlib_mas import ShiftEnvMas
 from plotutils import makeplot
+from auxfunctions_shiftenv import get_post_data
+from plotutils import makeplot
+
+
 
 def test(tenv, tester, n_episodes):
 
     # n_episodes=1
+    episode_metrics=pd.DataFrame()
     
-    metrics_experiment=pd.DataFrame(columns=['cost','delta_c','gamma'], 
-                                    index=range(n_episodes))
+    
+    
     k=0
     
     while k < n_episodes:
@@ -46,12 +51,12 @@ def test(tenv, tester, n_episodes):
             
             
         # we are summing the total cost and making a mean for delta    
-        from auxfunctions_shiftenv import get_post_data
+
+        print('bo')
         full_state, env_state=get_post_data(tenv)
         
+        episode_metrics=pd.concat([get_episode_metrics(full_state, tenv),episode_metrics])
         
-        
-        from plotutils import makeplot
         makeplot(T,
                  [],
                  env_state['shift_T'],
@@ -64,6 +69,54 @@ def test(tenv, tester, n_episodes):
             
         k+=1
         
+    
         
-        return full_state, env_state
+    return full_state, env_state, episode_metrics
+
+
+
+def get_episode_metrics(full_state,environment):
+    agents_id=full_state.index.unique()
+    metrics=pd.DataFrame(index=full_state.index.unique())
+    for ag in agents_id:
+        # cost
+        full_state.loc[ag,'cost']=(full_state.loc[ag]['action']*environment.profile[ag][0]-full_state.loc[ag]['excess0'])*full_state.loc[ag]['tar_buy']
         
+
+        # cost=pd.DataFrame([max(0,k) for k in full_state.loc[ag]['cost']])
+        pos_cost=pd.DataFrame([max(0,k) for k in full_state.loc[ag]['cost']])
+        full_state.loc[ag,'cost_pos']=pos_cost.values        
+        
+        # Self-Sufficiency
+        full_state.loc[ag,'load']=full_state.loc[ag]['action']*environment.profile[ag][0]
+        
+        #BUG need to solve the self.dh factor problem
+        full_state.loc[ag,'selfsuf']=full_state.loc[ag][['load','excess0']].min(axis=1)/environment.E_prof.loc[ag]['E_prof']*environment.dh #dh its just here as a patch
+        
+        #group everything
+        metrics.loc[ag,'cost']=full_state.loc[ag,'cost_pos'].sum()
+        metrics.loc[ag,'selfsuf']=full_state.loc[ag,'selfsuf'].sum()
+        
+        #community
+        metrics.loc['com','selfsuf']=full_state['selfsuf'].sum()/environment.num_agents
+        metrics.loc['com','cost']=full_state['cost_pos'].sum()
+    
+    return metrics
+        
+    
+        
+    # full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
+    # full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
+
+    # #gamma per epsidode is beying divided by the total amount of energy that appliances need to consume.
+    # metrics_experiment.iloc[k]=[metrics_episode['cost'].sum(),
+    #                             metrics_episode['delta_c'].mean(), 
+    #                             metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof)] 
+    
+    # # print(metrics_episode['gamma'].sum()/(num_days_test*tenv.E_prof))
+    # # print(full_track['load0'].sum())
+    
+    # print(tenv.E_prof/full_track['excess0'].sum())
+
+
+      
