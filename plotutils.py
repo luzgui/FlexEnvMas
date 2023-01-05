@@ -15,35 +15,35 @@ import time
 import random as rnd
 
 
-def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
+# def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
 
-    load_full = load+sol
+#     load_full = load+sol
 
-    fig, ax = plt.subplots(figsize=(10, 7))
-    t = np.arange(0, T, 1)
-    # ax.plot(delta,label='delta_c')
-    ax.plot(t, load_full[0:T], label='Unflexible load')
+#     fig, ax = plt.subplots(figsize=(10, 7))
+#     t = np.arange(0, T, 1)
+#     # ax.plot(delta,label='delta_c')
+#     ax.plot(t, load_full[0:T], label='Unflexible load')
 
-    # ax.plot(sol,label='appliance')
-    ax.fill_between(t, sol.values.astype('float64'),
-                    facecolor="none", hatch="////", edgecolor='#1f77b4')
-    # ax.plot(load[0:T],label='Shiftable load')
-    ax.plot(gen[0:T], label='PV generation', color='r')
-    # ax.plot(delta[0:T],label='delta')
-    ax2 = ax.twinx()
-    # ax2.plot(tar[0:T],label='tariff')
+#     # ax.plot(sol,label='appliance')
+#     ax.fill_between(t, sol.values.astype('float64'),
+#                     facecolor="none", hatch="////", edgecolor='#1f77b4')
+#     # ax.plot(load[0:T],label='Shiftable load')
+#     ax.plot(gen[0:T], label='PV generation', color='r')
+#     # ax.plot(delta[0:T],label='delta')
+#     ax2 = ax.twinx()
+#     # ax2.plot(tar[0:T],label='tariff')
+#     asdas
+#     useful_pv = pd.concat([gen, load_full], axis=1).min(axis=1)
+#     ax.fill_between(t, useful_pv[0:T],
+#                     label='self-consumption', color='#FFB300')
 
-    useful_pv = pd.concat([gen, load_full], axis=1).min(axis=1)
-    ax.fill_between(t, useful_pv[0:T],
-                    label='self-consumption', color='#FFB300')
+#     ax.grid()
+#     ax.legend()
+#     ax.set(xlabel='Timesteps', ylabel='kWh',
+#            title=' c= {:f} // r={:f}'.format(var_1, var_2))
+#     # title= 'Shiftable device solution c='.format
 
-    ax.grid()
-    ax.legend()
-    ax.set(xlabel='Timesteps', ylabel='kWh',
-           title=' c= {:f} // r={:f}'.format(var_1, var_2))
-    # title= 'Shiftable device solution c='.format
-
-    # print(var_1)
+#     # print(var_1)
 
 
 # %%
@@ -116,6 +116,10 @@ def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
     ax2.minorticks_on()
     ax2.grid(visible=True, which='minor',
              color='#999999', linestyle='-', alpha=0.07)
+
+
+
+
 
 
 # %%

@@ -11,7 +11,7 @@ from auxfunctions_shiftenv import *
 from shiftenvRLlib_mas import ShiftEnvMas
 from plotutils import makeplot
 from auxfunctions_shiftenv import get_post_data
-from plotutils import makeplot
+
 
 
 
@@ -78,6 +78,10 @@ def test(tenv, tester, n_episodes):
 def get_episode_metrics(full_state,environment,k):
     agents_id=full_state.index.unique()
     metrics=pd.DataFrame(index=full_state.index.unique())
+    Total_load=[]
+    
+    
+    #Per agent metrics
     for ag in agents_id:
         # cost
         full_state.loc[ag,'cost']=(full_state.loc[ag]['action']*environment.profile[ag][0]-full_state.loc[ag]['excess0'])*full_state.loc[ag]['tar_buy']
@@ -96,14 +100,30 @@ def get_episode_metrics(full_state,environment,k):
         metrics.loc[ag,'cost']=full_state.loc[ag,'cost_pos'].sum()
         metrics.loc[ag,'selfsuf']=full_state.loc[ag,'selfsuf'].sum()
         
-        #community
-        metrics.loc['com','selfsuf']=full_state['selfsuf'].sum()/environment.num_agents
-        metrics.loc['com','cost']=full_state['cost_pos'].sum()
+
         
-        #create index for test episode number
-        metrics['test_epi']=k
-        metrics_out=metrics.set_index('test_epi',drop=True, append=True)
+        
+        
+    #community metrics
+    SS_temp=pd.concat([full_state[['minutes','load']]\
+        .set_index('minutes')\
+        .groupby(level=0).sum(),
+        full_state.iloc[0:environment.Tw][['minutes','excess0']].set_index('minutes')],axis=1)
     
+    metrics.loc['com','selfsuf']=SS_temp.min(axis=1).sum()/(environment.E_prof['E_prof'].sum()*
+                                  (environment.Tw/environment.tstep_per_day)) #number of days
+    
+
+    
+
+    
+    # metrics.loc['com','selfsuf']=full_state['selfsuf'].sum()/environment.num_agents
+    metrics.loc['com','cost']=full_state['cost_pos'].sum()
+    
+    #create index for test episode number
+    metrics['test_epi']=k
+    metrics_out=metrics.set_index('test_epi',drop=True, append=True)
+
     return metrics_out
         
     

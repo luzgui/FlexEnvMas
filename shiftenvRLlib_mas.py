@@ -29,6 +29,7 @@ class ShiftEnvMas(MultiAgentEnv):
         self.info = config['env_info']
 
         self.reward_type=config["reward_type"]
+        self.mas_setup=config['mas_setup']
         self.tar_type=config['tar_type']
         
         
@@ -402,17 +403,33 @@ class ShiftEnvMas(MultiAgentEnv):
             return agent_reward
         
     
-    def reward_shapping(self,agent):
-        return self.action.loc[agent]['action']*10*self.state.loc[agent]['excess0']
+    # def reward_shapping(self,agent):
+    #     return self.action.loc[agent]['action']*10*self.state.loc[agent]['excess0']
     
     
     
     def get_env_reward(self):
-        "Returns the current state of a specific agent (observation, mask) in a dictionary"
+        '''
+        Returns the reward for each agent in the environment as a dictionary for algorithm processing. 
         
-        R=sum([self.get_agent_reward(aid) for aid in self.agents_id])
-        return {aid: R for aid in self.agents_id}
-        # return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
+        
+        inspect self.mas_setup for actual setup
+        
+        - Cooperative: All agents get the same reward given by the sum of all agents rewards "
+        
+        - Competitive: each agent has an individual reward
+        '''
+        
+        if self.mas_setup == 'cooperative':
+        #cooperative // common reward
+            R=sum([self.get_agent_reward(aid) for aid in self.agents_id])
+            return {aid: R for aid in self.agents_id}
+        
+        #Competitive / individual rewards
+        elif self.mas_setup == 'competitive':
+            return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
+    
+    
     
     def get_agent_obs(self, agent):
         assert agent in self.agents_id, 'Agent does not exist in this community'

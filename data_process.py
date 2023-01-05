@@ -52,12 +52,19 @@ def make_env_config(datafolder):
     #%% make env config
     reward_type='excess_cost_max'
     
+    #type of setup weather cooperative or competitive 
+    # (determines the reward given to each agent) // check get_env_reward()
+    mas_setup='cooperative'
+    # mas_setup='competitive'
+    
+    
     
     env_config={"step_size": tstep_size,
                 'window_size':tstep_per_day,
                 'tstep_per_day':tstep_per_day,
                 "data": env_data,
-                "reward_type": reward_type, 
+                "reward_type": reward_type,
+                "mas_setup": mas_setup,
                 "profile": shiftprof, 
                 "time_deliver": delivery_times, 
                 'done_condition': 'mode_window',

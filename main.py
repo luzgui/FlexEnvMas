@@ -116,15 +116,15 @@ tuneResults=tune.run(trainable_mas,
 import test_build
 
 # test_exp_name='test_ist_2ag_gs'
-# test_exp_name='2Ag_3000'
-test_exp_name=exp_name
+test_exp_name='2Ag_3000'
+# test_exp_name=exp_name
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
 
 #%% Plot
 import test_agents
-full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=5)
+full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=1)
 # print(metrics)
 
 # actions=full_state['action']
