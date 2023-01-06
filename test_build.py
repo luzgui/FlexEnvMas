@@ -36,7 +36,7 @@ def make_tester(exp_name, raylog, datafolder):
     env_config=best_config['env_config']
     #%% Generate data for testing
     
-    #indezx for load and for agent is also 'ag'
+    #index for load and for agent is also 'ag'
     test_load_id=['ag4','ag5'] #selct new loads for testing 
     test_agents_id=['ag1','ag2'] #choose which agents are in play
     num_agents=len(test_agents_id)
@@ -57,6 +57,10 @@ def make_tester(exp_name, raylog, datafolder):
     # bug - ned to come back here and figure out how to make two different environments with different data 
     best_config['env_config']['data']=test_env_data #update data
     best_config['env_config']['env_info']='testing environment' 
+    
+    #try new initialization for testing purposes
+    best_config['env_config']['init_condition']='mode_window_seq'
+    
     
     #make config object to build
     best_config_obj=PPOConfig().from_dict(best_config)

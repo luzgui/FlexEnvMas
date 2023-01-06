@@ -202,6 +202,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #initial timestep
         self.tstep=self.get_init_tstep()
         self.tstep_init=self.tstep # initial timestep
+        print(self.tstep)
         self.state['tstep']=self.tstep
         #minutes
         self.minutes=self.data.iloc[self.tstep]['minutes']
@@ -463,7 +464,21 @@ class ShiftEnvMas(MultiAgentEnv):
                 
 
     def get_init_tstep(self):
-        "A function that returns the initial tstep of the episode"
+        '''
+        A function that returns the initial tstep of the episode"
+        
+        - mode_window: we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
+        
+        - mode_window_seq; we allways start at the beggining of the day and advance Tw timesteps and days are chosen sequentially
+
+        - mode_random: radom initiatiation any timestep
+        
+        - mode_horizon: always start at t=0 and advance Tw
+
+        
+        '''
+        
+
         if self.init_cond == 'mode_window':
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
@@ -471,7 +486,15 @@ class ShiftEnvMas(MultiAgentEnv):
             assert self.data.iloc[t]['minutes']==0, 'initial timeslot not 0'
             
             return t
-            
+        
+        elif self.init_cond == 'mode_window_seq': #sequential
+            if hasattr(self, 'tstep')==False: #if its not defined means that its the first call to reset()
+                t=0
+            else:
+                t=self.tstep_init+self.Tw
+        
+            return t
+        
         elif self.init_cond=='mode_random':
             t=rnd.randrange(0, self.T-self.Tw-1)
             return t
