@@ -42,7 +42,10 @@ def make_tester(exp_name, raylog, datafolder):
     num_agents=len(test_agents_id)
     
     
-    data = get_raw_data('Dataset_gecad.xlsx', datafolder)
+    # data = get_raw_data('Dataset_gecad.xlsx', datafolder)
+    data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder)
+    
+    
     
     test_env_data=make_env_data_mas(data, 
                                     len(data)-1, 

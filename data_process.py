@@ -12,7 +12,8 @@ def make_env_config(datafolder):
     data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers')
     
     
-    data = get_raw_data('Dataset_gecad.xlsx', datafolder)
+    # data = get_raw_data('Dataset_gecad.xlsx', datafolder)
+    data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder)
     # data=data_raw[['minutes','PV0','Ag0','Ag1']]
     
     
