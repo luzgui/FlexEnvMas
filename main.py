@@ -116,7 +116,8 @@ tuneResults=tune.run(trainable_mas,
 import test_build
 
 # test_exp_name='test_ist_2ag_gs'
-test_exp_name='test-3000-2g-FCUL'
+test_exp_name='test-3000-2g-FCUL-comp'
+# test_exp_name='test-3000-2g-FCUL'
 # test_exp_name=exp_name
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
@@ -127,6 +128,12 @@ import test_agents
 full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=10)
 # print(metrics)
 
+print(metrics.loc['com']['cost'])
+
 # actions=full_state['action']
 
 # df=full_state.loc['ag1'][['minutes','tar_buy','load','excess0','selfsuf','cost_pos']]
+
+# tenv_data=tenv.data
+
+

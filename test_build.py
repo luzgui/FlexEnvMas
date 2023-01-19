@@ -46,11 +46,15 @@ def make_tester(exp_name, raylog, datafolder):
     data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder)
     
     
+    # define the length of the dataset
+    H=96*20 #10 days
+    # H=len(data)-1
+    
     
     test_env_data=make_env_data_mas(data, 
-                                    len(data)-1, 
+                                    H, 
                                     test_load_id, 
-                                    4, 
+                                    6, 
                                     num_agents,
                                     test_agents_id)
     
@@ -62,8 +66,8 @@ def make_tester(exp_name, raylog, datafolder):
     best_config['env_config']['env_info']='testing environment' 
     
     #try new initialization for testing purposes
-    best_config['env_config']['init_condition']='mode_window_seq'
-    
+    # best_config['env_config']['init_condition']='mode_window_seq'
+    best_config['env_config']['init_condition']='mode_window'
     
     #make config object to build
     best_config_obj=PPOConfig().from_dict(best_config)
@@ -82,7 +86,7 @@ def make_tester(exp_name, raylog, datafolder):
     #Instantiate and restore agent
     tester=best_config_obj.build()
 
-
+    
     # tester=PPO(best_config,env=best_config['env'])
     tester.restore(best_checkpoint)
     
@@ -94,6 +98,9 @@ def make_tester(exp_name, raylog, datafolder):
     # p0=tester.get_policy('pol_ag0')
     # p1=tester.get_policy('pol_ag1')
     
+    # w1=p1.get_weights()
+    
+    
     # # w0=p0.get_weights()
     # w1=p1.get_weights()
     
@@ -101,3 +108,5 @@ def make_tester(exp_name, raylog, datafolder):
 
 # m1=p1.model.internal_model.base_model.summary()
     return tenv, tester, best_checkpoint
+
+
