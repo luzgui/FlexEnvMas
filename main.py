@@ -88,6 +88,7 @@ menv=environment_build.make_env(env_config)
 
 # menv=gym.wrappers.NormalizeObservation(menv0)
 
+menv_data=menv.data
 
 #%% Make experiment/train Tune config
 import experiment_build
@@ -122,18 +123,14 @@ test_exp_name='test-3000-2g-FCUL-comp'
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
-
+tenv_data=tenv.data
 #%% Plot
 import test_agents
-full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=10)
+full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=365)
 # print(metrics)
 
-print(metrics.loc['com']['cost'])
+print(metrics.loc['ag1']['selfsuf'].mean())
 
-# actions=full_state['action']
-
-# df=full_state.loc['ag1'][['minutes','tar_buy','load','excess0','selfsuf','cost_pos']]
-
-# tenv_data=tenv.data
+# metrics.to_csv('metrics_competitive_365_sequential.csv')
 
 

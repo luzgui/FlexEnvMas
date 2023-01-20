@@ -35,8 +35,19 @@ def make_env_config(datafolder):
     # agents_id=['ag'+str(k) for k in range(num_agents)]
     #What are agents data?
     
+    t_init=0
+    t_end=len(data)-1 #10 days
     
-    env_data=make_env_data_mas(data, timesteps, load_id, 4, num_agents,agents_id)
+    pv_id='PV0'
+    env_data=make_env_data_mas(data,
+                               t_init, 
+                               t_end, 
+                               load_id, 
+                               4,
+                               pv_id,
+                               num_agents,
+                               agents_id)
+    
     
     ## Shiftable profile example
     AgentsProfiles=np.array([[1.2,1.2,1.2,1.2,1.2,1.2,1.2],

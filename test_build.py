@@ -47,14 +47,18 @@ def make_tester(exp_name, raylog, datafolder):
     
     
     # define the length of the dataset
-    H=96*20 #10 days
+    dt=env_config['tstep_per_day']
+    t_init=0
+    t_end=len(data)-1 #10 days
     # H=len(data)-1
     
-    
-    test_env_data=make_env_data_mas(data, 
-                                    H, 
+    pv_id='PV4'
+    test_env_data=make_env_data_mas(data,
+                                    t_init,
+                                    t_end, 
                                     test_load_id, 
-                                    6, 
+                                    4, 
+                                    pv_id,
                                     num_agents,
                                     test_agents_id)
     
@@ -65,9 +69,11 @@ def make_tester(exp_name, raylog, datafolder):
     best_config['env_config']['data']=test_env_data #update data
     best_config['env_config']['env_info']='testing environment' 
     
-    #try new initialization for testing purposes
+    ### try new initialization for testing purposes
     # best_config['env_config']['init_condition']='mode_window_seq'
-    best_config['env_config']['init_condition']='mode_window'
+    # best_config['env_config']['init_condition']='mode_window'
+    best_config['env_config']['init_condition']='mode_window_no-repeat'
+    
     
     #make config object to build
     best_config_obj=PPOConfig().from_dict(best_config)
@@ -77,7 +83,7 @@ def make_tester(exp_name, raylog, datafolder):
     
     # ValueError: Your desired `train_batch_size` (8000) or a value 10% off of that cannot be achieved with your other settings (num_rollout_workers=12; num_envs_per_worker=1; rollout_fragment_length=200)! Try setting `rollout_fragment_length` to 'auto' OR 666.
     best_config_obj.training(train_batch_size=1000)\
-                   .rollouts(num_rollout_workers=1) 
+                    .rollouts(num_rollout_workers=1) 
     
     
     #Make the testing environment

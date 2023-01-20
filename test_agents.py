@@ -57,15 +57,15 @@ def test(tenv, tester, n_episodes):
         
         episode_metrics=pd.concat([get_episode_metrics(full_state, tenv,k),episode_metrics])
         
-        makeplot(T,
-                 [],
-                 env_state['shift_T'],
-                 env_state['gen0'],
-                 env_state['load_T'],
-                 env_state['tar_buy'],
-                 tenv, 
-                 0,
-                 0) #
+        # makeplot(T,
+        #          [],
+        #          env_state['shift_T'],
+        #          env_state['gen0'],
+        #          env_state['load_T'],
+        #          env_state['tar_buy'],
+        #          tenv, 
+        #          0,
+        #          0) #
             
         k+=1
         

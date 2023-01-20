@@ -51,6 +51,11 @@ class ShiftEnvMas(MultiAgentEnv):
         
         self.min_max=self.data['minutes'].max() #maximum timeslot??
         
+        #get the possoble initial timeslots from data
+        self.select=self.data.loc['ag1'][self.data.loc['ag1']['minutes']==0] #get all o mionutes index
+        self.allowed_inits=list(self.select.index)
+        
+        
         
         #AGENTS INDIVIDUAL parameters
         #Appliance profile
@@ -205,7 +210,7 @@ class ShiftEnvMas(MultiAgentEnv):
         print(self.tstep)
         self.state['tstep']=self.tstep
         #minutes
-        self.minutes=self.data.iloc[self.tstep]['minutes']
+        self.minutes=self.data.loc['ag1',self.tstep]['minutes']
         self.state['minutes']=self.minutes
         #sine/cosine
         self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
@@ -482,21 +487,22 @@ class ShiftEnvMas(MultiAgentEnv):
         if self.init_cond == 'mode_window':
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
-            t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))]) # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
-            assert self.data.iloc[t]['minutes']==0, 'initial timeslot not 0'
+            # t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))])
             
+            t=rnd.choice(self.allowed_inits)
+            
+            # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
+            assert self.data.loc['ag1',t]['minutes']==0, 'initial timeslot not 0'
             return t
         
         elif self.init_cond == 'mode_window_seq': #sequential
-            if hasattr(self, 'tstep')==False: #if its not defined means that its the first call to reset()
-                t=0
-            else:
-                t=self.tstep_init+self.Tw
-        
+            t=self.allowed_inits[0] #get first day
+            self.allowed_inits.remove(t)
             return t
         
-        elif self.init_cond=='mode_random':
-            t=rnd.randrange(0, self.T-self.Tw-1)
+        elif self.init_cond=='mode_window_no-repeat':
+            t=rnd.choice(self.allowed_inits) # day is is chosen randomly
+            self.allowed_inits.remove(t) #but it doenst repeat we remove the vallue from the list
             return t
         
         
@@ -523,6 +529,7 @@ class ShiftEnvMas(MultiAgentEnv):
                     if self.tstep+self.t_ahead*t >= self.T: #if forecast values fall outside global horizon T
                         # setattr(self,k, 0)
                         self.state.loc[agent][k]=0
+                        # self.state.loc[agent,k]=0 # maybe this to solve the 'value is trying to be set on a copy of a slice from a DataFrame' warning
                     else:
                         # setattr(self,k, self.data.iloc[self.tstep+self.t_ahead*t][var] )
                         
@@ -530,7 +537,6 @@ class ShiftEnvMas(MultiAgentEnv):
                         self.state.loc[agent,k]=self.data.loc[agent,tstep_to_use][var]
                 
 
-    
 
 
     def state_update(self):

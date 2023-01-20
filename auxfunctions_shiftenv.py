@@ -37,7 +37,7 @@ def make_minutes(data, timesteps):
     return minutes
     
 
-def make_env_data_mas(data,timesteps, load_id, pv_factor,num_agents, agents_id):
+def make_env_data_mas(data,t_init,t_end, load_id, pv_factor,pv_id, num_agents, agents_id):
     "(data: timeseries, load_num: house number, pv_factor, num_agents, agents_id (list string)"
     
 
@@ -46,13 +46,13 @@ def make_env_data_mas(data,timesteps, load_id, pv_factor,num_agents, agents_id):
     
     load_names=['load_ag'+str(k) for k in range(num_agents)]
     
-    df['minutes']=data.iloc[0:timesteps]['minutes']
-    df[load_id]=data.iloc[0:timesteps][load_id]
-    df['gen']=pv_factor*abs(data.iloc[0:timesteps]['PV0'])
+    df['minutes']=data.iloc[t_init:t_end]['minutes']
+    df[load_id]=data.iloc[t_init:t_end][load_id]
+    df['gen']=pv_factor*abs(data.iloc[t_init:t_end][pv_id])
     
     # delta and excess are COLLECTIVE, i.e computed based on aggregated quantities
     df['delta']=df[load_id].sum(axis=1)-df['gen']
-    df['excess']=[max(0,-df['delta'][k]) for k in range(timesteps)] 
+    df['excess']=[max(0,-df['delta'][k]) for k in range(t_init,t_end)] 
     
     frames=[]
     for lid,aid in zip(load_id,agents_id):
