@@ -15,7 +15,7 @@ from auxfunctions_shiftenv import get_post_data
 
 
 
-def test(tenv, tester, n_episodes):
+def test(tenv, tester, n_episodes, plot=True):
 
     # n_episodes=1
     episode_metrics=pd.DataFrame()
@@ -57,15 +57,21 @@ def test(tenv, tester, n_episodes):
         
         episode_metrics=pd.concat([get_episode_metrics(full_state, tenv,k),episode_metrics])
         
-        # makeplot(T,
-        #          [],
-        #          env_state['shift_T'],
-        #          env_state['gen0'],
-        #          env_state['load_T'],
-        #          env_state['tar_buy'],
-        #          tenv, 
-        #          0,
-        #          0) #
+        
+        
+        if plot: 
+            makeplot(T,
+                      [],
+                      env_state['shift_T'],
+                      env_state['gen0'],
+                      env_state['load_T'],
+                      env_state['tar_buy'],
+                      tenv, 
+                      0,
+                      0) #
+            
+            
+            
             
         k+=1
         

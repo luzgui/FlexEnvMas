@@ -126,11 +126,22 @@ tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,data
 tenv_data=tenv.data
 #%% Plot
 import test_agents
-full_state, env_state, metrics=test_agents.test(tenv, tester, n_episodes=365)
+full_state, env_state, metrics=test_agents.test(tenv, tester, 
+                                                n_episodes=1,
+                                                plot=True)
 # print(metrics)
 
 print(metrics.loc['ag1']['selfsuf'].mean())
 
 # metrics.to_csv('metrics_competitive_365_sequential.csv')
+
+
+
+
+
+
+
+
+
 
 
