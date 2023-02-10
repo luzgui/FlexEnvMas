@@ -103,14 +103,14 @@ class ShiftEnvMas(MultiAgentEnv):
         
         #get the state variables[]
         self.state_vars, self.vars_list=get_state_vars(self)    
-        
+        self.var_class={'gen','load','delta','excess'} #this list of variables will be tested in update_forecasts()
             
     
         #extract the names of variables in env.data and take out the minutes that we dont need    
         self.ag_var_class=[k for k in self.data.keys() if 'ag' in k]
 
         
-        self.var_class={'gen','load','delta','excess'}
+        
         
         self.obs=None   
             

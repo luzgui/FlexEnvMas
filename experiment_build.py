@@ -22,6 +22,7 @@ from ray.tune import ExperimentAnalysis
 from ray.tune import TuneConfig
 from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
 from ray.tune.experiment import trial
+from obs_wrapper import *
 
 
 def make_train_config(menv):
@@ -47,7 +48,7 @@ def make_train_config(menv):
                                     'custom_model_config': 
                                         {'fcnet_hiddens': [128,128]}})\
                     .environment(
-                        env=ShiftEnvMas,           
+                        env='shiftenv',           
                         observation_space=menv.observation_space,
                         action_space=menv.action_space,
                         env_config=menv.env_config)\

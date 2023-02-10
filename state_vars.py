@@ -62,31 +62,31 @@ def get_state_vars(self):
     'load12':# g : PV generation forecast 24h ahead
             {'max':self.max_load,'min':-1.0,'use': True},
     'delta0':# g : PV generation at timeslot
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta1':# g : PV generation forecast next timeslot
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta2':# g : PV deltaeration forecast 1h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta3':# g : PV deltaeration forecast 6h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta4':# g : PV deltaeration forecast 12h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta5':# g : PV deltaeration forecast 24h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta6':# g : PV deltaeration forecast next timeslot
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta7':# g : PV deltaeration forecast 1h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta8':# g : PV deltaeration forecast 6h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta9':# g : PV deltaeration forecast 12h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta10':# g : PV deltaeration forecast 24h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta11':# g : PV deltaeration forecast 12h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'delta12':# g : PV generation forecast 24h ahead
-            {'max':self.max_load,'min':-self.max_load,'use': True},
+            {'max':self.max_load,'min':-self.max_load,'use': False},
     'excess0':# g : PV generation at timeslot
             {'max':self.max_load,'min':-self.max_load,'use': True},
     'excess1':# g : PV generation forecast next timeslot

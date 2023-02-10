@@ -58,6 +58,8 @@ import random
 
 from trainable import *
 
+from obs_wrapper import *
+
 # from ray.tune.registry import register_env
 from ray.rllib.examples.env.multi_agent import MultiAgentCartPole, make_multi_agent
 from shiftenvRLlib_mas import ShiftEnvMas
@@ -71,7 +73,6 @@ datafolder=cwd + '/Data'
 raylog=cwd + '/raylog'
 
 
-
 ##############################################################################
 
 
@@ -82,13 +83,27 @@ env_config=data_process.make_env_config(datafolder)
 
 
 #%% Make environment instance
+
 import environment_build
-menv=environment_build.make_env(env_config)
+menv_base=environment_build.make_env(env_config)
 # menv=environment_build.make_env(env_config)
 
-# menv=gym.wrappers.NormalizeObservation(menv0)
+
+# menv=NormalizeObs(menv_base)
 
 menv_data=menv.data
+
+
+from ray.tune.registry import register_env
+
+def env_creator(env_config):
+    # return NormalizeObs(menv_base)  # return an env instance
+    return menv_base
+
+register_env("shiftenv", env_creator)
+
+
+
 
 #%% Make experiment/train Tune config
 import experiment_build
@@ -96,7 +111,7 @@ config=experiment_build.make_train_config(menv)
 # config.observation_filter='MeanStdFilter'
 
 #%% Train
-exp_name='test-2g-coop'
+exp_name='test-norm_obs'
 
 from trainable import *
 
@@ -117,11 +132,13 @@ tuneResults=tune.run(trainable_mas,
 import test_build
 
 # test_exp_name='test_ist_2ag_gs'
-test_exp_name='test-3000-2g-FCUL-comp'
+# test_exp_name='test-3000-2g-FCUL-comp'
 # test_exp_name='test-3000-2g-FCUL'
-# test_exp_name=exp_name
+test_exp_name=exp_name
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
+
+tenv=NormalizeObs(tenv)
 
 tenv_data=tenv.data
 #%% Plot
