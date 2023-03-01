@@ -117,11 +117,46 @@ def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
     ax2.grid(visible=True, which='minor',
              color='#999999', linestyle='-', alpha=0.07)
 
+# %%
+def make_boxplot(metrics,env):
+    
+    m=metrics.loc['com']
+    
+    
+    min_cost=env.tar_buy*env.E_prof['E_prof'].sum()
+    #boxplot
+     
+    fig, ax = plt.subplots(figsize =(10, 7))
+     
+    # Creating plot
+    ax.boxplot(m[['cost', 'selfsuf','x_sig']])
+    ax.set(title='Number of days=%i' % len(m))
+    ax.grid(True, which='major')
+
+    ax.set_xticklabels(['cost', 'selfsuf','x_sig'])
+
+    # show plot
+    plt.show()
+    
+    # scatter
+    fig1, ax1 = plt.subplots(figsize =(10, 7))
+    ax1.scatter(m['cost'],m['x_ratio'])
+    ax1.set(title='Cost vs Available PV excess | Number of days=%i' % len(m))
+    
+    ax1.set_xlabel('Cost(€)')
+    ax1.set_ylabel('PV Excess for the whole day (kWh)')
+    
+    #plot the min cost for comparison
+    ax1.axvline(x = min_cost, color = 'r', label = 'min_cost')
+    
+    ax1.legend()
+    
+    
+    
 
 
 
-
-
+# make_boxplot(metrics,tenv)
 # %%
     # #PLots
 

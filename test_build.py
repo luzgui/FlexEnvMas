@@ -10,6 +10,7 @@ from auxfunctions_shiftenv import *
 from ray.rllib.algorithms.ppo import PPO #trainer
 from ray.rllib.algorithms.ppo import PPOConfig #config
 from shiftenvRLlib_mas import ShiftEnvMas
+from ray.tune.registry import register_env
 
 
 def make_tester(exp_name, raylog, datafolder):
@@ -57,7 +58,7 @@ def make_tester(exp_name, raylog, datafolder):
                                     t_init,
                                     t_end, 
                                     test_load_id, 
-                                    4, 
+                                    1, 
                                     pv_id,
                                     num_agents,
                                     test_agents_id)
@@ -88,6 +89,12 @@ def make_tester(exp_name, raylog, datafolder):
     
     #Make the testing environment
     tenv=ShiftEnvMas(best_config['env_config'])
+    
+    def env_creator(env_config): # return an env instance
+        return tenv
+    register_env("shiftenv", env_creator)
+    
+    
     
     #Instantiate and restore agent
     tester=best_config_obj.build()

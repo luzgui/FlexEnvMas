@@ -49,7 +49,7 @@ from datetime import datetime
 #Custom functions
 from shiftenvRLlib import ShiftEnv
 from auxfunctions_shiftenv import *
-from plotutils import makeplot
+from plotutils import *
 from models2 import ActionMaskModel
 
 from ray.rllib.utils.pre_checks import env
@@ -90,7 +90,7 @@ menv_base=environment_build.make_env(env_config)
 
 
 # menv=NormalizeObs(menv_base)
-
+menv=menv_base
 menv_data=menv.data
 
 
@@ -110,15 +110,26 @@ import experiment_build
 config=experiment_build.make_train_config(menv)
 # config.observation_filter='MeanStdFilter'
 
+#configs for FCUL-PC
+# config.num_rollout_workers=25
+
+
+
+
 #%% Train
-exp_name='test-norm_obs'
+exp_name='test-shared'
 
 from trainable import *
 
 
+# resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
+resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
+
+
+
 tuneResults=tune.run(trainable_mas,
          config=config.to_dict(),
-         resources_per_trial=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4),
+         resources_per_trial=resources,
          local_dir=raylog,
          name=exp_name,
          verbose=3)
@@ -134,19 +145,28 @@ import test_build
 # test_exp_name='test_ist_2ag_gs'
 # test_exp_name='test-3000-2g-FCUL-comp'
 # test_exp_name='test-3000-2g-FCUL'
+
 test_exp_name=exp_name
+
+# Good ones
+# test_exp_name='test-Feb13'
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
-tenv=NormalizeObs(tenv)
+# tenv=NormalizeObs(tenv)
 
 tenv_data=tenv.data
 #%% Plot
 import test_agents
-full_state, env_state, metrics=test_agents.test(tenv, tester, 
+full_state, env_state, metrics=test_agents.test(tenv, 
+                                                tester, 
                                                 n_episodes=1,
                                                 plot=True)
 # print(metrics)
+from plotutils import *
+make_boxplot(metrics,tenv)
+
+m=metrics.loc['com']
 
 print(metrics.loc['ag1']['selfsuf'].mean())
 

@@ -222,7 +222,8 @@ def get_post_data(menv):
 
 def policy_mapping_fn(agent_id):
     'Policy mapping function'
-    return 'pol_' + agent_id
+    return 'shared_pol' # parameter sharing must return the same policy for any agent
+    # return 'pol_' + agent_id
 
 
 
@@ -233,3 +234,7 @@ def get_actions(obs,trainer,agents_id, map_func):
     elif type(obs)==tuple:
         actions = {aid:trainer.compute_single_action(obs[0][aid],policy_id=map_func(aid)) for aid in agents_id}
     return actions
+
+
+def sigmoid(a,b,c,d,x):
+    return c/(d+np.exp(-a*x+b))

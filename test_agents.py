@@ -67,7 +67,7 @@ def test(tenv, tester, n_episodes, plot=True):
                       env_state['load_T'],
                       env_state['tar_buy'],
                       tenv, 
-                      0,
+                      full_state['cost_pos'].sum(),
                       0) #
             
             
@@ -78,6 +78,11 @@ def test(tenv, tester, n_episodes, plot=True):
     
         
     return full_state, env_state, episode_metrics
+
+
+
+
+
 
 
 
@@ -106,6 +111,10 @@ def get_episode_metrics(full_state,environment,k):
         metrics.loc[ag,'cost']=full_state.loc[ag,'cost_pos'].sum()
         metrics.loc[ag,'selfsuf']=full_state.loc[ag,'selfsuf'].sum()
         
+        #
+        metrics.loc[ag,'x_ratio']=full_state.loc['ag1']['excess0'].sum()/environment.E_prof.loc[ag,'E_prof']
+        
+        
 
         
         
@@ -119,12 +128,29 @@ def get_episode_metrics(full_state,environment,k):
     metrics.loc['com','selfsuf']=SS_temp.min(axis=1).sum()/(environment.E_prof['E_prof'].sum()*
                                   (environment.Tw/environment.tstep_per_day)) #number of days
     
-
+    #compute the ratio between energy needed and excess available
+    # E_ratio=full_state.loc['ag1']['excess0'].sum()/environment.E_prof['E_prof'].sum()
     
+    E_ratio=full_state.loc['ag1']['excess0'].sum()/environment.E_prof['E_prof'].sum()
+    
+    
+    metrics.loc['com','x_ratio']=E_ratio
+    
+    metrics.loc['com','x_sig']=sigmoid(0.5,6.2,2,1,E_ratio)
+
+
 
     
     # metrics.loc['com','selfsuf']=full_state['selfsuf'].sum()/environment.num_agents
     metrics.loc['com','cost']=full_state['cost_pos'].sum()
+    
+    
+    #Binary metrics ()
+    
+    min_cost=full_state['tar_buy'].min()*environment.E_prof['E_prof'].sum()
+    #1 if the cost is greater that mininmum tarif cost of community
+    metrics.loc['com','y']=int(bool(metrics.loc['com','cost'] > min_cost))
+    
     
     #create index for test episode number
     metrics['test_epi']=k

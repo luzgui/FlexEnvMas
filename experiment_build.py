@@ -29,13 +29,13 @@ def make_train_config(menv):
     
     config_pol={}
     
-    policies={'pol_'+aid:(None,
-                       menv.observation_space,
-                       menv.action_space,
-                       config_pol,) for aid in menv.agents_id }
+    # policies={'pol_'+aid:(None,
+    #                    menv.observation_space,
+    #                    menv.action_space,
+    #                    config_pol,) for aid in menv.agents_id }
     
 
-    
+    policies={'shared_pol': (None,menv.observation_space,menv.action_space,config_pol,)}
     
     #Config
     config = PPOConfig()\
@@ -65,7 +65,8 @@ def make_train_config(menv):
     return config
 
 
-
 def policy_mapping_fn(agent_id):
-    'Policy mapping function'
-    return 'pol_' + agent_id
+    return 'shared_pol'
+# def policy_mapping_fn(agent_id):
+#     'Policy mapping function'
+#     return 'pol_' + agent_id
