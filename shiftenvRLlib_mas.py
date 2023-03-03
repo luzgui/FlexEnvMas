@@ -404,7 +404,13 @@ class ShiftEnvMas(MultiAgentEnv):
 #This agent specific reward must variable according to the situation (machines invlved and time horizon)
     
             else:
-                agent_reward=-max(0,((self.action.loc[agent]['action']*self.profile[agent][0])-self.state.loc[agent]['excess0']))*self.state.loc[agent]['tar_buy']
+                
+                if self.mas_setup == 'cooperative_colective':
+                    agent_reward=0
+                    
+                else:
+                
+                    agent_reward=-max(0,((self.action.loc[agent]['action']*self.profile[agent][0])-self.state.loc[agent]['excess0']))*self.state.loc[agent]['tar_buy']
                                 
             return agent_reward
         
@@ -441,7 +447,7 @@ class ShiftEnvMas(MultiAgentEnv):
             AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id]
             # R=sum(agents loads)- Excess
             R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']
-            return {aid: R for aid in self.agents_id}
+            return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id}
             
     
     def get_agent_obs(self, agent):
