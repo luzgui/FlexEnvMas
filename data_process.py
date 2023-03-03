@@ -66,8 +66,9 @@ def make_env_config(datafolder):
     
     #type of setup weather cooperative or competitive 
     # (determines the reward given to each agent) // check get_env_reward()
-    mas_setup='cooperative'
+    # mas_setup='cooperative'
     # mas_setup='competitive'
+    mas_setup='cooperative_colective'
     
     
     

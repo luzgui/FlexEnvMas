@@ -402,7 +402,7 @@ class ShiftEnvMas(MultiAgentEnv):
             if self.minutes == self.min_max-self.agents_params.loc[agent]['T_prof']*self.tstep_size and self.state.loc[agent]['y_s']  !=self.agents_params.loc[agent]['T_prof']:
                 agent_reward=-5.0
 #This agent specific reward must variable according to the situation (machines invlved and time horizon)
-                
+    
             else:
                 agent_reward=-max(0,((self.action.loc[agent]['action']*self.profile[agent][0])-self.state.loc[agent]['excess0']))*self.state.loc[agent]['tar_buy']
                                 
@@ -424,6 +424,8 @@ class ShiftEnvMas(MultiAgentEnv):
         - Cooperative: All agents get the same reward given by the sum of all agents rewards "
         
         - Competitive: each agent has an individual reward
+        
+        - Cooperative_colective: all agents get the same reward given by the collective purchase of energy from the grid (all loads are summed and the excess is collective)
         '''
         
         if self.mas_setup == 'cooperative':
@@ -435,7 +437,12 @@ class ShiftEnvMas(MultiAgentEnv):
         elif self.mas_setup == 'competitive':
             return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
     
-    
+        elif self.mas_setup == 'cooperative_colective':
+            AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id]
+            # R=sum(agents loads)- Excess
+            R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']
+            return {aid: R for aid in self.agents_id}
+            
     
     def get_agent_obs(self, agent):
         assert agent in self.agents_id, 'Agent does not exist in this community'

@@ -58,7 +58,7 @@ def make_tester(exp_name, raylog, datafolder):
                                     t_init,
                                     t_end, 
                                     test_load_id, 
-                                    1, 
+                                    4, 
                                     pv_id,
                                     num_agents,
                                     test_agents_id)

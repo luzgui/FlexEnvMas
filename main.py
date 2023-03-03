@@ -117,7 +117,7 @@ config=experiment_build.make_train_config(menv)
 
 
 #%% Train
-exp_name='test-shared'
+exp_name='test-shared-collective-reward'
 
 from trainable import *
 
@@ -146,10 +146,12 @@ import test_build
 # test_exp_name='test-3000-2g-FCUL-comp'
 # test_exp_name='test-3000-2g-FCUL'
 
-test_exp_name=exp_name
+# test_exp_name=exp_name
 
 # Good ones
 # test_exp_name='test-Feb13'
+test_exp_name='test-shared-2ag-FCUL'
+
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
@@ -160,7 +162,7 @@ tenv_data=tenv.data
 import test_agents
 full_state, env_state, metrics=test_agents.test(tenv, 
                                                 tester, 
-                                                n_episodes=1,
+                                                n_episodes=100,
                                                 plot=True)
 # print(metrics)
 from plotutils import *
