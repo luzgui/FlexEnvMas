@@ -120,6 +120,9 @@ def make_tester(exp_name, raylog, datafolder):
     # weights_file=
 
 # m1=p1.model.internal_model.base_model.summary()
+
+    print(tenv.env_config)
+    print(tester.config.poltype)
     return tenv, tester, best_checkpoint
 
 

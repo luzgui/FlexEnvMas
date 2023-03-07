@@ -21,6 +21,13 @@ def test(tenv, tester, n_episodes, plot=True):
     episode_metrics=pd.DataFrame()
     
     
+    #choose the policy mapping function according to poltype in algorithm config
+    if tester.config.poltype=='agent_pol':
+        policy_mapping_func=policy_mapping_fn
+    elif tester.config.poltype=='shared_pol':
+        policy_mapping_func=policy_mapping_fn_shared
+        
+        
     
     k=0
     
@@ -37,7 +44,7 @@ def test(tenv, tester, n_episodes, plot=True):
         # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
     
         for i in range(T):
-            actions=get_actions(obs, tester, tenv.agents_id,policy_mapping_fn)
+            actions=get_actions(obs, tester, tenv.agents_id,policy_mapping_func)
             obs, reward, done, info = tenv.step(actions)
             
             

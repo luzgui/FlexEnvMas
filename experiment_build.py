@@ -24,19 +24,39 @@ from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
 from ray.tune.experiment import trial
 from obs_wrapper import *
 
+from auxfunctions_shiftenv import *
 
-def make_train_config(menv):
+
+def make_train_config(menv,pol_type):
+    """
+    Pol_type argument determines if there will be shared policy or each agent will have its own policy
+    
+    """
     
     config_pol={}
     
-    # policies={'pol_'+aid:(None,
-    #                    menv.observation_space,
-    #                    menv.action_space,
-    #                    config_pol,) for aid in menv.agents_id }
-    
 
-    policies={'shared_pol': (None,menv.observation_space,menv.action_space,config_pol,)}
+    #which  policy
+    if pol_type=='agent_pol':
     
+        policies={'pol_'+aid:(None,
+                            menv.observation_space,
+                            menv.action_space,
+                            config_pol,) for aid in menv.agents_id }
+        
+        policy_function=policy_mapping_fn
+        
+        
+    elif pol_type=='shared_pol':
+
+        policies={'shared_pol': (None,menv.observation_space,menv.action_space,config_pol,)}
+        
+        policy_function=policy_mapping_fn_shared
+        
+        
+        
+    
+        
     #Config
     config = PPOConfig()\
                     .training(lr=1e-5,
@@ -55,18 +75,16 @@ def make_train_config(menv):
                     .debugging(seed=1024,log_level='WARN')\
                     .rollouts(num_rollout_workers=1)\
                     .multi_agent(policies=policies,
-                                  policy_mapping_fn=policy_mapping_fn)
+                                  policy_mapping_fn=policy_function)
     
                     # .evaluation(evaluation_interval=1,
                     #             evaluation_num_workers=1,
                     #             evaluation_num_episodes=10,) 
                     # .resources(placement_strategy=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 1))
+      
                     
+    config['poltype']=pol_type #store the value in the config    
+    
     return config
 
 
-def policy_mapping_fn(agent_id):
-    return 'shared_pol'
-# def policy_mapping_fn(agent_id):
-#     'Policy mapping function'
-#     return 'pol_' + agent_id

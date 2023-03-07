@@ -222,9 +222,11 @@ def get_post_data(menv):
 
 def policy_mapping_fn(agent_id):
     'Policy mapping function'
-    return 'shared_pol' # parameter sharing must return the same policy for any agent
-    # return 'pol_' + agent_id
+    return 'pol_' + agent_id
 
+def policy_mapping_fn_shared(agent_id):
+    'Policy mapping function with shared policy'
+    return 'shared_pol' # parameter sharing must return the same policy for any agent
 
 
 def get_actions(obs,trainer,agents_id, map_func):

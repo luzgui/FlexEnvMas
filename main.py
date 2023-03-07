@@ -61,7 +61,7 @@ from trainable import *
 from obs_wrapper import *
 
 # from ray.tune.registry import register_env
-from ray.rllib.examples.env.multi_agent import MultiAgentCartPole, make_multi_agent
+# from ray.rllib.examples.env.multi_agent import MultiAgentCartPole, make_multi_agent
 from shiftenvRLlib_mas import ShiftEnvMas
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
@@ -107,7 +107,10 @@ register_env("shiftenv", env_creator)
 
 #%% Make experiment/train Tune config
 import experiment_build
-config=experiment_build.make_train_config(menv)
+
+pol_type='shared_pol'
+# pol_type='agent_pol'
+config=experiment_build.make_train_config(menv,pol_type)
 # config.observation_filter='MeanStdFilter'
 
 #configs for FCUL-PC
@@ -117,7 +120,7 @@ config=experiment_build.make_train_config(menv)
 
 
 #%% Train
-exp_name='test-shared-collective-reward'
+exp_name='test-same-profile-3'
 
 from trainable import *
 
@@ -146,11 +149,12 @@ import test_build
 # test_exp_name='test-3000-2g-FCUL-comp'
 # test_exp_name='test-3000-2g-FCUL'
 
-# test_exp_name=exp_name
+test_exp_name=exp_name
 
 # Good ones
 # test_exp_name='test-Feb13'
-test_exp_name='test-shared-2ag-FCUL'
+# test_exp_name='test-shared-2ag-FCUL'
+# test_exp_name='test-shared-collective-reward-FCUL'
 
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
@@ -162,7 +166,7 @@ tenv_data=tenv.data
 import test_agents
 full_state, env_state, metrics=test_agents.test(tenv, 
                                                 tester, 
-                                                n_episodes=100,
+                                                n_episodes=1,
                                                 plot=True)
 # print(metrics)
 from plotutils import *

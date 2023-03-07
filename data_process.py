@@ -49,13 +49,21 @@ def make_env_config(datafolder):
                                agents_id)
     
     
-    ## Shiftable profile example
-    AgentsProfiles=np.array([[1.2,1.2,1.2,1.2,1.2,1.2,1.2],
-                       [1.5,1.5,1.5,1.5,1.5],
-                       [0.6,0.6,0.6,0.6,0.6],
-                       [0.9,0.9,0.9,0.9,0.9]], dtype=object)
+    ## Shiftable profile example 
+    ## Different profiles
+    # AgentsProfiles=np.array([[1.2,1.2,1.2,1.2,1.2,1.2,1.2],
+    #                    [1.5,1.5,1.5,1.5,1.5],
+    #                    [0.6,0.6,0.6,0.6,0.6],
+    #                    [0.9,0.9,0.9,0.9,0.9]], dtype=object)
     
-    shiftprof={agent:profile for (agent,profile) in zip(agents_id,AgentsProfiles)}
+
+    
+    
+    # shiftprof={agent:profile for (agent,profile) in zip(agents_id,AgentsProfiles)}
+    
+    ## Same profile for all machines
+    shiftprof={agent:[1.2,1.2,1.2,1.2,1.2,1.2,1.2] for agent in agents_id}
+    
     
     #Agents delivery times
     delivery_times={ag:37*tstep_size for ag in agents_id }
