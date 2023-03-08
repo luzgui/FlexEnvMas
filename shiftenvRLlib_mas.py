@@ -708,11 +708,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
     def get_state(self):
         return self.state
-    
-    
-    def action_space_sample(self,keys):
-        return {aid:rnd.randint(0,1) for aid,a in zip(self.agents_id,[1,0,0,1])}
-    
+         
     
     def assert_type(self,obs):
         for key in obs.keys():
@@ -725,4 +721,17 @@ class ShiftEnvMas(MultiAgentEnv):
                     assert type(val)==np.float32, 'other type'
                     # print(val)
                     # print(type(val))
-            
+     
+        
+    #functions needed for eliminating warnings 
+    def action_space_sample(self,keys):
+        return {aid:rnd.randint(0,1) for aid,a in zip(self.agents_id,[1,0,0,1])}
+    
+    def observation_space_sample(self):
+        return self.reset()
+    
+    def action_space_contains(self, x):
+        return True
+    
+    def observation_space_contains(self, x):
+        return True        
