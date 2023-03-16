@@ -12,7 +12,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
 from shiftenvRLlib import ShiftEnv
 
 from state_vars import *
-
+from termcolor import colored
 
 class ShiftEnvMas(MultiAgentEnv):
     def __init__(self,config):
@@ -183,10 +183,14 @@ class ShiftEnvMas(MultiAgentEnv):
         
         
         
-        print(f'Created an MAS environment with {self.num_agents} agents')
+        print(f'Created an multiagent environment with {self.num_agents} agents')
+        print(colored('Envrironment configurations:','green'))
+        print('Type of reward:', colored(self.env_config['reward_type'],'red'))
+        print('Multiagent setup for reward:', colored(self.env_config['mas_setup'],'red'))
+        print('Environment purpose:', colored(self.env_config['env_info'],'red'))
         
-        
-        
+    
+        self._spaces_in_preferred_format = True
     
     def reset(self):
         """
@@ -207,7 +211,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #initial timestep
         self.tstep=self.get_init_tstep()
         self.tstep_init=self.tstep # initial timestep
-        print(self.tstep)
+        # print(self.tstep)
         self.state['tstep']=self.tstep
         #minutes
         self.minutes=self.data.loc['ag1',self.tstep]['minutes']

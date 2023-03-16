@@ -95,7 +95,6 @@ menv_data=menv.data
 
 
 from ray.tune.registry import register_env
-
 def env_creator(env_config):
     # return NormalizeObs(menv_base)  # return an env instance
     return menv_base
@@ -120,14 +119,13 @@ config=experiment_build.make_train_config(menv,pol_type)
 
 
 #%% Train
-exp_name='test-same-profile-3'
+exp_name='test-No-wrapper'
 
 from trainable import *
 
 
 # resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
 resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
-
 
 
 tuneResults=tune.run(trainable_mas,

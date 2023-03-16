@@ -25,6 +25,7 @@ from ray.tune.experiment import trial
 from obs_wrapper import *
 
 from auxfunctions_shiftenv import *
+from termcolor import colored
 
 
 def make_train_config(menv,pol_type):
@@ -52,7 +53,8 @@ def make_train_config(menv,pol_type):
         policies={'shared_pol': (None,menv.observation_space,menv.action_space,config_pol,)}
         
         policy_function=policy_mapping_fn_shared
-        
+     
+    print('Policy Type:', colored(pol_type,'red'))
         
         
     
