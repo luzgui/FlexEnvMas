@@ -22,11 +22,11 @@ def test(tenv, tester, n_episodes, plot=True):
     
     
     #choose the policy mapping function according to poltype in algorithm config
-    if tester.config.poltype=='agent_pol':
-        policy_mapping_func=policy_mapping_fn
-    elif tester.config.poltype=='shared_pol':
-        policy_mapping_func=policy_mapping_fn_shared
-        
+    # if tester.config.poltype=='agent_pol':
+    #     policy_mapping_func=policy_mapping_fn
+    # elif tester.config.poltype=='shared_pol':
+    #     policy_mapping_func=policy_mapping_fn_shared
+    policy_mapping_func=policy_mapping_fn    
         
     
     k=0

@@ -5,7 +5,7 @@ Created on Mon Dec 12 15:46:19 2022
 
 @author: omega
 """
-from models2 import ActionMaskModel
+from models2 import ActionMaskModel, CCActionMaskModel
 from ray.rllib.models import ModelCatalog
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 
@@ -64,7 +64,7 @@ def make_train_config(menv,pol_type):
                     .training(lr=1e-5,
                               num_sgd_iter=100,
                               train_batch_size=8000,
-                              model={'custom_model':ActionMaskModel,
+                              model={'custom_model':CCActionMaskModel,
                                     'fcnet_hiddens': [128,128],
                                     'fcnet_activation':'relu',
                                     'custom_model_config': 
@@ -77,15 +77,15 @@ def make_train_config(menv,pol_type):
                     .debugging(seed=1024,log_level='WARN')\
                     .rollouts(num_rollout_workers=1)\
                     .multi_agent(policies=policies,
-                                  policy_mapping_fn=policy_function)
+                                  policy_mapping_fn=policy_function)\
+                    .framework(framework='tf2')
     
                     # .evaluation(evaluation_interval=1,
                     #             evaluation_num_workers=1,
                     #             evaluation_num_episodes=10,) 
                     # .resources(placement_strategy=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 1))
-      
-                    
-    config['poltype']=pol_type #store the value in the config    
+                     
+    # config['poltype']=pol_type #store the value in the config    
     
     return config
 

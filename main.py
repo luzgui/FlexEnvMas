@@ -21,9 +21,7 @@ from ray.tune.experiment import trial
 from pathlib import Path
 
 #PPO algorithm
-from ray.rllib.algorithms.ppo import PPO #trainer
-from ray.rllib.algorithms.ppo import PPOConfig #config
-
+from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
 
 from ray.rllib.env.env_context import EnvContext
 
@@ -57,14 +55,17 @@ from ray.rllib.utils.pre_checks import env
 import random
 
 from trainable import *
-
 from obs_wrapper import *
 
 # from ray.tune.registry import register_env
 # from ray.rllib.examples.env.multi_agent import MultiAgentCartPole, make_multi_agent
 from shiftenvRLlib_mas import ShiftEnvMas
+
+from auxfunctions_CC import *
+
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
+ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 
 
 #
@@ -107,19 +108,26 @@ register_env("shiftenv", env_creator)
 #%% Make experiment/train Tune config
 import experiment_build
 
-pol_type='shared_pol'
-# pol_type='agent_pol'
+# pol_type='shared_pol'
+pol_type='agent_pol'
 config=experiment_build.make_train_config(menv,pol_type)
 # config.observation_filter='MeanStdFilter'
 
 #configs for FCUL-PC
 # config.num_rollout_workers=25
 
+# stop = {"training_iteration": 1}
 
 
+# tuner = tune.Tuner(
+#      CentralizedCritic,
+#      param_space=config.to_dict(),
+#      run_config=air.RunConfig(stop=stop, verbose=3),)
+
+# results = tuner.fit()
 
 #%% Train
-exp_name='test-No-wrapper'
+exp_name='test-CC-2'
 
 from trainable import *
 
@@ -129,11 +137,11 @@ resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
 
 
 tuneResults=tune.run(trainable_mas,
-         config=config.to_dict(),
-         resources_per_trial=resources,
-         local_dir=raylog,
-         name=exp_name,
-         verbose=3)
+          config=config.to_dict(),
+           resources_per_trial=resources,
+          local_dir=raylog,
+          name=exp_name,
+          verbose=3)
 
 # Results=tuneResult
 

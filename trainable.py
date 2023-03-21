@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import random
 from ray import tune
+from auxfunctions_CC import *
 
 
 def trainable_mas(config):
@@ -14,7 +15,9 @@ def trainable_mas(config):
     n_iters=1
     checkpoint_freq=50
     
-    trainer=PPO(config, env=config["env"])
+    # trainer=PPO(config, env=config["env"])
+    trainer=CentralizedCritic(config)
+    
     weights={}
     
     #set the seed
