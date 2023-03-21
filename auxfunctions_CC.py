@@ -95,8 +95,10 @@ class CentralizedValueMixin:
 
 # Grabs the opponent obs/act and includes it in the experience train_batch,
 # and computes GAE using the central vf predictions.
-def centralized_critic_postprocessing(
-    policy, sample_batch, other_agent_batches=None, episode=None):
+def centralized_critic_postprocessing(policy, 
+                                      sample_batch, 
+                                      other_agent_batches=None, 
+                                      episode=None):
     
     
     pytorch = policy.config["framework"] == "torch"
@@ -104,6 +106,7 @@ def centralized_critic_postprocessing(
         not pytorch and policy.loss_initialized()
     ):
         assert other_agent_batches is not None
+        print('other batches',other_agent_batches.values())
         [(_, opponent_batch)] = list(other_agent_batches.values())
 
         # also record the opponent obs and actions in the trajectory

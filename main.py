@@ -127,7 +127,7 @@ config=experiment_build.make_train_config(menv,pol_type)
 # results = tuner.fit()
 
 #%% Train
-exp_name='test-CC-2'
+exp_name='test-CC-3'
 
 from trainable import *
 
