@@ -8,6 +8,8 @@ import numpy as np
 import random
 from ray import tune
 from auxfunctions_CC import *
+from termcolor import colored
+
 
 
 def trainable_mas(config):
@@ -46,6 +48,7 @@ def trainable_mas(config):
         
         #save checkpoint every checkpoint_freq
         if i % checkpoint_freq == 0: 
+            print(colored('Saving checkpoint...','green'))
             checkpoint=trainer.save(tune.get_trial_dir())
         
         #evaluate agent
@@ -58,7 +61,9 @@ def trainable_mas(config):
         # eval_logs['evaluation']={k: eval_results['evaluation'][k] for k in eval_metrics}
         
         # results={**logs,**weights,**eval_logs}
+        print(colored('Results...','green'))
         results={**logs}
+        print(colored('Report...','green'))
         tune.report(results)
         
     trainer.stop()
