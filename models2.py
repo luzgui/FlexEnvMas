@@ -6,7 +6,9 @@ Created on Thu Jun  2 11:31:46 2022
 @author: omega
 """
 
-from gym.spaces import Dict
+from gymnasium.spaces import Dict
+# from gym.spaces import Dict #May raise problems because of the transition from gym to gymnasium in RLlib
+
 
 from ray.rllib.models.tf.fcnet import FullyConnectedNetwork
 from ray.rllib.models.tf.tf_modelv2 import TFModelV2
@@ -37,10 +39,16 @@ class CCActionMaskModel(TFModelV2):
                  **kwargs):
 
         orig_space = getattr(obs_space, "original_space", obs_space)
+        
+        # print(orig_space)
+        # print(type(orig_space))
+        
         assert (
             isinstance(orig_space, Dict)
             and "action_mask" in orig_space.spaces
             and "observations" in orig_space.spaces)
+        
+        
         
         # super().__init__(obs_space, action_space, num_outputs, model_config, name)
         

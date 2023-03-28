@@ -1,5 +1,5 @@
-import gym
-from gym import spaces
+import gymnasium  as gym
+from gymnasium import spaces
 import numpy as np
 import pandas as pd
 import random as rnd
@@ -9,14 +9,14 @@ import math
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
 
-from shiftenvRLlib import ShiftEnv
+# from shiftenvRLlib import ShiftEnv
 
 from state_vars import *
 from termcolor import colored
 
 class ShiftEnvMas(MultiAgentEnv):
     def __init__(self,config):
-        super().__init__()
+        super(MultiAgentEnv).__init__()
         
 
         self.env_config=config
@@ -160,7 +160,7 @@ class ShiftEnvMas(MultiAgentEnv):
         self.count=0
         
         #seed 
-        # self.seed=config['seed']
+        self.seed=config['seed']
         
         
         

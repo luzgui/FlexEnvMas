@@ -6,16 +6,18 @@ Created on Mon Dec 12 10:48:58 2022
 @author: omega
 """
 
-import gym
+import gymnasium as gym
 
 import ray #ray2.0 implementation
 
-from ray import tune, air
+from ray import tune
+
+from ray import air
 # from ray.tune import Analysis
 from ray.tune import analysis
 from ray.tune import ExperimentAnalysis
 from ray.tune import TuneConfig
-from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
+# from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
 from ray.tune.experiment import trial
 
 from pathlib import Path
@@ -45,10 +47,10 @@ import datetime
 from datetime import datetime
 
 #Custom functions
-from shiftenvRLlib import ShiftEnv
+# from shiftenvRLlib import ShiftEnv
 from auxfunctions_shiftenv import *
 from plotutils import *
-from models2 import ActionMaskModel
+from models2 import ActionMaskModel, CCActionMaskModel
 
 from ray.rllib.utils.pre_checks import env
 
@@ -67,6 +69,7 @@ from auxfunctions_CC import *
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 
+from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
 
 #
 cwd=os.getcwd()
@@ -89,18 +92,21 @@ import environment_build
 menv_base=environment_build.make_env(env_config)
 # menv=environment_build.make_env(env_config)
 
-
+menv=MultiAgentEnvCompatibility(menv_base)
 # menv=NormalizeObs(menv_base)
-menv=menv_base
-menv_data=menv.data
+# menv=menv_base
+menv_data=menv.env.data
 
 
 from ray.tune.registry import register_env
 def env_creator(env_config):
     # return NormalizeObs(menv_base)  # return an env instance
-    return menv_base
+    return MultiAgentEnvCompatibility(menv_base)
+    # return menv_base
 
 register_env("shiftenv", env_creator)
+
+# register_env("shiftenv", menv)
 
 
 
@@ -111,78 +117,79 @@ import experiment_build
 # pol_type='shared_pol'
 pol_type='agent_pol'
 config=experiment_build.make_train_config(menv,pol_type)
+print(config)
 # config.observation_filter='MeanStdFilter'
 
 #configs for FCUL-PC
 # config.num_rollout_workers=25
 
-# stop = {"training_iteration": 1}
+stop = {"training_iteration": 1}
 
 
-# tuner = tune.Tuner(
-#      CentralizedCritic,
-#      param_space=config.to_dict(),
-#      run_config=air.RunConfig(stop=stop, verbose=3),)
+tuner = tune.Tuner(
+      CentralizedCritic,
+      param_space=config.to_dict(),
+      run_config=air.RunConfig(stop=stop, verbose=3),)
 
-# results = tuner.fit()
+results = tuner.fit()
 
-#%% Train
-exp_name='test-CC-3'
+# #%% Train
+# exp_name='test-CC-Debug'
 
-from trainable import *
-
-
-# resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
-resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
+# from trainable import *
 
 
-tuneResults=tune.run(trainable_mas,
-          config=config.to_dict(),
-           resources_per_trial=resources,
-          local_dir=raylog,
-          name=exp_name,
-          verbose=3)
-
-# Results=tuneResult
-
-######################################################
-# TESTING
-#########################################################
-#%% Test
-import test_build
-
-# test_exp_name='test_ist_2ag_gs'
-# test_exp_name='test-3000-2g-FCUL-comp'
-# test_exp_name='test-3000-2g-FCUL'
-
-test_exp_name=exp_name
-
-# Good ones
-# test_exp_name='test-Feb13'
-# test_exp_name='test-shared-2ag-FCUL'
-# test_exp_name='test-shared-collective-reward-FCUL'
+# # resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
+# resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
 
 
-tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
+# tuneResults=tune.run(trainable_mas,
+#           config=config.to_dict(),
+#            resources_per_trial=resources,
+#           local_dir=raylog,
+#           name=exp_name,
+#           verbose=3)
 
-# tenv=NormalizeObs(tenv)
+# # Results=tuneResult
 
-tenv_data=tenv.data
-#%% Plot
-import test_agents
-full_state, env_state, metrics=test_agents.test(tenv, 
-                                                tester, 
-                                                n_episodes=1,
-                                                plot=True)
-# print(metrics)
-from plotutils import *
-make_boxplot(metrics,tenv)
+# ######################################################
+# # TESTING
+# #########################################################
+# #%% Test
+# import test_build
 
-m=metrics.loc['com']
+# # test_exp_name='test_ist_2ag_gs'
+# # test_exp_name='test-3000-2g-FCUL-comp'
+# # test_exp_name='test-3000-2g-FCUL'
 
-print(metrics.loc['ag1']['selfsuf'].mean())
+# test_exp_name=exp_name
 
-# metrics.to_csv('metrics_competitive_365_sequential.csv')
+# # Good ones
+# # test_exp_name='test-Feb13'
+# # test_exp_name='test-shared-2ag-FCUL'
+# # test_exp_name='test-shared-collective-reward-FCUL'
+
+
+# tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
+
+# # tenv=NormalizeObs(tenv)
+
+# tenv_data=tenv.data
+# #%% Plot
+# import test_agents
+# full_state, env_state, metrics=test_agents.test(tenv, 
+#                                                 tester, 
+#                                                 n_episodes=1,
+#                                                 plot=True)
+# # print(metrics)
+# from plotutils import *
+# make_boxplot(metrics,tenv)
+
+# m=metrics.loc['com']
+
+# print(metrics.loc['ag1']['selfsuf'].mean())
+
+# # metrics.to_csv('metrics_competitive_365_sequential.csv')
 
 
 

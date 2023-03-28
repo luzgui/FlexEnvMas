@@ -93,7 +93,8 @@ def make_env_config(datafolder):
                 'tar_type':'bi',
                 'env_info': 'training environment',
                 'num_agents':num_agents,
-                'agents_id':agents_id}
+                'agents_id':agents_id,
+                'seed':1024}
     
     
     return env_config

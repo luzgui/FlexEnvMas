@@ -23,7 +23,7 @@ modifies the environment.
 
 import argparse
 import numpy as np
-from gym.spaces import Discrete
+from gymnasium.spaces import Discrete
 import os
 
 import ray
@@ -48,7 +48,7 @@ from ray.rllib.utils.numpy import convert_to_numpy
 from ray.rllib.utils.test_utils import check_learning_achieved
 from ray.rllib.utils.tf_utils import explained_variance, make_tf_callable
 from ray.rllib.utils.torch_utils import convert_to_torch_tensor
-
+from termcolor import colored
 
 from models2 import *
 
@@ -100,19 +100,21 @@ def centralized_critic_postprocessing(policy,
                                       other_agent_batches=None, 
                                       episode=None):
     
+    # print(colored('Initiatted post-processing...','red'))
+    
     
     pytorch = policy.config["framework"] == "torch"
     if (pytorch and hasattr(policy, "compute_central_vf")) or (
         not pytorch and policy.loss_initialized()
     ):
         assert other_agent_batches is not None
-        # print('other batches',other_agent_batches.values())
-        [(_, opponent_batch)] = list(other_agent_batches.values())
+        print('other batches',other_agent_batches.values())
+        [(_,_, opponent_batch)] = list(other_agent_batches.values())
 
         # also record the opponent obs and actions in the trajectory
         sample_batch[OPPONENT_OBS] = opponent_batch[SampleBatch.CUR_OBS]
         sample_batch[OPPONENT_ACTION] = opponent_batch[SampleBatch.ACTIONS]
-
+        
         # overwrite default VF prediction with the central VF
         if policy.config["framework"] == "torch":
             sample_batch[SampleBatch.VF_PREDS] = (
@@ -133,7 +135,7 @@ def centralized_critic_postprocessing(policy,
             # print('cur_obs',sample_batch[SampleBatch.CUR_OBS])
             # print('opp_obs',sample_batch[OPPONENT_OBS])
             # print('opp_act',sample_batch[OPPONENT_ACTION])
-            
+            # print(colored('Computing VF..','red'))
             sample_batch[SampleBatch.VF_PREDS] = convert_to_numpy(
                 policy.compute_central_vf(
                     sample_batch[SampleBatch.CUR_OBS],
@@ -154,7 +156,8 @@ def centralized_critic_postprocessing(policy,
         last_r = 0.0
     else:
         last_r = sample_batch[SampleBatch.VF_PREDS][-1]
-
+    
+    # print(colored('Computing advantages...','red'))
     train_batch = compute_advantages(
         sample_batch,
         last_r,
@@ -162,6 +165,7 @@ def centralized_critic_postprocessing(policy,
         policy.config["lambda"],
         use_gae=policy.config["use_gae"],
     )
+    print(colored('Finished postprocess...','green'))
     return train_batch
 
 #%%

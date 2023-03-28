@@ -19,6 +19,8 @@ def trainable_mas(config):
     
     # trainer=PPO(config, env=config["env"])
     trainer=CentralizedCritic(config)
+    print(colored('Created Trainer...','red'))
+    
     
     weights={}
     

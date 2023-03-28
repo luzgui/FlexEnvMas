@@ -220,11 +220,11 @@ def get_post_data(menv):
 
 #%% Functions for MAS environment
 
-def policy_mapping_fn(agent_id):
+def policy_mapping_fn(agent_id,episode, worker, **kwargs):
     'Policy mapping function'
     return 'pol_' + agent_id
 
-def policy_mapping_fn_shared(agent_id):
+def policy_mapping_fn_shared(agent_id, episode, worker, **kwargs):
     'Policy mapping function with shared policy'
     return 'shared_pol' # parameter sharing must return the same policy for any agent
 
