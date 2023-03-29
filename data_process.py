@@ -9,7 +9,7 @@ def make_env_config(datafolder):
     # data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv')
     
     # data_raw_cons=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Consumers')
-    data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers')
+    # data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers')
     
     
     # data = get_raw_data('Dataset_gecad.xlsx', datafolder)

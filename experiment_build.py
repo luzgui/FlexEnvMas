@@ -82,15 +82,23 @@ def make_train_config(menv,pol_type):
                     .rollouts(num_rollout_workers=0)\
                     .multi_agent(policies=policies,
                                   policy_mapping_fn=policy_function)\
-                    .framework(framework='tf2')
-    
+                    .framework(framework='tf2',
+                               eager_tracing=True)\
+                    .resources(num_cpus_per_worker=1,
+                               num_cpus_per_trainer_worker=1,
+                               num_trainer_workers=1)\
                     # .evaluation(evaluation_interval=1,
                     #             evaluation_num_workers=1,
                     #             evaluation_num_episodes=10,) 
-                    # .resources(placement_strategy=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 1))
-                     
-    # config['poltype']=pol_type #store the value in the config    
+
+    # config['poltype']=pol_type #store the value in the config 
     
-    return config
+    
+    config_tune=TuneConfig(mode='max',
+                           metric='_metric/episode_reward_mean',)
+    
+    
+    
+    return config, config_tune
 
 

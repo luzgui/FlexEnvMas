@@ -10,16 +10,16 @@ from ray import tune
 from auxfunctions_CC import *
 from termcolor import colored
 
-
+import cProfile
 
 def trainable_mas(config):
     
-    n_iters=1
+    n_iters=2
     checkpoint_freq=50
     
     # trainer=PPO(config, env=config["env"])
     trainer=CentralizedCritic(config)
-    print(colored('Created Trainer...','red'))
+    print(colored('Trainer created...','red'))
     
     
     weights={}
@@ -30,8 +30,9 @@ def trainable_mas(config):
     random.seed(seed)    
     
     for i in range(n_iters):
-        print('training...')
+        print(colored('training...','red'))
         train_results=trainer.train()
+        # train_results=cProfile.run('trainer.train()')
 #       
         #Metrics we are gonna log from full train_results dict
         metrics={'episode_reward_max', 
@@ -49,10 +50,14 @@ def trainable_mas(config):
         #             weights["FCC/{}".format(k)] = v
         
         #save checkpoint every checkpoint_freq
-        if i % checkpoint_freq == 0: 
-            print(colored('Saving checkpoint...','green'))
-            checkpoint=trainer.save(tune.get_trial_dir())
+        # if i % checkpoint_freq == 0: 
+        #     print(colored('Saving checkpoint...','green'))
+        #     checkpoint=trainer.save(tune.get_trial_dir())
         
+        
+        
+        checkpoint=trainer.save(tune.get_trial_dir())
+        print(colored('Checkpoint saved...','green'))
         #evaluate agent
         # print('evaluating...')
         # # eval_results=trainer.evaluate()
@@ -63,9 +68,9 @@ def trainable_mas(config):
         # eval_logs['evaluation']={k: eval_results['evaluation'][k] for k in eval_metrics}
         
         # results={**logs,**weights,**eval_logs}
-        print(colored('Results...','green'))
+        # print(colored('Results...','green'))
         results={**logs}
-        print(colored('Report...','green'))
+        print(colored('Reporting...','green'))
         tune.report(results)
         
     trainer.stop()

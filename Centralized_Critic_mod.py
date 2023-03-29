@@ -41,6 +41,8 @@ from ray.rllib.utils.test_utils import check_learning_achieved
 from ray.rllib.utils.tf_utils import explained_variance, make_tf_callable
 from ray.rllib.utils.torch_utils import convert_to_torch_tensor
 
+import cProfile
+
 tf1, tf, tfv = try_import_tf()
 torch, nn = try_import_torch()
 
@@ -199,9 +201,10 @@ def get_ccppo_policy(base):
         def postprocess_trajectory(
             self, sample_batch, other_agent_batches=None, episode=None
         ):
-            return centralized_critic_postprocessing(
-                self, sample_batch, other_agent_batches, episode
-            )
+            return centralized_critic_postprocessing(self, sample_batch, other_agent_batches, episode)
+        
+
+
 
         @override(base)
         def stats_fn(self, train_batch: SampleBatch):

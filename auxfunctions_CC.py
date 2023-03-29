@@ -108,7 +108,7 @@ def centralized_critic_postprocessing(policy,
         not pytorch and policy.loss_initialized()
     ):
         assert other_agent_batches is not None
-        print('other batches',other_agent_batches.values())
+        # print('other batches',other_agent_batches.values())
         [(_,_, opponent_batch)] = list(other_agent_batches.values())
 
         # also record the opponent obs and actions in the trajectory
@@ -165,7 +165,7 @@ def centralized_critic_postprocessing(policy,
         policy.config["lambda"],
         use_gae=policy.config["use_gae"],
     )
-    print(colored('Finished postprocess...','green'))
+    # print(colored('Finished postprocess...','green'))
     return train_batch
 
 #%%

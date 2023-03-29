@@ -71,10 +71,17 @@ ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 
 from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
 
+#profiling
+import cProfile
+import pstats
+from pstats import SortKey
+
 #
 cwd=os.getcwd()
 datafolder=cwd + '/Data'
 raylog=cwd + '/raylog'
+
+prof_folder=raylog+'/profiles'
 
 
 ##############################################################################
@@ -85,11 +92,22 @@ raylog=cwd + '/raylog'
 import data_process
 env_config=data_process.make_env_config(datafolder)
 
+# filename=prof_folder+'/make_env_profile'
+# conf = cProfile.run('data_process.make_env_config(datafolder)',filename)
+
 
 #%% Make environment instance
 
 import environment_build
+# 
 menv_base=environment_build.make_env(env_config)
+
+
+# filename=prof_folder+'/env_profile_' + exp_name
+# menv_base=cProfile.run('environment_build.make_env(env_config)',filename)
+
+
+
 # menv=environment_build.make_env(env_config)
 
 menv=MultiAgentEnvCompatibility(menv_base)
@@ -114,45 +132,55 @@ register_env("shiftenv", env_creator)
 #%% Make experiment/train Tune config
 import experiment_build
 
+exp_name='test-CC-Tuner'
+
 # pol_type='shared_pol'
 pol_type='agent_pol'
-config=experiment_build.make_train_config(menv,pol_type)
-print(config)
+
+config, config_tune=experiment_build.make_train_config(menv,pol_type)
 # config.observation_filter='MeanStdFilter'
 
 #configs for FCUL-PC
 # config.num_rollout_workers=25
 
-stop = {"training_iteration": 1}
+
+#%% Train
+
+# stop = {"training_iteration": 1}
 
 
-tuner = tune.Tuner(
-      CentralizedCritic,
-      param_space=config.to_dict(),
-      run_config=air.RunConfig(stop=stop, verbose=3),)
+# trainer=CentralizedCritic(config)
+# filename=prof_folder+'/trainer_profile_' + exp_name
+# results = cProfile.run('trainer.train()',filename)
 
-results = tuner.fit()
+# trainer.train()
 
-# #%% Train
-# exp_name='test-CC-Debug'
 
-# from trainable import *
+
+
+run_config=air.RunConfig(verbose=3, 
+                         name=exp_name,
+                         local_dir=raylog)
 
 
 # # resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
-# resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
+resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
+trainable_resources = tune.with_resources(trainable_mas, resources)
+
+tuner = tune.Tuner(
+      trainable_resources,
+      param_space=config,
+      tune_config=config_tune,
+      run_config=run_config)
 
 
-# tuneResults=tune.run(trainable_mas,
-#           config=config.to_dict(),
-#            resources_per_trial=resources,
-#           local_dir=raylog,
-#           name=exp_name,
-#           verbose=3)
+# tuner.fit()
 
-# # Results=tuneResult
+filename=prof_folder+'/tuner_profile_' + exp_name
+results = cProfile.run('tuner.fit()',filename)
 
-# ######################################################
+
+#%%
 # # TESTING
 # #########################################################
 # #%% Test
@@ -195,7 +223,11 @@ results = tuner.fit()
 
 
 
+#%% Profilling
 
+
+p = pstats.Stats(filename)
+p.sort_stats(SortKey.CUMULATIVE).print_stats(20)
 
 
 
