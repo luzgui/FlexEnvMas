@@ -40,6 +40,7 @@ import matplotlib.pyplot as plt
 #System
 import os
 from os import path
+from pathlib import Path
 import sys
 import time
 
@@ -76,12 +77,12 @@ import cProfile
 import pstats
 from pstats import SortKey
 
-#
-cwd=os.getcwd()
-datafolder=cwd + '/Data'
-raylog=cwd + '/raylog'
+#paths
 
-prof_folder=raylog+'/profiles'
+cwd=Path.cwd()
+datafolder=cwd / 'Data'
+raylog=cwd / 'raylog'
+prof_folder=raylog / 'profiles'
 
 
 ##############################################################################
@@ -90,7 +91,7 @@ prof_folder=raylog+'/profiles'
 
 #%% Make environment config / Data
 import data_process
-env_config=data_process.make_env_config(datafolder)
+env_config=data_process.make_env_config(datafolder.as_posix())
 
 # filename=prof_folder+'/make_env_profile'
 # conf = cProfile.run('data_process.make_env_config(datafolder)',filename)
@@ -160,7 +161,7 @@ config, config_tune=experiment_build.make_train_config(menv,pol_type)
 
 run_config=air.RunConfig(verbose=3, 
                          name=exp_name,
-                         local_dir=raylog)
+                         local_dir=raylog.as_posix())
 
 
 # # resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
@@ -176,7 +177,7 @@ tuner = tune.Tuner(
 
 # tuner.fit()
 
-filename=prof_folder+'/tuner_profile_' + exp_name
+filename=prof_folder / ('tuner_profile_' + exp_name)
 results = cProfile.run('tuner.fit()',filename)
 
 
@@ -226,7 +227,7 @@ results = cProfile.run('tuner.fit()',filename)
 #%% Profilling
 
 
-p = pstats.Stats(filename)
+p = pstats.Stats(filename.as_posix())
 p.sort_stats(SortKey.CUMULATIVE).print_stats(20)
 
 

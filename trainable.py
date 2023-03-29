@@ -14,7 +14,7 @@ import cProfile
 
 def trainable_mas(config):
     
-    n_iters=2
+    n_iters=1
     checkpoint_freq=50
     
     # trainer=PPO(config, env=config["env"])
@@ -49,15 +49,15 @@ def trainable_mas(config):
         # for k, v in trainer.get_policy().get_weights().items():
         #             weights["FCC/{}".format(k)] = v
         
-        #save checkpoint every checkpoint_freq
-        # if i % checkpoint_freq == 0: 
-        #     print(colored('Saving checkpoint...','green'))
-        #     checkpoint=trainer.save(tune.get_trial_dir())
+        # save checkpoint every checkpoint_freq
+        if i % checkpoint_freq == 0: 
+            print(colored('Saving checkpoint...','green'))
+            checkpoint=trainer.save(tune.get_trial_dir())
         
         
         
-        checkpoint=trainer.save(tune.get_trial_dir())
-        print(colored('Checkpoint saved...','green'))
+        # checkpoint=trainer.save(tune.get_trial_dir())
+        # print(colored('Checkpoint saved...','green'))
         #evaluate agent
         # print('evaluating...')
         # # eval_results=trainer.evaluate()
