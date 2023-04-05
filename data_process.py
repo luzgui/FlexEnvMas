@@ -94,7 +94,8 @@ def make_env_config(datafolder):
                 'env_info': 'training environment',
                 'num_agents':num_agents,
                 'agents_id':agents_id,
-                'seed':1024}
+                'seed':1024,
+                'normalization': True}
     
     
     return env_config

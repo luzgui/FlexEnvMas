@@ -102,7 +102,7 @@ env_config=data_process.make_env_config(datafolder.as_posix())
 import environment_build
 # 
 menv_base=environment_build.make_env(env_config)
-
+#menv_base.normalization=False
 
 # filename=prof_folder+'/env_profile_' + exp_name
 # menv_base=cProfile.run('environment_build.make_env(env_config)',filename)
@@ -133,7 +133,7 @@ register_env("shiftenv", env_creator)
 #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='test-CC-Tuner'
+exp_name='test-CC-Normal'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'
@@ -225,7 +225,6 @@ results = cProfile.run('tuner.fit()',filename)
 
 
 #%% Profilling
-
 
 p = pstats.Stats(filename.as_posix())
 p.sort_stats(SortKey.CUMULATIVE).print_stats(20)

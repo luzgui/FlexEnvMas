@@ -21,6 +21,9 @@ class ShiftEnvMas(MultiAgentEnv):
 
         self.env_config=config
         
+        #Normalization
+        self.normalization=config['normalization']
+        
         #COMMUNITY /COMMON parameters
         self.num_agents=config['num_agents']
         self.agents_id=config['agents_id']
@@ -34,6 +37,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         
         self.data=config["data"]
+        self.stats=self.get_data_stats()
           
         self.tstep_size=config["step_size"]
         
@@ -306,7 +310,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #initialy history is just the all history
         self.state_hist=self.state.copy()
 
-
+        self.make_state_norm() #make the normalized state
         
         return self.get_env_obs()
         
@@ -390,7 +394,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         # self.assert_type(obs)
         
-        
+        self.make_state_norm() #make the normalized state
         
         
         return self.get_env_obs(), self.reward, self.get_env_done(), {}
@@ -456,8 +460,12 @@ class ShiftEnvMas(MultiAgentEnv):
     
     def get_agent_obs(self, agent):
         assert agent in self.agents_id, 'Agent does not exist in this community'
-        # return np.array(self.state.loc[agent], dtype=np.float32)
-        return np.array(self.state.loc[agent], dtype=np.float32)
+        
+        if self.normalization == True: #return the nomrlized state
+            return np.array(self.state_norm.loc[agent], dtype=np.float32)
+        else:
+            return np.array(self.state.loc[agent], dtype=np.float32)
+        
     
     
     def get_env_obs(self):
@@ -713,6 +721,79 @@ class ShiftEnvMas(MultiAgentEnv):
     def get_state(self):
         return self.state
          
+    
+    def make_state_norm(self):
+        self.state_norm=self.state.copy()
+        for aid in self.agents_id:
+            for key in self.state.columns:
+                # print(key)
+                if key=='tstep': #convert timestep to sin
+                    self.state_norm.loc[aid,key]=np.sin(2*np.pi*(self.state.loc[aid,key]/self.T))
+                
+                if key=='minutes': #convert minutes to cos with a phase
+                    self.state_norm.loc[aid,key]=np.cos(2*np.pi*(self.state.loc[aid,key]/self.T)+np.pi)
+                
+                if key=='y_s': #normalize by the app profile timeslots
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.T_prof.loc[aid]['T_prof']
+                
+                if key=='E_prof_rem':
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.E_prof.loc[aid]['E_prof']
+                    
+                
+                for var in self.var_class:
+                    if var in key:
+                        
+                        #mean normalization
+                        self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
+                               
+                        #standartization
+                        # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/self.stats[aid].loc['mean'][var]
+                        
+                        # maxnormalization
+                        # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.stats[aid].loc['max'][var]
+                
+                    
+        # def get_state_norm(self):
+        #     m.state_norm=m.state.copy()
+        #     for aid in m.agents_id:
+        #         for key in m.state.columns:
+        #             # print(key)
+        #             if key=='tstep': #convert timestep to sin
+        #                 m.state_norm.loc[aid,key]=np.sin(2*np.pi*(m.state.loc[aid,key]/m.T))
+                    
+        #             if key=='minutes': #convert minutes to cos with a phase
+        #                 m.state_norm.loc[aid,key]=np.cos(2*np.pi*(m.state.loc[aid,key]/m.T)+np.pi)
+                    
+        #             if key=='y_s': #normalize by the app profile timeslots
+        #                 m.state_norm.loc[aid,key]=m.state.loc[aid,key]/m.T_prof.loc[aid]['T_prof']
+                    
+        #             if key=='E_prof_rem':
+        #                 m.state_norm.loc[aid,key]=m.state.loc[aid,key]/m.E_prof.loc[aid]['E_prof']
+                        
+                    
+        #             for var in m.var_class:
+        #                 if var in key:
+                            
+        #                     #mean normalization
+        #                     m.state_norm.loc[aid,key]=(m.state.loc[aid,key]-m.stats[aid].loc['mean'][var])/(m.stats[aid].loc['max'][var]-m.stats[aid].loc['min'][var])
+                            
+        #                     #standartization
+        #                     # m.state_norm.loc[aid,key]=(m.state.loc[aid,key]-m.stats[aid].loc['mean'][var])/m.stats[aid].loc['mean'][var]
+                            
+        #                     # maxnormalization
+        #                     # m.state_norm.loc[aid,key]=m.state.loc[aid,key]/m.stats[aid].loc['max'][var]
+                    
+                
+                    
+        
+    
+    def get_data_stats(self):
+        stats={}
+        for aid in self.agents_id:
+            stats[aid]=self.data.loc[aid].describe()        
+        return stats
+        
+    
     
     def assert_type(self,obs):
         for key in obs.keys():
