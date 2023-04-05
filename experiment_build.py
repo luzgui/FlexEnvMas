@@ -78,15 +78,15 @@ def make_train_config(menv,pol_type):
                         observation_space=menv.observation_space,
                         action_space=menv.action_space,
                         env_config=menv.env_config)\
-                    .debugging(seed=1024,log_level='WARN')\
+                    .debugging(seed=1024,log_level='DEBUG')\
                     .rollouts(num_rollout_workers=0)\
                     .multi_agent(policies=policies,
                                   policy_mapping_fn=policy_function)\
                     .framework(framework='tf2',
                                eager_tracing=True)\
-                    .resources(num_cpus_per_worker=1,
-                               num_cpus_per_trainer_worker=1,
-                               num_trainer_workers=1)\
+                    # .resources(num_cpus_per_worker=1,
+                    #            num_cpus_per_trainer_worker=1,
+                    #            num_trainer_workers=1)\
                     # .evaluation(evaluation_interval=1,
                     #             evaluation_num_workers=1,
                     #             evaluation_num_episodes=10,) 

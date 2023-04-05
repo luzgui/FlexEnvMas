@@ -163,9 +163,16 @@ run_config=air.RunConfig(verbose=3,
                          name=exp_name,
                          local_dir=raylog.as_posix())
 
+#resources FCUL
+# b={'CPU':3,'GPU':0.1}
+# resources=tune.PlacementGroupFactory([b]*10)
+# config.num_rollout_workers=10
 
-# # resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 27 +  [{'GPU': 1.0}]) #reosurces FCUL
+
+#reosurces local
 resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
+
+
 trainable_resources = tune.with_resources(trainable_mas, resources)
 
 tuner = tune.Tuner(
