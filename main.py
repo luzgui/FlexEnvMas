@@ -133,7 +133,7 @@ register_env("shiftenv", env_creator)
 #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='test-CC-Normal'
+exp_name='test-CC-Normal-1'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'
@@ -188,44 +188,44 @@ filename=prof_folder / ('tuner_profile_' + exp_name)
 results = cProfile.run('tuner.fit()',filename)
 
 
-#%%
-# # TESTING
-# #########################################################
-# #%% Test
-# import test_build
+ #%%
+# TESTING
+#########################################################
+#%% Test
+import test_build
 
-# # test_exp_name='test_ist_2ag_gs'
-# # test_exp_name='test-3000-2g-FCUL-comp'
-# # test_exp_name='test-3000-2g-FCUL'
+# test_exp_name='test_ist_2ag_gs'
+# test_exp_name='test-3000-2g-FCUL-comp'
+# test_exp_name='test-3000-2g-FCUL'
 
-# test_exp_name=exp_name
+test_exp_name=exp_name
 
-# # Good ones
-# # test_exp_name='test-Feb13'
-# # test_exp_name='test-shared-2ag-FCUL'
-# # test_exp_name='test-shared-collective-reward-FCUL'
+# Good ones
+# test_exp_name='test-Feb13'
+# test_exp_name='test-shared-2ag-FCUL'
+# test_exp_name='test-shared-collective-reward-FCUL'
 
 
-# tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
+tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
-# # tenv=NormalizeObs(tenv)
+# tenv=NormalizeObs(tenv)
 
-# tenv_data=tenv.data
-# #%% Plot
-# import test_agents
-# full_state, env_state, metrics=test_agents.test(tenv, 
-#                                                 tester, 
-#                                                 n_episodes=1,
-#                                                 plot=True)
-# # print(metrics)
-# from plotutils import *
-# make_boxplot(metrics,tenv)
+tenv_data=tenv.data
+#%% Plot
+import test_agents
+full_state, env_state, metrics=test_agents.test(tenv, 
+                                                tester, 
+                                                n_episodes=1,
+                                                plot=True)
+# print(metrics)
+from plotutils import *
+make_boxplot(metrics,tenv)
 
-# m=metrics.loc['com']
+m=metrics.loc['com']
 
-# print(metrics.loc['ag1']['selfsuf'].mean())
+print(metrics.loc['ag1']['selfsuf'].mean())
 
-# # metrics.to_csv('metrics_competitive_365_sequential.csv')
+# metrics.to_csv('metrics_competitive_365_sequential.csv')
 
 
 

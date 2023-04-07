@@ -228,13 +228,23 @@ def policy_mapping_fn_shared(agent_id, episode, worker, **kwargs):
     'Policy mapping function with shared policy'
     return 'shared_pol' # parameter sharing must return the same policy for any agent
 
+def policy_mapping_fn_test(agent_id):
+    'Policy mapping function'
+    return 'pol_' + agent_id
+
+def policy_mapping_fn_test_shared(agent_id):
+    'Policy mapping function with shared policy'
+    return 'shared_pol' # p
+
 
 def get_actions(obs,trainer,agents_id, map_func):
     'resturns the actions of the agents'
     if type(obs)==dict:
-        actions = {aid:trainer.compute_single_action(obs[aid],policy_id=map_func(aid)) for aid in agents_id}
+        actions = {aid:trainer.compute_single_action(obs[aid],
+                                                     policy_id=map_func(aid)) for aid in agents_id}
     elif type(obs)==tuple:
-        actions = {aid:trainer.compute_single_action(obs[0][aid],policy_id=map_func(aid)) for aid in agents_id}
+        actions = {aid:trainer.compute_single_action(obs[0][aid],
+                                                     policy_id=map_func(aid)) for aid in agents_id}
     return actions
 
 

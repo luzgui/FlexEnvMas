@@ -21,14 +21,16 @@ def test(tenv, tester, n_episodes, plot=True):
     episode_metrics=pd.DataFrame()
     
     
-    #choose the policy mapping function according to poltype in algorithm config
-    # if tester.config.poltype=='agent_pol':
-    #     policy_mapping_func=policy_mapping_fn
-    # elif tester.config.poltype=='shared_pol':
-    #     policy_mapping_func=policy_mapping_fn_shared
-    policy_mapping_func=policy_mapping_fn    
-        
+    #choose the policy mapping function according to policies in algorithm config
     
+    pols=list(tester.config.policies.keys())
+    if 'pol_ag' in pols[0]: # each agent has its policy
+        policy_mapping_func=policy_mapping_fn_test
+    elif pols[0]=='shared_pol': # theres a shared policy for agents
+        policy_mapping_func=policy_mapping_fn_test_shared
+        
+        
+
     k=0
     
     while k < n_episodes:

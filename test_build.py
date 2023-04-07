@@ -44,7 +44,7 @@ def make_tester(exp_name, raylog, datafolder):
     
     
     # data = get_raw_data('Dataset_gecad.xlsx', datafolder)
-    data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder)
+    data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix())
     
     
     # define the length of the dataset
