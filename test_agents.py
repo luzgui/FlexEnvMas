@@ -64,19 +64,24 @@ def test(tenv, tester, n_episodes, plot=True):
 
         full_state, env_state=get_post_data(tenv)
         
-        episode_metrics=pd.concat([get_episode_metrics(full_state, tenv,k),episode_metrics])
+        episode_metrics=pd.concat([get_episode_metrics(full_state,
+                                                       env_state,
+                                                       tenv,k),
+                                                       episode_metrics])
         
         
         
         if plot: 
+            # from plotutils import makeplot
             makeplot(T,
                       [],
                       env_state['shift_T'],
+                      env_state[[k for k in env_state.columns if 'shift_ag' in k]],
                       env_state['gen0'],
                       env_state['load_T'],
                       env_state['tar_buy'],
                       tenv, 
-                      full_state['cost_pos'].sum(),
+                      env_state['Cost_shift_T'].sum(),
                       0) #
             
             
@@ -93,9 +98,7 @@ def test(tenv, tester, n_episodes, plot=True):
 
 
 
-
-
-def get_episode_metrics(full_state,environment,k):
+def get_episode_metrics(full_state,env_state,environment,k):
     agents_id=full_state.index.unique()
     metrics=pd.DataFrame(index=full_state.index.unique())
     Total_load=[]
@@ -103,7 +106,8 @@ def get_episode_metrics(full_state,environment,k):
     
     #Per agent metrics
     for ag in agents_id:
-        # cost
+        
+        # per agent cost considering the 
         full_state.loc[ag,'cost']=(full_state.loc[ag]['action']*environment.profile[ag][0]-full_state.loc[ag]['excess0'])*full_state.loc[ag]['tar_buy']
         
 
@@ -147,11 +151,12 @@ def get_episode_metrics(full_state,environment,k):
     
     metrics.loc['com','x_sig']=sigmoid(0.5,6.2,2,1,E_ratio)
 
-
-
+    
+    
     
     # metrics.loc['com','selfsuf']=full_state['selfsuf'].sum()/environment.num_agents
-    metrics.loc['com','cost']=full_state['cost_pos'].sum()
+    # metrics.loc['com','cost']=full_state['cost_pos'].sum()
+    metrics.loc['com','cost']=env_state['Cost_shift_T'].sum() #the cost of consuming aggregated shiftable load
     
     
     #Binary metrics ()
@@ -160,10 +165,16 @@ def get_episode_metrics(full_state,environment,k):
     #1 if the cost is greater that mininmum tarif cost of community
     metrics.loc['com','y']=int(bool(metrics.loc['com','cost'] > min_cost))
     
+    #cost variation relative to the min cost (-1 zero cost)
+    min_cost=environment.tar_buy*environment.E_prof['E_prof'].sum()
+    metrics['cost_var']=(metrics.loc['com']['cost']-min_cost)/min_cost
+    
     
     #create index for test episode number
     metrics['test_epi']=k
     metrics_out=metrics.set_index('test_epi',drop=True, append=True)
+    
+    
 
     return metrics_out
         

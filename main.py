@@ -83,6 +83,7 @@ cwd=Path.cwd()
 datafolder=cwd / 'Data'
 raylog=cwd / 'raylog'
 prof_folder=raylog / 'profiles'
+resultsfolder=cwd / 'Results'
 
 
 ##############################################################################
@@ -133,7 +134,7 @@ register_env("shiftenv", env_creator)
 #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='test-CC-Normal-1'
+exp_name='test-CC-Normal-ag_pol'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'
@@ -194,9 +195,14 @@ results = cProfile.run('tuner.fit()',filename)
 #%% Test
 import test_build
 
-# test_exp_name='test_ist_2ag_gs'
-# test_exp_name='test-3000-2g-FCUL-comp'
-# test_exp_name='test-3000-2g-FCUL'
+#runs in FCUL after normalization if inputs
+#centralized Critic
+exp_name='test-CC-Normal'
+# exp_name='test-CC-Normal-shared-F2'
+
+#independent learning
+# exp_name='PPO-IL-Normal-F1'
+# exp_name='PPO-IL-Normal-shared-F2'
 
 test_exp_name=exp_name
 
@@ -205,25 +211,28 @@ test_exp_name=exp_name
 # test_exp_name='test-shared-2ag-FCUL'
 # test_exp_name='test-shared-collective-reward-FCUL'
 
-
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
 # tenv=NormalizeObs(tenv)
 
 tenv_data=tenv.data
+
+
 #%% Plot
 import test_agents
+
 full_state, env_state, metrics=test_agents.test(tenv, 
-                                                tester, 
-                                                n_episodes=1,
-                                                plot=True)
-# print(metrics)
+                                                    tester, 
+                                                    n_episodes=365,
+                                                    plot=False)
+    
+    
 from plotutils import *
 make_boxplot(metrics,tenv)
 
-m=metrics.loc['com']
+# m=metrics.loc['com']
 
-print(metrics.loc['ag1']['selfsuf'].mean())
+# print('self-suf mean:', metrics.loc['ag1']['selfsuf'].mean())
 
 # metrics.to_csv('metrics_competitive_365_sequential.csv')
 

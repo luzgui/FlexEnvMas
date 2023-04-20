@@ -47,7 +47,10 @@ import random as rnd
 
 
 # %%
-def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
+def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
+    
+    ag_colors=pd.DataFrame(['c','r'],index=sol_ag.columns)
+    ag_colors.columns=['color']
 
     useful_pv = pd.concat([load + sol, gen], axis=1).min(axis=1)
     surplus_pv = ((load+sol)-gen).clip(upper=0)  # negative, saturates at 0
@@ -92,8 +95,28 @@ def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
     plot5 = ax1.fill_between(t[0:T], surplus_pv[0:T].values.astype(
         'float64'), label='PV surplus', facecolor="none", hatch='..', edgecolor='#FFB300')
 
+    
+
     plot2 = ax1.fill_between(t[0:T], sol.values.astype(
-        'float64'), facecolor="none", hatch="////", edgecolor='k', alpha=0.4)  # , linewidth=0.0
+        'float64'), facecolor="none", hatch="////", edgecolor='k', alpha=0.8)
+    
+    #individual appliance plots
+    for ag in sol_ag.columns: 
+        ax1.fill_between(t[0:T], sol_ag[ag].values.astype(
+            'float64'), facecolor=ag_colors.loc[ag]['color'],edgecolor='k', alpha=0.6)  # ,
+    
+    # plot2 = ax1.fill_between(t[0:T], sol_ag['shift_ag1'].values.astype(
+    #     'float64'), facecolor='c',edgecolor='k', alpha=1)  # , linewidth=0.0
+    
+    # plot8 = ax1.fill_between(t[0:T], sol_ag['shift_ag2'].values.astype(
+    #     'float64'), facecolor='r',edgecolor='k', alpha=1)  # , linewidt8h=0.0
+    
+
+     # , linewidth=0.0
+    # plot8 = ax1.fill_between(t[0:T],8 sol_ag['shift_ag2'].values.astype(
+    #     'float64'), facecolor="none", hatch="////", edgecolor='g', alpha=0.4)  # , linewidth=0.0
+    
+
 
     ax2.plot(t, tar[0:T], label='tariff', color='k')
 
@@ -120,10 +143,11 @@ def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
 # %%
 def make_boxplot(metrics,env):
     
-    m=metrics.loc['com']
+    m=metrics.loc['com']#only using community metrics in plots
     
     
     min_cost=env.tar_buy*env.E_prof['E_prof'].sum()
+
     #boxplot
      
     fig, ax = plt.subplots(figsize =(10, 7))
@@ -132,22 +156,25 @@ def make_boxplot(metrics,env):
     ax.boxplot(m[['cost', 'selfsuf','x_sig']])
     ax.set(title='Number of days=%i' % len(m))
     ax.grid(True, which='major')
-
+    
     ax.set_xticklabels(['cost', 'selfsuf','x_sig'])
-
+    
     # show plot
     plt.show()
     
     # scatter
     fig1, ax1 = plt.subplots(figsize =(10, 7))
-    ax1.scatter(m['cost'],m['x_ratio'])
-    ax1.set(title='Cost vs Available PV excess | Number of days=%i' % len(m))
+    ax1.scatter(m['cost_var'],m['x_ratio'])
+    ax1.set(title='Cost vs Available PV excess for the community | Number of days=%i' % len(m))
     
-    ax1.set_xlabel('Cost(€)')
-    ax1.set_ylabel('PV Excess for the whole day (kWh)')
+    ax1.set_xlabel('%')
+    ax1.set_ylabel('PV Excess to app energy needed ratio')
     
     #plot the min cost for comparison
-    ax1.axvline(x = min_cost, color = 'r', label = 'min_cost')
+    ax1.axvline(x = 0, color = 'r', label = 'min cost')
+    ax1.axvline(x = 1, color = 'k', label = 'max cost')
+    ax1.axvline(x = -1, color = 'g', label = 'zero cost')
+    ax1.axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy')
     
     ax1.legend()
     

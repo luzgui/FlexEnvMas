@@ -186,7 +186,7 @@ def get_post_data(menv):
     columns_names.extend(shift_columns_names)
     columns_names.extend(reward_columns_names)
     
-    columns_names.extend(['shift_T','load_T','gen0','reward_T','tar_buy'])
+    columns_names.extend(['shift_T','load_T','gen0','excess0','reward_T','Cost_shift_T','tar_buy'])
     
     #make a new dataframe to store the solutions
     df_post=pd.DataFrame(columns=columns_names)
@@ -210,9 +210,17 @@ def get_post_data(menv):
     df_post['reward_T']=df_post[reward_columns_names].sum(axis=1)
     
     
-    
     df_post['gen0']=df.loc[menv.agents_id[0],'gen0'].values #pv production is the same for all and it is collective. So we can use any agent on the agents_id list
+    df_post['excess0']=df.loc[menv.agents_id[0],'excess0'].values # the excess is the same for all
+    
+    
     df_post['tar_buy']=df.loc[menv.agents_id[0],'tar_buy'].values
+    
+    
+    #computing cost of ONLY the shiftable loads with excess
+    df_temp=df_post['shift_T']-df_post['excess0']
+    df_post['Cost_shift_T']=np.maximum(df_temp,0)*df_post['tar_buy']
+    
     
                 
     return df, df_post

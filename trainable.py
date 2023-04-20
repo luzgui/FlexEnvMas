@@ -17,8 +17,8 @@ def trainable_mas(config):
     n_iters=1
     checkpoint_freq=50
     
-    # trainer=PPO(config, env=config["env"])
-    trainer=CentralizedCritic(config)
+    trainer=PPO(config, env=config["env"])
+    # trainer=CentralizedCritic(config)
     print(colored('Trainer created...','red'))
     
     

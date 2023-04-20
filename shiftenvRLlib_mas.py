@@ -452,7 +452,8 @@ class ShiftEnvMas(MultiAgentEnv):
             return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
     
         elif self.mas_setup == 'cooperative_colective':
-            AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id]
+            AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id] #harcoded expression for agents with same profile
+            
             # R=sum(agents loads)- Excess
             R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']
             return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id}
@@ -523,11 +524,15 @@ class ShiftEnvMas(MultiAgentEnv):
         elif self.init_cond == 'mode_window_seq': #sequential
             t=self.allowed_inits[0] #get first day
             self.allowed_inits.remove(t)
+            print('chosen timestep:',t)
+            print('days left:',len(self.allowed_inits))
             return t
         
         elif self.init_cond=='mode_window_no-repeat':
             t=rnd.choice(self.allowed_inits) # day is is chosen randomly
             self.allowed_inits.remove(t) #but it doenst repeat we remove the vallue from the list
+            print('chosen timestep:',t)
+            print('days left:',len(self.allowed_inits))
             return t
         
         
@@ -535,6 +540,7 @@ class ShiftEnvMas(MultiAgentEnv):
             #episode starts at t=0
             return 0
 
+        
         
         
     def update_forecast(self):
@@ -743,7 +749,7 @@ class ShiftEnvMas(MultiAgentEnv):
                 for var in self.var_class:
                     if var in key:
                         
-                        #mean normalization
+                        #mean normalization using statistics from the training dataset
                         self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
                                
                         #standartization
