@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy.random as rnd
 import time
 import random as rnd
+import seaborn as sns
 
 
 # def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
@@ -139,6 +140,9 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     ax2.minorticks_on()
     ax2.grid(visible=True, which='minor',
              color='#999999', linestyle='-', alpha=0.07)
+    
+    
+    
 
 # %%
 def make_boxplot(metrics,env):
@@ -150,39 +154,104 @@ def make_boxplot(metrics,env):
 
     #boxplot
      
-    fig, ax = plt.subplots(figsize =(10, 7))
+    # fig, ax = plt.subplots(figsize =(10, 7))
      
     # Creating plot
-    ax.boxplot(m[['cost', 'selfsuf','x_sig']])
-    ax.set(title='Number of days=%i' % len(m))
-    ax.grid(True, which='major')
+    # ax.boxplot(m[['cost', 'selfsuf','x_sig']])
+    # ax.set(title='Number of days=%i' % len(m))
+    # ax.grid(True, which='major')
     
-    ax.set_xticklabels(['cost', 'selfsuf','x_sig'])
+    # ax.set_xticklabels(['cost', 'selfsuf','x_sig'])
     
-    # show plot
-    plt.show()
+    # # show plot
+    # plt.show()
     
-    # scatter
-    fig1, ax1 = plt.subplots(figsize =(10, 7))
-    ax1.scatter(m['cost_var'],m['x_ratio'])
-    ax1.set(title='Cost vs Available PV excess for the community | Number of days=%i' % len(m))
+    # scatter plot
     
-    ax1.set_xlabel('%')
-    ax1.set_ylabel('PV Excess to app energy needed ratio')
+    # fig1, ax1 = plt.subplots(figsize =(10, 7))
+    
+    fig, ax = plt.subplots(2,1,figsize =(10, 7))
+    
+    
+    
+    ax[0].scatter(m['cost_var'],m['x_ratio'])
+    ax[0].set(title='Cost vs Available PV excess for the community | Number of days=%i' % len(m))
+    
+    ax[0].set_xlabel('%')
+    ax[0].set_ylabel('PV Excess to app energy needed ratio')
     
     #plot the min cost for comparison
-    ax1.axvline(x = 0, color = 'r', label = 'min cost')
-    ax1.axvline(x = 1, color = 'k', label = 'max cost')
-    ax1.axvline(x = -1, color = 'g', label = 'zero cost')
-    ax1.axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy')
+    ax[0].axvline(x = 0, color = 'r', label = 'min cost')
+    ax[0].axvline(x = 1, color = 'k', label = 'max cost')
+    ax[0].axvline(x = -1, color = 'g', label = 'zero cost')
+    ax[0].axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy')
+    ax[0].grid('minor')
     
-    ax1.legend()
+    ax[0].legend()
     
     
     
+    ## Histogram
+
+    ax[1].hist(m['cost_var'], bins=40)
+    ax[1].set_ylabel('Number of days in year')
+    
+    
+    ax[1].axvline(x = 1, color = 'k')
+    ax[1].axvline(x = 0, color = 'r')
+    ax[1].axvline(x = -1, color = 'g')
+    ax[1].grid('minor')
+    
+    fig.tight_layout()
+    plt.show()
 
 
 
+def make_costplot(df,filename):
+    m=df.loc['com']#only using community metrics in plots
+    
+    # sns.set_theme()
+    
+    # g=sns.jointplot(data=m, x="cost_var", y="x_ratio", hue='season',
+    #                 ylim=[-1,m['x_ratio'].max()+1],
+    #                 height=7)
+    
+    # g=sns.jointplot(data=m, x="cost_var", y="x_ratio",
+    #                 ylim=[-1,m['x_ratio'].max()+1],
+    #                 height=7)
+    
+    
+    
+    g = sns.JointGrid(data=m, x="cost_var", y="x_ratio", 
+                      height=7,
+                      marginal_ticks=True)
+    # g.plot(sns.scatterplot, sns.histplot)
+
+    
+    g.plot_joint(sns.scatterplot, s=50, alpha=0.9)
+    g.plot_marginals(sns.histplot)
+    
+    
+    a=0.5
+    g.refline(x=0, color='b', alpha=a, label = 'min cost')
+    g.refline(x=-1,color='g',alpha=a)
+    g.refline(x=1,color='r',alpha=a)
+    g.refline(y=1)
+
+    
+    g.set_axis_labels('% relative to minimum cost', 
+                      'PV Excess to app energy needed ratio')
+
+
+
+    # plt.axvline(x = 0, color = 'k',linestyle='--', label = 'min cost', alpha=0.6)
+    # plt.axvline(x = 1, color = 'k',linestyle='--', label = 'max cost',alpha=0.6)
+    # plt.axvline(x = -1, color = 'k',ls='--', label = 'zero cost',alpha=0.6)
+    # plt.axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy',alpha=0.6)
+    
+    g.ax_marg_y.remove()
+
+    g.savefig(filename, dpi=300)
 # make_boxplot(metrics,tenv)
 # %%
     # #PLots

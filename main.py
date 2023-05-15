@@ -36,6 +36,8 @@ import numpy as np
 
 #Plotting
 import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 #System
 import os
@@ -189,20 +191,31 @@ filename=prof_folder / ('tuner_profile_' + exp_name)
 results = cProfile.run('tuner.fit()',filename)
 
 
- #%%
-# TESTING
-#########################################################
+
 #%% Test
+
 import test_build
 
 #runs in FCUL after normalization if inputs
 #centralized Critic
-exp_name='test-CC-Normal'
+# exp_name='test-CC-Normal'
 # exp_name='test-CC-Normal-shared-F2'
 
 #independent learning
 # exp_name='PPO-IL-Normal-F1'
-# exp_name='PPO-IL-Normal-shared-F2'
+exp_name='PPO-IL-Normal-shared-F2'
+
+
+#LowPV agents
+#centralized Critic
+# exp_name='CC-Normal-ag_pol'
+# exp_name='CC-Normal-shared-PVLow-F1'
+
+#Independent agents
+# exp_name='PPO-IL-ag_pol-PVLow'
+# exp_name='PPO-IL-Shared-PVLow'
+
+
 
 test_exp_name=exp_name
 
@@ -223,12 +236,19 @@ import test_agents
 
 full_state, env_state, metrics=test_agents.test(tenv, 
                                                     tester, 
-                                                    n_episodes=365,
-                                                    plot=False)
+                                                    n_episodes=1,
+                                                    plot=True)
     
+
+#import metrics from file
+# csv_list=get_files(resultsfolder,'csv','metrics')
+# metrics=pd.read_csv(csv_list[2], index_col=0)
     
 from plotutils import *
-make_boxplot(metrics,tenv)
+# make_boxplot(metrics,tenv)
+
+filename=resultsfolder / 'PicsSample' / 'joint_plot.png'
+make_costplot(metrics,filename)
 
 # m=metrics.loc['com']
 
@@ -236,6 +256,10 @@ make_boxplot(metrics,tenv)
 
 # metrics.to_csv('metrics_competitive_365_sequential.csv')
 
+penguins = sns.load_dataset("penguins")
+sns.JointGrid(data=penguins, x="bill_length_mm", y="bill_depth_mm")
+g = sns.JointGrid(data=penguins, x="bill_length_mm", y="bill_depth_mm")
+g.plot(sns.scatterplot, sns.histplot)
 
 
 

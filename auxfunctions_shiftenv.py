@@ -258,3 +258,24 @@ def get_actions(obs,trainer,agents_id, map_func):
 
 def sigmoid(a,b,c,d,x):
     return c/(d+np.exp(-a*x+b))
+
+
+
+def get_files(folder,filetype,keyword):
+    #we shall store all the file names in this list
+    filelist = []
+
+    for root, dirs, files in os.walk(folder):
+    	for file in files:
+        		filelist.append(os.path.join(root,file))
+
+
+    filetype_list=[]
+    for file in filelist:
+        if filetype and keyword in file:
+            filetype_list.append(file)
+            
+    return filetype_list
+    
+    
+

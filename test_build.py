@@ -71,9 +71,9 @@ def make_tester(exp_name, raylog, datafolder):
     best_config['env_config']['env_info']='testing environment' 
     
     ### try new initialization for testing purposes
-    best_config['env_config']['init_condition']='mode_window_seq'
+    # best_config['env_config']['init_condition']='mode_window_seq'
     # best_config['env_config']['init_condition']='mode_window'
-    # best_config['env_config']['init_condition']='mode_window_no-repeat'
+    best_config['env_config']['init_condition']='mode_window_no-repeat'
     
     
     #make config object to build

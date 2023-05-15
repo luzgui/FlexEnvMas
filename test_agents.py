@@ -128,10 +128,7 @@ def get_episode_metrics(full_state,env_state,environment,k):
         metrics.loc[ag,'x_ratio']=full_state.loc['ag1']['excess0'].sum()/environment.E_prof.loc[ag,'E_prof']
         
         
-
-        
-        
-        
+    
     #community metrics
     SS_temp=pd.concat([full_state[['minutes','load']]\
         .set_index('minutes')\
@@ -170,15 +167,44 @@ def get_episode_metrics(full_state,env_state,environment,k):
     metrics['cost_var']=(metrics.loc['com']['cost']-min_cost)/min_cost
     
     
+    
+    #year season
+    metrics['day']=environment.tstep_init/environment.tstep_per_day
+    metrics['season']=get_season(metrics.loc['com']['day'])
+    
+    
+    
     #create index for test episode number
     metrics['test_epi']=k
     metrics_out=metrics.set_index('test_epi',drop=True, append=True)
     
     
-
+    #year season
+    
+    
+    
     return metrics_out
         
+
+
+def get_season(day):
+        # "day of year" ranges for the northern hemisphere
+    spring = range(80, 172)
+    summer = range(172, 264)
+    fall = range(264, 355)
+    # winter = everything else
     
+    if day in spring:
+        season = 'spring'
+    elif day in summer:
+        season = 'summer'
+    elif day in fall:
+        season = 'fall'
+    else:
+        season = 'winter'
+    
+    return season
+        
     
     # full_track=pd.concat([state_track, action_reward_track,metrics_episode],axis=1)
     # full_track_filter=full_track[['tstep','minutes','gen0','load0','delta0','excess0','tar_buy','E_prof', 'action', 'reward','cost', 'delta_c', 'gamma']]
