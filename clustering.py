@@ -21,15 +21,18 @@ from tslearn.preprocessing import TimeSeriesScalerMeanVariance, \
 
 data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix())
 
-
+#%%
 seed=1000
 model = TimeSeriesKMeans(n_clusters=3, metric="dtw",
                          max_iter=100, random_state=seed)
 
+data=data.set_index(pd.date_range('1/1/2000', periods=len(data), freq='15T'))
+series=data.squeeze()
+
+series30=series.resample('0.5H').mean()
 
 # ts=data.iloc[1:100][['ag0','ag1','ag3','ag4','ag5','ag6','ag7','ag8']]
-ts=data.iloc[1:1000,1:52]
-
+ts=series30.iloc[:,1:52]
 ts_np=ts.values
 ts_np=np.transpose(ts_np)
 
