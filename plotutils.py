@@ -207,9 +207,13 @@ def make_boxplot(metrics,env):
 
 
 
-def make_costplot(df,filename):
+def make_costplot(df,filename,save_fig):
     m=df.loc['com']#only using community metrics in plots
     
+    exp_name=filename.name
+    exp_name=exp_name.replace('plot-metrics-',' ')
+    exp_name=exp_name.replace('.png',' ')
+    print(exp_name)
     # sns.set_theme()
     
     # g=sns.jointplot(data=m, x="cost_var", y="x_ratio", hue='season',
@@ -242,7 +246,8 @@ def make_costplot(df,filename):
     g.set_axis_labels('% relative to minimum cost', 
                       'PV Excess to app energy needed ratio')
 
-
+    g.fig.suptitle(exp_name + 'Total year cost: %1.1f €' % m['cost'].sum())
+    g.fig.subplots_adjust(top = 0.9)
 
     # plt.axvline(x = 0, color = 'k',linestyle='--', label = 'min cost', alpha=0.6)
     # plt.axvline(x = 1, color = 'k',linestyle='--', label = 'max cost',alpha=0.6)
@@ -251,7 +256,8 @@ def make_costplot(df,filename):
     
     g.ax_marg_y.remove()
 
-    g.savefig(filename, dpi=300)
+    if save_fig:
+        g.savefig(filename, dpi=300)
 # make_boxplot(metrics,tenv)
 # %%
     # #PLots

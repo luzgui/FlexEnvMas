@@ -6,14 +6,15 @@ def make_env_config(datafolder):
 
     #%% Make Shiftable loads environment
     #import raw data
-    # data_raw=pd.read_csv(datafolder + '/issda_data_halfyear.csv')
     
     # data_raw_cons=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Consumers')
     # data_raw_prod=pd.read_excel(datafolder + '/Dataset_gecad.xlsx', 'Total Producers')
     
     
     # data = get_raw_data('Dataset_gecad.xlsx', datafolder)
+    
     data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder)
+    # data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix())
     # data=data_raw[['minutes','PV0','Ag0','Ag1']]
     
     

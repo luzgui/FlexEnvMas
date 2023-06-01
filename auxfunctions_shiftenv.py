@@ -272,7 +272,7 @@ def get_files(folder,filetype,keyword):
 
     filetype_list=[]
     for file in filelist:
-        if filetype and keyword in file:
+        if filetype in file and keyword in file:
             filetype_list.append(file)
             
     return filetype_list
