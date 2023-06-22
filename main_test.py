@@ -108,7 +108,9 @@ exp_name='PPO-IL-Normal-shared-F2'
 
 
 
-test_exp_name=exp_name
+# test_exp_name=exp_name
+
+test_exp_name='cluster'
 
 # Good ones
 # test_exp_name='test-Feb13'

@@ -116,7 +116,7 @@ plt.figure()
 data_describe_cons.loc['cluster'].plot.hist()
 data_describe_cons.loc['Pc'].plot.hist()
 
-
+# data_describe_cons.to_csv('data_describe.csv')
 
 
 

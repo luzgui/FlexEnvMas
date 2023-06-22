@@ -37,18 +37,58 @@ def make_minutes(data, timesteps):
     return minutes
     
 
-def make_env_data_mas(data,t_init,t_end, load_id, pv_factor,pv_id, num_agents, agents_id):
-    "(data: timeseries, load_num: house number, pv_factor, num_agents, agents_id (list string)"
+def make_env_data_mas(data,t_init,t_end, load_id, pv_factor, num_agents, agents_id, cluster):
+    "(data: timeseries, load_id: house number, pv_factor, num_agents, agents_id (list string)"
     
 
-  
+    #to extend to n>2 agenst just have to edit this function to create n groups of m elements
+    def divide_into_groups(lst, n):
+        """Divides lst elements into groups of n elements"""
+        return [lst[i:i+n] for i in range(0, len(lst), n)]
+    
+    # we are gonna transform directly the data dataframe in order to  
+    if len(cluster)!=0:
+        n=2 #groups of 2
+        groups=divide_into_groups(cluster, n)
+        
+        df_stack=pd.DataFrame()
+        df_stack['minutes']=pd.concat([data['minutes']]*n, axis=0)
+        
+        df_stack=df_stack.reset_index(drop=True)
+        
+        i=1
+        for g in groups:    
+            pv_cluster=['PV'+str(k) for k in g]
+            cluster_agents=['ag'+str(k) for k in g]
+            
+            data_group=data[['minutes']+cluster_agents+pv_cluster]
+            
+            
+            for e in [pv_cluster,cluster_agents]:    
+                stack=pd.concat([data_group[col] for col in e], axis=0)
+                name=''.join(e)[0:2]+str(i)
+                df_stack[name]=stack.values
+            
+            i+=1
+        
+        data=df_stack
+    
+    
+    #if no cluster it starts here
+    pv_id=[k.replace('ag','PV') for k in load_id]
+    
     df=pd.DataFrame()
     
-    load_names=['load_ag'+str(k) for k in range(num_agents)]
+    # load_names=['load_ag'+str(k) for k in range(num_agents)]
     
     df['minutes']=data.iloc[t_init:t_end]['minutes']
     df[load_id]=data.iloc[t_init:t_end][load_id]
-    df['gen']=pv_factor*abs(data.iloc[t_init:t_end][pv_id])
+    
+    df[pv_id]=data.iloc[t_init:t_end][pv_id]
+    
+    # df['gen']=pv_factor*abs(data.iloc[t_init:t_end][pv_id])
+    df['gen']=df[pv_id].sum(axis=1)*pv_factor
+    
     
     # delta and excess are COLLECTIVE, i.e computed based on aggregated quantities
     df['delta']=df[load_id].sum(axis=1)-df['gen']
@@ -64,9 +104,15 @@ def make_env_data_mas(data,t_init,t_end, load_id, pv_factor,pv_id, num_agents, a
         frames.append(df_temp)    
         
     df_final=pd.concat(frames, keys=agents_id)
+    
+    
+
         
+    
 
     return df_final
+
+
 
 
 def get_raw_data(file, datafolder):

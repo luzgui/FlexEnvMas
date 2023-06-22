@@ -81,7 +81,7 @@ resultsfolder=cwd / 'Results'
 #%% Make environment config / Data
 import data_process
 env_config=data_process.make_env_config(datafolder.as_posix())
-
+env_data=env_config['data']
 # filename=prof_folder+'/make_env_profile'
 # conf = cProfile.run('data_process.make_env_config(datafolder)',filename)
 
@@ -122,7 +122,7 @@ register_env("shiftenv", env_creator)
 #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='callgraph'
+exp_name='cluster'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'
@@ -171,7 +171,7 @@ tuner = tune.Tuner(
       run_config=run_config)
 
 
-# tuner.fit()
+tuner.fit()
 
 # filename=prof_folder / ('tuner_profile_' + exp_name)
 # results = cProfile.run('tuner.fit()',filename)

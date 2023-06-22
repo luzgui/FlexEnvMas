@@ -32,22 +32,32 @@ def make_env_config(datafolder):
     
     #%% Make env data
     num_agents=len(load_id)
-    agents_id=load_id
-    # agents_id=['ag'+str(k) for k in range(num_agents)]
+    # agents_id=load_id
+    agents_id=['ag'+str(k+1) for k in range(num_agents)]
     #What are agents data?
     
     t_init=0
-    t_end=len(data)-1 #10 days
+    # t_end=len(data)-1
+    t_end=2*len(data)-1
     
-    pv_id='PV0'
+    
+    
+    
+    #members of the cluster from whcih we can make blends (happeningi inside make_env_data_mas function)
+    cluster=[2,3,6,8]
+    # cluster=[]
+    # cluster=[2,3,6,8,4,5]
+    
+    
+    
     env_data=make_env_data_mas(data,
                                t_init, 
                                t_end, 
                                load_id, 
-                               4,
-                               pv_id,
+                               1,
                                num_agents,
-                               agents_id)
+                               agents_id,
+                               cluster)
     
     
     ## Shiftable profile example 

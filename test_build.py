@@ -38,9 +38,11 @@ def make_tester(exp_name, raylog, datafolder):
     #%% Generate data for testing
     
     #index for load and for agent is also 'ag'
-    test_load_id=['ag4','ag5'] #selct new loads for testing 
-    test_agents_id=['ag1','ag2'] #choose which agents are in play
-    num_agents=len(test_agents_id)
+    test_load_id=['ag10','ag13'] #selct new loads for testing
+    #10 and 13 are from the same cluster
+    num_agents=len(test_load_id)
+    test_agents_id=['ag'+str(k+1) for k in range(num_agents)] #choose which agents are in play
+
     
     
     # data = get_raw_data('Dataset_gecad.xlsx', datafolder)
@@ -53,15 +55,15 @@ def make_tester(exp_name, raylog, datafolder):
     t_end=len(data)-1 #10 days
     # H=len(data)-1
     
-    pv_id='PV4'
+
     test_env_data=make_env_data_mas(data,
                                     t_init,
                                     t_end, 
                                     test_load_id, 
-                                    4, 
-                                    pv_id,
+                                    1, 
                                     num_agents,
-                                    test_agents_id)
+                                    test_agents_id,
+                                    [])
     
     #%% Update config with test data
     # !BUG!
