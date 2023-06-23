@@ -45,7 +45,7 @@ class ShiftEnvMas(MultiAgentEnv):
         self.T=len(self.data.loc[self.agents_id[0]]) # Time horizon 
         self.Tw=config["window_size"] #window horizon
         self.tstep_per_day=config["tstep_per_day"]
-        self.dh=self.tstep_size*(1/60.0) # Conversion factor energy-power
+        self.dh=self.tstep_size*(1/60.0) # Conversion factor power-energy
         self.tstep_init=0 #initial timestep in each episode
         
         #

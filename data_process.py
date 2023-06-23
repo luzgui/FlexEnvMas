@@ -13,8 +13,8 @@ def make_env_config(datafolder):
     
     # data = get_raw_data('Dataset_gecad.xlsx', datafolder)
     
-    data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder)
-    # data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix())
+    data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder,unit='kwh')
+    # data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix(), unit='kwh')
     # data=data_raw[['minutes','PV0','Ag0','Ag1']]
     
     
@@ -72,8 +72,8 @@ def make_env_config(datafolder):
     
     # shiftprof={agent:profile for (agent,profile) in zip(agents_id,AgentsProfiles)}
     
-    ## Same profile for all machines
-    shiftprof={agent:[1.2,1.2,1.2,1.2,1.2,1.2,1.2] for agent in agents_id}
+    ## Same profile for all machines    
+    shiftprof={agent:[k*0.25 for k in [1.2,1.2,1.2,1.2,1.2,1.2,1.2]] for agent in agents_id}
     
     
     #Agents delivery times

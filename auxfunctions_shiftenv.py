@@ -115,7 +115,7 @@ def make_env_data_mas(data,t_init,t_end, load_id, pv_factor, num_agents, agents_
 
 
 
-def get_raw_data(file, datafolder):
+def get_raw_data(file, datafolder,unit):
     
     dt=15
     
@@ -129,7 +129,12 @@ def get_raw_data(file, datafolder):
     #create a vector of minutes
     mins=pd.DataFrame(np.tile(np.linspace(0,1440-dt,num=int((24*60/dt))),366), columns=['minutes'])
     
-    cons_data=pd.concat([mins,cons_data,prod_data],axis=1)
+    
+    if unit=='kwh':
+        dh=dt*(1/60.0)#kw to kwh convertion factor
+        cons_data=pd.concat([mins,dh*cons_data,dh*prod_data],axis=1) #kwh
+    elif unit=='kw':
+        cons_data=pd.concat([mins,cons_data,prod_data],axis=1) #original dataset unit kw
 
     return cons_data
 
