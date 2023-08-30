@@ -29,7 +29,7 @@ raylog=cwd / 'raylog'
 prof_folder=raylog / 'profiles'
 resultsfolder=cwd / 'Results'
 
-data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix())
+data = get_raw_data('Dataset_gecad_changed.xlsx', datafolder.as_posix(),unit='kw')
 
 
 

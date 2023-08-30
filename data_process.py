@@ -43,7 +43,7 @@ def make_env_config(datafolder):
     
     
     
-    #members of the cluster from whcih we can make blends (happeningi inside make_env_data_mas function)
+    #members of the cluster from which we can make blends (happening inside make_env_data_mas function)
     cluster=[2,3,6,8]
     # cluster=[]
     # cluster=[2,3,6,8,4,5]

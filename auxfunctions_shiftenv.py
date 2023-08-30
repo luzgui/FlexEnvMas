@@ -106,10 +106,6 @@ def make_env_data_mas(data,t_init,t_end, load_id, pv_factor, num_agents, agents_
     df_final=pd.concat(frames, keys=agents_id)
     
     
-
-        
-    
-
     return df_final
 
 
