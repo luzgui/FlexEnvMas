@@ -555,8 +555,12 @@ class ShiftEnvMas(MultiAgentEnv):
                     # print(t)
                     t=int(t[0])
                     
-                    if self.tstep+self.t_ahead*t >= self.T: #if forecast values fall outside global horizon T
+                    if self.tstep+self.t_ahead*t >= self.tstep_init+self.T: #if forecast values fall outside global horizon T
+                        
                         # setattr(self,k, 0)
+                        print('step',self.tstep)
+                        print('step+tahead', self.tstep+self.t_ahead*t)
+                        print('self.T+init', self.tstep_init+self.T)
                         self.state.loc[agent,k]=0
                         # self.state.loc[agent,k]=0 # maybe this to solve the 'value is trying to be set on a copy of a slice from a DataFrame' warning
                     else:
@@ -582,7 +586,7 @@ class ShiftEnvMas(MultiAgentEnv):
         self.update_forecast()
         
         #Minutes
-        print('this self.step', self.tstep)
+        # print('this self.step', self.tstep)
         # print('this is data', self.data)
         
         # self.minutes=self.data.iloc[self.tstep]['minutes']
