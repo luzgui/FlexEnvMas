@@ -74,8 +74,6 @@ class ShiftEnvMas(MultiAgentEnv):
         
         # total energy needed for the appliance
         self.E_prof={ag:sum(self.profile[ag]) for ag in self.agents_id}
-        
-        
         self.E_prof=pd.DataFrame.from_dict(self.E_prof, orient='index', columns=['E_prof'])
         
         #this must be set as a moving variable that updates the deliver time according to the day
@@ -450,7 +448,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #Competitive / individual rewards
         elif self.mas_setup == 'competitive':
             return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
-    
+        
         elif self.mas_setup == 'cooperative_colective':
             AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id] #harcoded expression for agents with same profile
             
@@ -584,7 +582,12 @@ class ShiftEnvMas(MultiAgentEnv):
         self.update_forecast()
         
         #Minutes
-        self.minutes=self.data.iloc[self.tstep]['minutes']
+        print('this self.step', self.tstep)
+        # print('this is data', self.data)
+        
+        # self.minutes=self.data.iloc[self.tstep]['minutes']
+        self.minutes=self.data.loc['ag1', self.tstep]['minutes'] #this solves the bug that do not allow for initialziation at t different from zero
+        # All agents share the same time referencial // 'ag1' is just the reference
         self.state['minutes']=self.minutes
         #sine/cosine
         self.sin=np.sin(2*np.pi*(self.minutes/self.min_max))
@@ -729,6 +732,8 @@ class ShiftEnvMas(MultiAgentEnv):
          
     
     def make_state_norm(self):
+        '''This normalization uses statistics from the dataset 
+        to normalize the state before entering the NN'''
         self.state_norm=self.state.copy()
         for aid in self.agents_id:
             for key in self.state.columns:
