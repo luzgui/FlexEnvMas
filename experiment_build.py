@@ -66,7 +66,8 @@ def make_train_config(menv,pol_type):
     config = PPOConfig()\
                     .training(lr=1e-5,
                               num_sgd_iter=100,
-                              train_batch_size=8000,
+                              train_batch_size=2000,
+                              _enable_learner_api=False,
                               model={'custom_model':'cc_shift_mask',
                                     'fcnet_hiddens': [128,128],
                                     'fcnet_activation':'relu',
@@ -77,13 +78,15 @@ def make_train_config(menv,pol_type):
                         # env=ShiftEnvMas,
                         observation_space=menv.observation_space,
                         action_space=menv.action_space,
-                        env_config=menv.env_config)\
-                    .debugging(seed=1024,log_level='DEBUG')\
+                        env_config=menv.env_config,
+                        disable_env_checking=True)\
+                    .debugging(seed=1024, log_level='DEBUG')\
                     .rollouts(num_rollout_workers=0)\
                     .multi_agent(policies=policies,
                                   policy_mapping_fn=policy_function)\
                     .framework(framework='tf2',
                                eager_tracing=True)\
+                    .rl_module(_enable_rl_module_api=False)    
                     # .resources(num_cpus_per_worker=1,
                     #            num_cpus_per_trainer_worker=1,
                     #            num_trainer_workers=1)\

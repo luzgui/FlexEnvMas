@@ -91,6 +91,7 @@ env_data=env_config['data']
 import environment_build
 # 
 menv_base=environment_build.make_env(env_config)
+menv_base.reset()
 #menv_base.normalization=False
 
 # filename=prof_folder+'/env_profile_' + exp_name
@@ -119,10 +120,10 @@ register_env("shiftenv", env_creator)
 
 
 
-#%% Make experiment/train Tune config
+    #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='cluster'
+exp_name='bableas'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'

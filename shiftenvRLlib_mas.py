@@ -307,6 +307,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         #initialy history is just the all history
         self.state_hist=self.state.copy()
+        # self.state_hist=self.state_hist.astype('object')
 
         self.make_state_norm() #make the normalized state
         
@@ -611,8 +612,10 @@ class ShiftEnvMas(MultiAgentEnv):
                 # self.y_1=self.hist[-2] #penultiumate element to get the previous action
                 # self.state.loc[aid,'y_1']=self.state_hist.loc[aid,self.tstep-1]['y']
                 # self.state.copy().loc[aid]['y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
-                
-                self.state.at[aid,'y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']    
+                self.state_hist=self.state_hist.astype('object')
+                # self.state.at[aid,'y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
+                a=self.state_hist.loc[aid][self.state_hist.loc[aid,'tstep']==self.tstep-1]['y']
+                self.state.at[aid,'y_1']=a.loc[aid]
             else:
                 self.state.loc[aid,'y_1']=0
 
@@ -739,11 +742,13 @@ class ShiftEnvMas(MultiAgentEnv):
         '''This normalization uses statistics from the dataset 
         to normalize the state before entering the NN'''
         self.state_norm=self.state.copy()
+        # self.state=self.state.astype('object')
+        self.state_norm=self.state_norm.astype('object') #casting as differente datatype solves the new pandas warning 
         for aid in self.agents_id:
             for key in self.state.columns:
                 # print(key)
                 if key=='tstep': #convert timestep to sin
-                    self.state_norm.loc[aid,key]=np.sin(2*np.pi*(self.state.loc[aid,key]/self.T))
+                    self.state_norm.loc[aid,key]=np.sin(2*np.pi*(self.state.loc[aid,key])/self.T)
                 
                 if key=='minutes': #convert minutes to cos with a phase
                     self.state_norm.loc[aid,key]=np.cos(2*np.pi*(self.state.loc[aid,key]/self.T)+np.pi)
