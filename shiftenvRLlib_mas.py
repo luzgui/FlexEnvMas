@@ -27,7 +27,10 @@ class ShiftEnvMas(MultiAgentEnv):
         #COMMUNITY /COMMON parameters
         self.num_agents=config['num_agents']
         self.agents_id=config['agents_id']
+        # self._agent_ids=self.get_agent_ids()
         self._agent_ids=self.agents_id
+        
+        
 
         self.info = config['env_info']
 
@@ -162,7 +165,8 @@ class ShiftEnvMas(MultiAgentEnv):
         self.count=0
         
         #seed 
-        self.seed=config['seed']
+        # self.seed=config['seed']
+        # self.seed=np.random.seed(config['seed'])
         
         
         
@@ -194,7 +198,7 @@ class ShiftEnvMas(MultiAgentEnv):
     
         self._spaces_in_preferred_format = True
     
-    def reset(self):
+    def reset(self, *, seed=None, options=None):
         """
         Reset the environment state and returns an initial observation
         
@@ -839,4 +843,12 @@ class ShiftEnvMas(MultiAgentEnv):
         return True
     
     def observation_space_contains(self, x):
-        return True        
+        return True 
+    
+    def seed(self,seed):
+        # return np.random.seed(self.env_config['seed'])
+        return np.random.seed(seed)
+    
+    def get_agent_ids(self):
+        return set(self.agents_id)
+        
