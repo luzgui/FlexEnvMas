@@ -18,7 +18,8 @@ from ray.tune import analysis
 from ray.tune import ExperimentAnalysis
 from pathlib import Path
 
-
+from ray import train
+from ray.train import RunConfig, CheckpointConfig, Checkpoint
 
 
 def make_cyclical(series, max_val): # transforma valores como dia e hora em valores cíclicos de sin e cos para remover efeitos indesejados
@@ -170,37 +171,20 @@ def self_suf(env,action):
 def get_checkpoint(log_dir,exp_name,metric,mode):
     #Recover the tune object from the dir
     # The trainable must be initialized # reuslts must be stored in the same analysis object
-    # metric='training_iteration'
-    
     experiment_path=os.path.join(log_dir, exp_name)
-    # experiment_path=os.path.join(raylog, 'GoodExperiments')
     analysis_object = ExperimentAnalysis(experiment_path,
                                          default_metric=metric, 
                                          default_mode=mode)
     
-    # state=local_trial.get_json_state
-    
-    # trial2=_load_trial_from_checkpoint(state)
-        
-    
     #get the best trial checkpoint
     local_trial=analysis_object.get_best_trial()
-    
     #identify the dir where is the best checkpoint according to metric and mode
-    best_local_dir=analysis_object.get_best_logdir(metric,mode)
-    
-    checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
-    
-    # checkpoint=analysis_object.get_best_checkpoint(local_trial.logdir,metric,mode)
-    
+    best_trial=analysis_object.get_best_trial(metric=metric, mode=mode)
+    checkpoint=analysis_object.get_best_checkpoint(best_trial)
+
     #dataframes
     df=analysis_object.dataframe(metric,mode) #get de dataframe results
-    best_df=analysis_object.best_result
-    
-    # bestdir=local_best_dir    
-    # checkpoint=analysis_object.get_best_checkpoint(best_local_dir,metric,mode)
-    
-    
+    best_df=analysis_object.best_result    
     print(mode,checkpoint)
     #recover best agent for te
     

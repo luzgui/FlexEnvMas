@@ -65,8 +65,8 @@ def make_train_config(menv,pol_type):
     #Config
     config = PPOConfig()\
                     .training(lr=1e-5,
-                              num_sgd_iter=100,
-                              train_batch_size=2000,
+                              num_sgd_iter=1,
+                              train_batch_size=128,
                               _enable_learner_api=False,
                               model={'custom_model':'cc_shift_mask',
                                     'fcnet_hiddens': [128,128],
@@ -98,7 +98,7 @@ def make_train_config(menv,pol_type):
     
     
     config_tune=TuneConfig(mode='max',
-                           metric='_metric/episode_reward_mean',)
+                           metric='episode_reward_mean',)
     
     
     

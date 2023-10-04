@@ -15,12 +15,14 @@ import cProfile
 
 def trainable_mas(config):
     
-    n_iters=1
-    checkpoint_freq=1
+    n_iters=10
+    checkpoint_freq=2
     
     # trainer=PPO(config, env=config["env"])
     trainer=CentralizedCritic(config)
     print(colored('Trainer created...','red'))
+    
+    # train.get_checkpoint(args, kwargs)
     
     
     weights={}
@@ -37,12 +39,12 @@ def trainable_mas(config):
 #       
         #Metrics we are gonna log from full train_results dict
         metrics={'episode_reward_max', 
-              'episode_reward_mean',
-              'episode_reward_min',
-              'info', 
-              'episodes_total',
-              'agent_timesteps_total',
-              'training_iteration'}
+                 'episode_reward_mean',
+                 'episode_reward_min',
+                 'info', 
+                 'episodes_total',
+                 'agent_timesteps_total',
+                 'training_iteration'}
         
         logs={k: train_results[k] for k in metrics}
         
@@ -51,10 +53,16 @@ def trainable_mas(config):
         #             weights["FCC/{}".format(k)] = v
         
         # save checkpoint every checkpoint_freq
-        if i % checkpoint_freq == 0: 
-            print(colored('Saving checkpoint...','green'))
+        # if i % checkpoint_freq == 0: 
+        #     print(colored('Saving checkpoint...','green'))
             # checkpoint=trainer.save(tune.get_trial_dir())
-            checkpoint=trainer.save(ray.train.get_context().get_trial_dir())
+            # checkpoint_dir=train.get_context().get_trial_dir()
+  
+        # print(colored('Saving checkpoint...','green'))  
+        # checkpoint_dir=train.get_context().get_trial_dir()
+        # print(colored('checkpoint dir','red'), checkpoint_dir)  
+        # checkpoint=trainer.save(checkpoint_dir)
+        
         
         
         
@@ -71,13 +79,53 @@ def trainable_mas(config):
         
         # results={**logs,**weights,**eval_logs}
         # print(colored('Results...','green'))
+
+        #save the checkpoint
+        # save_result=trainer.save()
+        # cp_path=save_result.checkpoint.path
+        # save_result
+        # checkpoint=trainer.save(train.get_context().get_trial_dir())
+        # print(colored('Saving checkpoint...','green'))
+        # print('checkpoint', train.get_context().get_trial_dir())
+
+        # checkpoint_dir=train.get_context().get_trial_dir()
+        # print(colored('checkpoint dir','red'), checkpoint_dir)  
+        
+        # print(checkpoint)   
+        
+        # #Create checkpoint from directory
+        # save_result=trainer.save()
+        # cp_path=save_result.checkpoint.path
+        # checkpoint_object=train.Checkpoint.from_directory(cp_path)
+        
+        
+        # print(colored('checkpoint get trial','red'), train.get_context().get_trial_dir())  
+        # print(colored('checkpoint object path','red'), checkpoint_object.path)  
+            
+        
+        # save_result=trainer.save(train.get_context().get_trial_dir())
+        # print(colored('checkpoint from save_result','red'), save_result.checkpoint)  
+        
         results={**logs}
-        print(colored('Reporting...','green'))
-        # tune.report(results)
-        train.report(results)
+        # print(colored('Reporting...','green'))
+        # train.report(results)
+        # train.report(results, checkpoint=save_result.checkpoint)
+        if i % checkpoint_freq == 0:
+            print(colored('Iteration:','red'),i)
+            print(colored('Reporting and checkpointing...','green'))
+            save_result=trainer.save()
+            cp_path=save_result.checkpoint.path
+            checkpoint_object=train.Checkpoint.from_directory(cp_path)
+            train.report(results, checkpoint=checkpoint_object)
+        else:
+            print(colored('Reporting...','green'))
+            train.report(results)
+            
+        # session.report
+        
+
         
     trainer.stop()
-
 
 
 

@@ -94,7 +94,7 @@ import test_build
 
 #independent learning
 # exp_name='PPO-IL-Normal-F1'
-exp_name='PPO-IL-Normal-shared-F2'
+# exp_name='PPO-IL-Normal-shared-F2'
 
 
 #LowPV agents
@@ -108,14 +108,30 @@ exp_name='PPO-IL-Normal-shared-F2'
 
 
 
-# test_exp_name=exp_name
 
-test_exp_name='cluster'
+
+# test_exp_name='cluster'
 
 # Good ones
 # test_exp_name='test-Feb13'
 # test_exp_name='test-shared-2ag-FCUL'
 # test_exp_name='test-shared-collective-reward-FCUL'
+
+#DimRedux
+# exp_name ='agpol_cc_cluster'
+# exp_name ='agpol_cc_cluster_with_delta'
+# exp_name ='agpol_cc_cluster_with_no_delta_no_excess'
+
+# exp_name=os.path.join('Experiment-dimRedux', exp_name)
+
+# exp_name='bableas'
+exp_name='ccenas-tune-cp'
+
+
+test_exp_name=exp_name
+
+# raylog=raylog / 'Experiment-dimRedux'
+
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
 
@@ -135,37 +151,38 @@ full_state, env_state, metrics=test_agents.test(tenv,
 
 
 
-from plotutils import *
-#import metrics from file
-csv_list=get_files(resultsfolder / 'Train-PVHigh','.csv','metrics')
+#%%
+# from plotutils import *
+# #import metrics from file
+# csv_list=get_files(resultsfolder / 'Train-PVHigh','.csv','metrics')
 
-# metrics=pd.read_csv(csv_list[0], index_col=0)
-# metrics_com=metrics.loc['com']
-# make_costplot(metrics,'plot-metrics-PPO-IL-Shared-TrainPVHigh-TestPVHigh.png', False)
+# # metrics=pd.read_csv(csv_list[0], index_col=0)
+# # metrics_com=metrics.loc['com']
+# # make_costplot(metrics,'plot-metrics-PPO-IL-Shared-TrainPVHigh-TestPVHigh.png', False)
 
 # make_boxplot(metrics,tenv)
-# filename=resultsfolder / 'PicsSample' / 'joint_plot.png'
+# # filename=resultsfolder / 'PicsSample' / 'joint_plot.png'
 
-TotalCosts={}
-for f in csv_list:
-    # print(f)
-    file_path=Path(f)
-    metrics=pd.read_csv(f, index_col=0)
-    new_filename='plot-' + file_path.name
-    new_file_path=file_path.with_name(new_filename)
-    new_file_path=new_file_path.with_suffix('.png')
+# TotalCosts={}
+# for f in csv_list:
+#     # print(f)
+#     file_path=Path(f)
+#     metrics=pd.read_csv(f, index_col=0)
+#     new_filename='plot-' + file_path.name
+#     new_file_path=file_path.with_name(new_filename)
+#     new_file_path=new_file_path.with_suffix('.png')
     
-    make_costplot(metrics,new_file_path,True)
-    print(new_file_path.name)
-    TotalCosts[new_file_path.name]=metrics.loc['com']['cost'].sum()
+#     make_costplot(metrics,new_file_path,True)
+#     print(new_file_path.name)
+#     TotalCosts[new_file_path.name]=metrics.loc['com']['cost'].sum()
 
-# m=metrics.loc['com']
+# # m=metrics.loc['com']
 
-# print('self-suf mean:', metrics.loc['ag1']['selfsuf'].mean())
+# # print('self-suf mean:', metrics.loc['ag1']['selfsuf'].mean())
 
-# metrics.to_csv('metrics_competitive_365_sequential.csv')
+# # metrics.to_csv('metrics_competitive_365_sequential.csv')
 
-penguins = sns.load_dataset("penguins")
-sns.JointGrid(data=penguins, x="bill_length_mm", y="bill_depth_mm")
-g = sns.JointGrid(data=penguins, x="bill_length_mm", y="bill_depth_mm")
-g.plot(sns.scatterplot, sns.histplot)
+# penguins = sns.load_dataset("penguins")
+# sns.JointGrid(data=penguins, x="bill_length_mm", y="bill_depth_mm")
+# g = sns.JointGrid(data=penguins, x="bill_length_mm", y="bill_depth_mm")
+# g.plot(sns.scatterplot, sns.histplot)

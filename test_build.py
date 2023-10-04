@@ -11,19 +11,27 @@ from ray.rllib.algorithms.ppo import PPO #trainer
 from ray.rllib.algorithms.ppo import PPOConfig #config
 from shiftenvRLlib_mas import ShiftEnvMas
 from ray.tune.registry import register_env
+from ray.train import Checkpoint
 
 
 def make_tester(exp_name, raylog, datafolder):
 
     #%% Recover and load checkpoints
     #define the metric and the mode criteria for identifying the best checkpoint
-    metric="_metric/episode_reward_mean"
-    mode="max"
     
-    # exp_name='1Ag_0512'
-    # exp_name='1_Ag_new'
-    # exp_name='3Oct'
-    # exp_name='1Ag'
+    ## Max reward
+    # metric="_metric/episode_reward_mean"
+    # mode="max"
+    
+    ## last checkpoint (may be equivalent to min entropy)
+    # metric = '_metric/training_iteration'
+    
+    metric = 'training_iteration'
+    # metric = 'episode_reward_mean'
+    # metric='entropy'
+    mode='min'    
+    
+    
     # log_dir=raylog
     
     #get best checkpoint info
@@ -52,8 +60,14 @@ def make_tester(exp_name, raylog, datafolder):
     # define the length of the dataset
     dt=env_config['tstep_per_day']
     t_init=0
-    t_end=len(data)-1 #10 days
+    t_end=t_init+(96*1)+1
+    # t_end=len(data)-1 #10 days
     # H=len(data)-1
+    
+    # t_init=15552
+    # t_end=15936
+    # t_end=t_end+1
+    
     
 
     test_env_data=make_env_data_mas(data,
@@ -73,9 +87,9 @@ def make_tester(exp_name, raylog, datafolder):
     best_config['env_config']['env_info']='testing environment' 
     
     ### try new initialization for testing purposes
-    # best_config['env_config']['init_condition']='mode_window_seq'
+    best_config['env_config']['init_condition']='mode_window_seq'
     # best_config['env_config']['init_condition']='mode_window'
-    best_config['env_config']['init_condition']='mode_window_no-repeat'
+    # best_config['env_config']['init_condition']='mode_window_no-repeat'
     
     
     #make config object to build
