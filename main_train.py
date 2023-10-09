@@ -102,6 +102,7 @@ menv_base.reset()
 # menv=environment_build.make_env(env_config)
 
 menv=MultiAgentEnvCompatibility(menv_base)
+# menv._agent_ids=menv_base.agents_id
 # menv=NormalizeObs(menv_base)
 # menv=menv_base
 menv_data=menv.env.data
