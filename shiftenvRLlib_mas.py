@@ -5,6 +5,7 @@ import pandas as pd
 import random as rnd
 import re
 import math
+from termcolor import colored
 
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
@@ -217,7 +218,7 @@ class ShiftEnvMas(MultiAgentEnv):
         #initial timestep
         self.tstep=self.get_init_tstep()
         self.tstep_init=self.tstep # initial timestep
-        # print(self.tstep)
+        # print(colored('Initial timestep','red'),self.tstep)
         self.state['tstep']=self.tstep
         #minutes
         self.minutes=self.data.loc['ag1',self.tstep]['minutes']
@@ -356,7 +357,7 @@ class ShiftEnvMas(MultiAgentEnv):
             self.action_hist=pd.concat([self.action_hist,self.action])
             self.reward_hist=pd.concat([self.reward_hist, pd.DataFrame.from_dict(self.reward, orient='index',columns=['reward'])])
             
-        
+        self.tstep+=1 # update timestep
         #check weather to end or not the episode
         self.check_term() 
         
@@ -365,7 +366,7 @@ class ShiftEnvMas(MultiAgentEnv):
         # self.state_hist=pd.concat([self.state_hist,self.state])
        
         
-        self.tstep+=1 # update timestep
+        
         # print(self.tstep)
         #update state variables  
         self.state_update() 
@@ -519,6 +520,9 @@ class ShiftEnvMas(MultiAgentEnv):
             # t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))])
             
             t=rnd.choice(self.allowed_inits)
+            # t=70176
+            # t=70080
+            # t=69984
             
             # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
             assert self.data.loc['ag1',t]['minutes']==0, 'initial timeslot not 0'
@@ -560,18 +564,25 @@ class ShiftEnvMas(MultiAgentEnv):
                     # print(t)
                     t=int(t[0])
                     
-                    if self.tstep+self.t_ahead*t >= self.tstep_init+self.T: #if forecast values fall outside global horizon T
+                    # if self.tstep+self.t_ahead*t >= self.tstep_init+self.T: #if forecast values fall outside global horizon T
+                    if self.tstep+self.t_ahead*t >= self.T-1: #if forecast values fall outside global horizon T
                         
                         # setattr(self,k, 0)
-                        print('step',self.tstep)
-                        print('step+tahead', self.tstep+self.t_ahead*t)
-                        print('self.T+init', self.tstep_init+self.T)
+                        # print('if')
+                        # print('step',self.tstep)
+                        # print('step+tahead', self.tstep+self.t_ahead*t)
+                        # print('self.T+init', self.tstep_init+self.T)
                         self.state.loc[agent,k]=0
                         # self.state.loc[agent,k]=0 # maybe this to solve the 'value is trying to be set on a copy of a slice from a DataFrame' warning
                     else:
                         # setattr(self,k, self.data.iloc[self.tstep+self.t_ahead*t][var] )
-                        
+                        # print('else')
+                        # print('step',self.tstep)
+                        # print('t',t)
+                        # print('step+tahead', self.tstep+self.t_ahead*t)
+                        # print('self.T+init', self.tstep_init+self.T)
                         tstep_to_use=self.tstep+self.t_ahead*t
+                        # print(colored('timestep_to_use','red'),tstep_to_use)
                         self.state.loc[agent,k]=self.data.loc[agent,tstep_to_use][var]
                 
 
@@ -595,6 +606,7 @@ class ShiftEnvMas(MultiAgentEnv):
         # print('this is data', self.data)
         
         # self.minutes=self.data.iloc[self.tstep]['minutes']
+        # print(colored('tstep','red'),self.tstep)
         self.minutes=self.data.loc['ag1', self.tstep]['minutes'] #this solves the bug that do not allow for initialziation at t different from zero
         # All agents share the same time referencial // 'ag1' is just the reference
         self.state['minutes']=self.minutes
@@ -714,7 +726,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
     def check_term(self):
         if self.tstep==self.get_term_cond():
-
+            # print('last timestep',self.tstep)
             self.R_Total.append(self.R)
             # print('sparse', self.R)
             print(self.R)

@@ -65,8 +65,8 @@ def make_train_config(menv,pol_type):
     #Config
     config = PPOConfig()\
                     .training(lr=1e-5,
-                              num_sgd_iter=1,
-                              train_batch_size=128,
+                              num_sgd_iter=100,
+                              train_batch_size=8000,
                               _enable_learner_api=False,
                               model={'custom_model':'cc_shift_mask',
                                     'fcnet_hiddens': [128,128],

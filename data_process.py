@@ -38,7 +38,7 @@ def make_env_config(datafolder):
     
     t_init=0
     # t_end=len(data)-1
-    t_end=2*len(data)-1
+    t_end=2*len(data)
     
     
     

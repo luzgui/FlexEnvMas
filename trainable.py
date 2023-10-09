@@ -15,8 +15,8 @@ import cProfile
 
 def trainable_mas(config):
     
-    n_iters=10
-    checkpoint_freq=2
+    n_iters=1
+    checkpoint_freq=1000
     
     # trainer=PPO(config, env=config["env"])
     trainer=CentralizedCritic(config)

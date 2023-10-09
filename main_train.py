@@ -124,7 +124,7 @@ register_env("shiftenv", env_creator)
     #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='ccenas-tune-cp'
+exp_name='post-tstep-bug'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'

@@ -60,8 +60,8 @@ def make_tester(exp_name, raylog, datafolder):
     # define the length of the dataset
     dt=env_config['tstep_per_day']
     t_init=0
-    t_end=t_init+(96*1)+1
-    # t_end=len(data)-1 #10 days
+    # t_end=t_init+(96*1)+1
+    t_end=len(data) #10 days
     # H=len(data)-1
     
     # t_init=15552
