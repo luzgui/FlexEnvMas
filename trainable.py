@@ -114,6 +114,7 @@ def trainable_mas(config):
             print(colored('Iteration:','red'),i)
             print(colored('Reporting and checkpointing...','green'))
             save_result=trainer.save()
+            # trainer.save_checkpoint()
             cp_path=save_result.checkpoint.path
             checkpoint_object=train.Checkpoint.from_directory(cp_path)
             train.report(results, checkpoint=checkpoint_object)

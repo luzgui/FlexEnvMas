@@ -124,7 +124,7 @@ register_env("shiftenv", env_creator)
     #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='post-tstep-bug'
+exp_name='storage-test'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'
@@ -150,9 +150,15 @@ config, config_tune=experiment_build.make_train_config(menv,pol_type)
 
 from ray.train import RunConfig, CheckpointConfig
 
-run_config=air.RunConfig(verbose=3, 
+
+run_config=train.RunConfig(verbose=3, 
                          name=exp_name,
                          local_dir=raylog.as_posix())
+
+# run_config=train.RunConfig(verbose=3, 
+#                          name=exp_name,
+#                          local_dir=raylog.as_posix(),
+#                          storage_path='/home/omega/Downloads/ShareIST')
                          # checkpoint_config=CheckpointConfig(
         # *Best* checkpoints are determined by these params:
         # checkpoint_score_attribute="episode_reward_mean",
@@ -167,7 +173,7 @@ run_config=air.RunConfig(verbose=3,
 
 
 #reosurces local
-resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 4)
+resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 6)
 
 
 trainable_resources = tune.with_resources(trainable_mas, resources)
