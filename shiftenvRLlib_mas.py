@@ -459,8 +459,12 @@ class ShiftEnvMas(MultiAgentEnv):
             AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id] #harcoded expression for agents with same profile
             
             # R=sum(agents loads)- Excess
+            # this is the real cost of collective energy consumption.
+            # it is centralized information since it sums all the loads and subtracts the excess
             R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']
-            return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id}
+            # return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id} #this adds the term of individual reward
+            return {aid: R for aid in self.agents_id} #this adds the term of individual reward
+            
             
     
     def get_agent_obs(self, agent):
