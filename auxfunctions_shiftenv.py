@@ -14,12 +14,13 @@ import numpy.random as rnd
 import time
 import random as rnd
 
-from ray.tune import analysis
-from ray.tune import ExperimentAnalysis
-from pathlib import Path
+from ray.tune import analysis, Tuner, result_grid
+from ray.tune import ExperimentAnalysis, ResultGrid
+from pathlib import Path, PurePath
 
 from ray import train
 from ray.train import RunConfig, CheckpointConfig, Checkpoint
+from trainable import trainable_mas
 
 
 def make_cyclical(series, max_val): # transforma valores como dia e hora em valores cíclicos de sin e cos para remover efeitos indesejados
@@ -176,19 +177,54 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
                                          default_metric=metric, 
                                          default_mode=mode)
     
+    
+    results=ResultGrid(analysis_object)
+                       
+                       
+    best_result=results.get_best_result()
+    best_checkpoint=best_result.checkpoint
+    df=results.get_dataframe()
+\
+    
+    # Checkpoint()
+    
+    # restored_tuner = Tuner.restore(experiment_path, trainable=trainable_mas)
+    
+    # analysis_object.get_best_checkpoint(best_trial)
+    # checkpoint_x=Checkpoint(experiment_path)
+    # checkpoint_dir=Checkpoint.from_directory(experiment_path)
+
+    # with checkpoint_x.as_directory() as checkpoint_dir:
+    #     analysis_object = ExperimentAnalysis(checkpoint_dir,
+    #                                          default_metric=metric, 
+    #                                          default_mode=mode)
+    
+    # best_path=experiment_path + '/trainable_mas_shiftenv_16d1b_00000_0_2023-10-09_22-30-38/checkpoint_000003'
+    
+
+    
+    # train.get_checkpoint(args, kwargs)
     #get the best trial checkpoint
-    local_trial=analysis_object.get_best_trial()
+    # local_trial=analysis_object.get_best_trial()
     #identify the dir where is the best checkpoint according to metric and mode
     best_trial=analysis_object.get_best_trial(metric=metric, mode=mode)
-    checkpoint=analysis_object.get_best_checkpoint(best_trial)
+    # checkpoint=analysis_object.get_best_checkpoint(best_trial)
+    # checkpoint.path=best_path
+
+    # convert the windows path to local linux path
+    # c_path=Path(checkpoint.path)   
+    # l_path=Path(c_path.name).as_posix()
+    # split=l_path.split('\\')
+    
+    # checkpoint.path=os.path.join(experiment_path,split[-2],split[-1])
 
     #dataframes
-    df=analysis_object.dataframe(metric,mode) #get de dataframe results
-    best_df=analysis_object.best_result    
-    print(mode,checkpoint)
+    # df=analysis_object.dataframe(metric,mode) #get de dataframe results
+    # best_df=analysis_object.best_result    
+    print(mode,best_checkpoint)
     #recover best agent for te
     
-    return checkpoint, df, local_trial
+    return best_checkpoint, df, best_trial
     
 
 def get_post_data(menv):
@@ -211,11 +247,13 @@ def get_post_data(menv):
     shift_columns_names=['shift_'+aid for aid in menv.agents_id]
     reward_columns_names=['reward_'+aid for aid in menv.agents_id]
     load_columns_names=['load_'+aid for aid in menv.agents_id]
+    coef_columns_names=['coef_'+aid for aid in menv.agents_id]
     
    
     columns_names.extend(load_columns_names)
     columns_names.extend(shift_columns_names)
     columns_names.extend(reward_columns_names)
+    columns_names.extend(coef_columns_names)
     
     columns_names.extend(['shift_T','load_T','gen0','excess0','reward_T','Cost_shift_T','tar_buy'])
     
@@ -234,9 +272,24 @@ def get_post_data(menv):
                 
             if 'reward' in var:
                 df_post[var]=df.loc[aid,'reward'].values
+                
+
+                
     
     
     df_post['shift_T']=df_post[shift_columns_names].sum(axis=1)
+    # df_post['']
+    
+    #we have to perfomr again this cicle
+    for aid in menv.agents_id:
+        var_ag=[v for v in df_post.columns if aid in v]
+        for var in var_ag:
+                if 'coef' in var:
+                    df_post[var]=df.loc[aid,'action'].values*menv.profile[aid][0]/df_post['shift_T']
+                    df_post[var]=df_post[var].fillna(0)  #substitute all nans for zeros 
+
+                        
+    
     df_post['load_T']=df_post[load_columns_names].sum(axis=1)
     df_post['reward_T']=df_post[reward_columns_names].sum(axis=1)
     
