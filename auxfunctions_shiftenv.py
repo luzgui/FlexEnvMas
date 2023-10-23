@@ -21,6 +21,7 @@ from pathlib import Path, PurePath
 from ray import train
 from ray.train import RunConfig, CheckpointConfig, Checkpoint
 from trainable import trainable_mas
+from icecream import ic
 
 
 def make_cyclical(series, max_val): # transforma valores como dia e hora em valores cíclicos de sin e cos para remover efeitos indesejados
@@ -228,87 +229,211 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     
 
 def get_post_data(menv):
+    """This function produces dataframes for analysing results from the environment itself, i.e, the environment stores all the state-action history and from there we can recover and post-process data"""
+    
     df=pd.DataFrame()
+    df_temp=pd.DataFrame()
     T=menv.Tw
     for aid in menv.agents_id:
         #we need to take out the last observation because its allways one timestep ahead
         state_hist=menv.state_hist.loc[aid][0:T] 
         action_hist=menv.action_hist.loc[aid]    
         reward_hist=menv.reward_hist.loc[aid]
-    
-        # df=pd.concat([state_hist,action_hist, reward_hist],axis=1)
-    
+   
         df=pd.concat([df,
                        pd.concat([state_hist,action_hist, reward_hist],
                     axis=1)])
     
-    #names for variables
-    columns_names=[]
-    shift_columns_names=['shift_'+aid for aid in menv.agents_id]
-    reward_columns_names=['reward_'+aid for aid in menv.agents_id]
-    load_columns_names=['load_'+aid for aid in menv.agents_id]
-    coef_columns_names=['coef_'+aid for aid in menv.agents_id]
-    
-   
-    columns_names.extend(load_columns_names)
-    columns_names.extend(shift_columns_names)
-    columns_names.extend(reward_columns_names)
-    columns_names.extend(coef_columns_names)
-    
-    columns_names.extend(['shift_T','load_T','gen0','excess0','reward_T','Cost_shift_T','tar_buy'])
-    
-    #make a new dataframe to store the solutions
-    df_post=pd.DataFrame(columns=columns_names)
-    
-    for aid in menv.agents_id:
-        var_ag=[v for v in df_post.columns if aid in v]
         
-        for var in var_ag:
-            if 'load' in var:
-                df_post[var]=df.loc[aid,'load0'].values
-            
-            if 'shift' in var:
-                df_post[var]=df.loc[aid,'action'].values*menv.profile[aid][0]
-                
-            if 'reward' in var:
-                df_post[var]=df.loc[aid,'reward'].values
-                
+    for aid in menv.agents_id:  
+        # df=pd.concat([state_hist,action_hist, reward_hist],axis=1)
+        df.loc[aid,'shift']=df.loc[aid]['action']*menv.profile[aid][0]
+        df.loc[aid,'shift_base']=df.loc[aid]['action']*menv.profile[aid][0]+df.loc[aid]['load0'] #for each agent the sum of its shiftable load with its base load
+        
+    df['shift'].name='shiftable load for each agent'
+    
+    #Sum all variables over the agents for each timestep
+    df_group=df.groupby('tstep').sum() # In this dataframe al variables are summed 
+    
+    for aid in menv.agents_id: 
+        df.loc[aid,'shift_T']=df_group['shift'].values #sum of all shiftable loads for all agents
+        df.loc[aid,'shift_base_T']=df_group[['shift','load0']].sum(axis=1).values # sum of all shiftable loads and base loads for all agents
+        df.loc[aid,'baseload_T']=df_group['load0'].values
+        
+        
+        df.loc[aid,'coef_shift']=df.loc[aid]['shift']/df.loc[aid]['shift_T'] #sharing/load coeficient considering only the shiftable loads
+        df.loc[aid,'coef_shift']=df.loc[aid,'coef_shift'].fillna(0)
+        
+        df.loc[aid,'coef_shift_base']=df.loc[aid]['shift_base']/df.loc[aid]['shift_base_T'] #shating/load coefficient considering shiftable and base load
+        df.loc[aid,'coef_shift_base']=df.loc[aid,'coef_shift_base'].fillna(0)
+        
+        #Real individual cost for each agent AFFECTED by the sharingf coefficient, i.e, we assume that excess is shared according to the load level of each agent
+        df.loc[aid,'r_cost']=(df.loc[aid]['shift']-df.loc[aid,'coef_shift']*df.loc[aid,'excess0'])*df.loc[aid,'tar_buy']
+        
+        df.loc[aid,'r_cost_pos']=df.loc[aid,'r_cost'].clip(lower=0)
+        
+    
+    ### transform the results in order to show them based on the same timesteps 
+    df_list=[]
+    for aid in menv.agents_id: 
+        df_ag=df.loc[aid]
+        new_col_names={col_name:col_name+'_'+aid for col_name in df_ag.columns}
+        df_ag=df_ag.rename(columns=new_col_names)
+        df_ag=df_ag.rename(columns={'tstep_'+aid:'tstep'})
+        df_ag=df_ag.set_index('tstep')
+        df_list.append(df_ag)
+        
+    df_select=pd.concat(df_list, axis=1)
+    
 
+    #Now we selct only the variables we wanna see
+    
+    vars_names=['minutes',
+                'gen0',
+                'load0',
+                'excess0',
+                'tar_buy',
+                'action',
+                'reward',
+                'shift',
+                'cost',
+                'baseload_T']
+    
+    cols_names=[]
+    for k in df_select.columns:
+        for j in vars_names:
+            if j in k:
+                cols_names.append(k)
                 
     
+    #
+    df_post=df_select[cols_names] #selct the variables that are relevant
+    df_post=df_post.drop(columns=[k for k in df_post.columns if 'tar_buy0' in k]) #we dont need tar_buy0
     
-    df_post['shift_T']=df_post[shift_columns_names].sum(axis=1)
-    # df_post['']
+    #reduce common features and filter out the common variables              
+    vars_names_filter=['minutes','shift_T','shift_base_T','excess','load0','tar_buy','baseload_T']
+    df_post=compare_equals(vars_names_filter, df_post, drop=False) 
     
-    #we have to perfomr again this cicle
-    for aid in menv.agents_id:
-        var_ag=[v for v in df_post.columns if aid in v]
-        for var in var_ag:
-                if 'coef' in var:
-                    df_post[var]=df.loc[aid,'action'].values*menv.profile[aid][0]/df_post['shift_T']
-                    df_post[var]=df_post[var].fillna(0)  #substitute all nans for zeros 
+    
+    #compute the Total cost
+    df_post_costs=df_post[[k for k in df_post.columns if 'cost_pos' in k]]
+    df_post['Cost_shift_T']=df_post_costs.sum(axis=1)
+
+    # compute total reward
+    df_post_rewards=df_post[[k for k in df_post.columns if 'reward' in k]] 
+    
+    if menv.env_config['mas_setup']=='cooperative_colective':#reward is cooperative what means that all agents get the same reward
+        print('reward is common for all agents')
+        df_post=compare_equals(['reward'], df_post, drop=False)
+    
+    
+        
+        
 
                         
-    
-    df_post['load_T']=df_post[load_columns_names].sum(axis=1)
-    df_post['reward_T']=df_post[reward_columns_names].sum(axis=1)
-    
-    
-    df_post['gen0']=df.loc[menv.agents_id[0],'gen0'].values #pv production is the same for all and it is collective. So we can use any agent on the agents_id list
-    df_post['excess0']=df.loc[menv.agents_id[0],'excess0'].values # the excess is the same for all
+   
+        
+        
     
     
-    df_post['tar_buy']=df.loc[menv.agents_id[0],'tar_buy'].values
+    # # cols_names=[k for k in vars_names if k in df_select.columns]
     
+    # columns_names=[]
+
+    # shift_columns_names=['shift_'+aid for aid in menv.agents_id]
+    # reward_columns_names=['reward_'+aid for aid in menv.agents_id]
+    # load_columns_names=['load_'+aid for aid in menv.agents_id]
+    # coef_columns_names=['coef_'+aid for aid in menv.agents_id]
+    # real_cost_columns_names=['real_cost_'+aid for aid in menv.agents_id]
     
-    #computing cost of ONLY the shiftable loads with excess
-    df_temp=df_post['shift_T']-df_post['excess0']
-    df_post['Cost_shift_T']=np.maximum(df_temp,0)*df_post['tar_buy']
+   
+    # columns_names.extend(load_columns_names)
+    # columns_names.extend(shift_columns_names)
+    # columns_names.extend(reward_columns_names)
+    # columns_names.extend(coef_columns_names)
+    # columns_names.extend(real_cost_columns_names)
     
+    # columns_names.extend(['shift_T','load_T','gen0','excess0','reward_T','Cost_shift_T','tar_buy'])
     
+    # #make a new dataframe to store the solutions
+    # df_post=pd.DataFrame(columns=columns_names)
+    
+    # for aid in menv.agents_id:
+    #     var_ag=[v for v in df_post.columns if aid in v]
+        
+    #     for var in var_ag:
+    #         if 'load' in var:
+    #             df_post[var]=df.loc[aid,'load0'].values
+            
+    #         if 'shift' in var:
+    #             df_post[var]=df.loc[aid,'action'].values*menv.profile[aid][0]
                 
+    #         if 'reward' in var:
+    #             df_post[var]=df.loc[aid,'reward'].values
+                
+
+                
+    
+    
+    # df_post['shift_T']=df_post[shift_columns_names].sum(axis=1)
+    # # df_post['']
+    
+    # #we have to perfomr again this cicle
+    # for aid in menv.agents_id:
+    #     var_ag=[v for v in df_post.columns if aid in v]
+    #     for var in var_ag:
+    #             if 'coef' in var:
+    #                 df_post[var]=df.loc[aid,'action'].values*menv.profile[aid][0]/df_post['shift_T']
+    #                 df_post[var]=df_post[var].fillna(0)  #substitute all nans for zeros 
+                
+               
+    
+    # df_post['load_T']=df_post[load_columns_names].sum(axis=1)
+    # df_post['reward_T']=df_post[reward_columns_names].sum(axis=1)
+    
+    
+    # df_post['gen0']=df.loc[menv.agents_id[0],'gen0'].values #pv production is the same for all and it is collective. So we can use any agent on the agents_id list
+    # df_post['excess0']=df.loc[menv.agents_id[0],'excess0'].values # the excess is the same for all
+    
+    
+    # df_post['tar_buy']=df.loc[menv.agents_id[0],'tar_buy'].values
+    
+    
+    # #computing cost of ONLY the shiftable loads with excess
+    # df_temp=df_post['shift_T']-df_post['excess0']
+    # df_post['Cost_shift_T']=np.maximum(df_temp,0)*df_post['tar_buy']
+    
+    
+    
+
+        
     return df, df_post
 
+
+
+def compare_equals(vars_names,df, drop=True):
+    """We are loping over the vars_names_filter and check if the columns for each agent are equal. if they are we are droping them and subsituting by only a column with the common variable its applicable to minutes, total shiftable loads and total bse load"""
+    
+    df=df.copy()
+    for n in vars_names:
+        names=[k for k in df.columns if n in k]
+        vals_var=[]
+        for col0 in names:
+            for col1 in [na for na in names if na != col0]:
+                # ic(col0)
+                # ic(col1)
+                # ic(df[col0]==df[col1])
+                val=df[col0]==df[col1]
+                # ic(all(val))
+                vals_var.append(all(val))
+                if all(vals_var):
+                        df_temp=df[names[0]]
+                        df.loc[:,n]=df_temp # bug
+                        if drop:
+                            df=df.drop(columns=names)
+                        # ic(col0)    
+                        names.remove(col1)
+    return df
 
 #%% Functions for MAS environment
 
