@@ -61,7 +61,7 @@ def test(tenv, tester, n_episodes, plot=True):
             
         # we are summing the total cost and making a mean for delta    
 
-
+        from auxfunctions_shiftenv import get_post_data
         full_state, env_state=get_post_data(tenv)
         
         episode_metrics=pd.concat([get_episode_metrics(full_state,
@@ -76,9 +76,9 @@ def test(tenv, tester, n_episodes, plot=True):
             makeplot(T,
                       [],
                       env_state['shift_T'],
-                      env_state[[k for k in env_state.columns if 'shift_ag' in k]],
-                      env_state['gen0'],
-                      env_state['load_T'],
+                      env_state[[k for k in env_state.columns if 'shift_ag' in k and 'coef' not in k]],
+                      env_state['gen0_ag1'],
+                      env_state['baseload_T'],
                       env_state['tar_buy'],
                       tenv, 
                       env_state['Cost_shift_T'].sum(),
@@ -105,24 +105,32 @@ def get_episode_metrics(full_state,env_state,environment,k):
     
     
     #Per agent metrics
+    
+    
     for ag in agents_id:
         
+        
+        
         # per agent cost considering the 
-        full_state.loc[ag,'cost']=(full_state.loc[ag]['action']*environment.profile[ag][0]-full_state.loc[ag]['excess0'])*full_state.loc[ag]['tar_buy']
+        # full_state.loc[ag,'cost']=(full_state.loc[ag]['action']*environment.profile[ag][0]-full_state.loc[ag]['excess0'])*full_state.loc[ag]['tar_buy']
+        
+        
         
 
-        # cost=pd.DataFrame([max(0,k) for k in full_state.loc[ag]['cost']])
-        pos_cost=pd.DataFrame([max(0,k) for k in full_state.loc[ag]['cost']])
-        full_state.loc[ag,'cost_pos']=pos_cost.values        
+        # # cost=pd.DataFrame([max(0,k) for k in full_state.loc[ag]['cost']])
+        # pos_cost=pd.DataFrame([max(0,k) for k in full_state.loc[ag]['cost']])
+        # full_state.loc[ag,'cost_pos']=pos_cost.values        
         
         # Self-Sufficiency
-        full_state.loc[ag,'load']=full_state.loc[ag]['action']*environment.profile[ag][0]
+        # full_state.loc[ag,'load']=full_state.loc[ag]['action']*environment.profile[ag][0]
         
-        full_state.loc[ag,'selfsuf']=full_state.loc[ag][['load','excess0']].min(axis=1)/environment.E_prof.loc[ag]['E_prof'] #dh its just here as a patch
+        # full_state.loc[ag,'selfsuf']=full_state.loc[ag][['load','excess0']].min(axis=1)/environment.E_prof.loc[ag]['E_prof'] #dh its just here as a patch
+        
+        
         
         #group everything
-        metrics.loc[ag,'cost']=full_state.loc[ag,'cost_pos'].sum()
-        metrics.loc[ag,'selfsuf']=full_state.loc[ag,'selfsuf'].sum()
+        metrics.loc[ag,'cost']=full_state.loc[ag,'r_cost_pos'].sum()
+        # metrics.loc[ag,'selfsuf']=full_state.loc[ag,'selfsuf'].sum()
         
         #
         metrics.loc[ag,'x_ratio']=full_state.loc['ag1']['excess0'].sum()/environment.E_prof.loc[ag,'E_prof']
@@ -130,20 +138,20 @@ def get_episode_metrics(full_state,env_state,environment,k):
         
     
     #community metrics
-    SS_temp=pd.concat([full_state[['minutes','load']]\
-        .set_index('minutes')\
-        .groupby(level=0).sum(),
-        full_state.iloc[0:environment.Tw][['minutes','excess0']].set_index('minutes')],axis=1)
+    # SS_temp=pd.concat([full_state[['minutes','load']]\
+    #     .set_index('minutes')\
+    #     .groupby(level=0).sum(),
+    #     full_state.iloc[0:environment.Tw][['minutes','excess0']].set_index('minutes')],axis=1)
     
-    metrics.loc['com','selfsuf']=SS_temp.min(axis=1).sum()/(environment.E_prof['E_prof'].sum()*
-                                  (environment.Tw/environment.tstep_per_day)) #number of days
+    # metrics.loc['com','selfsuf']=SS_temp.min(axis=1).sum()/(environment.E_prof['E_prof'].sum()*
+    #                               (environment.Tw/environment.tstep_per_day)) #number of days
+    
+    metrics.loc['com','selfsuf']=env_state[['shift_T','excess']].min(axis=1).sum()/environment.E_prof['E_prof'].sum()
     
     #compute the ratio between energy needed and excess available
     # E_ratio=full_state.loc['ag1']['excess0'].sum()/environment.E_prof['E_prof'].sum()
     
-    E_ratio=full_state.loc['ag1']['excess0'].sum()/environment.E_prof['E_prof'].sum()
-    
-    
+    E_ratio=env_state['excess'].sum()/environment.E_prof['E_prof'].sum()
     metrics.loc['com','x_ratio']=E_ratio
     
     metrics.loc['com','x_sig']=sigmoid(0.5,6.2,2,1,E_ratio)
@@ -156,16 +164,14 @@ def get_episode_metrics(full_state,env_state,environment,k):
     metrics.loc['com','cost']=env_state['Cost_shift_T'].sum() #the cost of consuming aggregated shiftable load
     
     
-    #Binary metrics ()
-    
+    #Binary metrics
     min_cost=full_state['tar_buy'].min()*environment.E_prof['E_prof'].sum()
     #1 if the cost is greater that mininmum tarif cost of community
     metrics.loc['com','y']=int(bool(metrics.loc['com','cost'] > min_cost))
     
     #cost variation relative to the min cost (-1 zero cost)
-    min_cost=environment.tar_buy*environment.E_prof['E_prof'].sum()
+    # min_cost=environment.tar_buy*environment.E_prof['E_prof'].sum()
     metrics['cost_var']=(metrics.loc['com']['cost']-min_cost)/min_cost
-    
     
     
     #year season
