@@ -82,6 +82,7 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     # os plotN servem depois para a legenda
     plot1, = ax1.plot(t[0:T], sol.values.astype(
         'float64')+load[0:T].values.astype('float64'), label='Total load', color='#1f77b4')
+    plot6, = ax1.plot(t[0:T], load[0:T].values.astype('float64'), label='Total baseload', color='#db4ddb',alpha=0.6)
 
     plot3, = ax1.plot(t, gen[0:T].values.astype(
         'float64'), label='PV generation', color='#FF8b00')
@@ -123,9 +124,9 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
 
     plt.ylim(bottom=0)
 
-    labels = ['Total load', 'Shiftable load', 'PV', 'Useful PV', 'PV surplus']
+    labels = ['Total load', 'Shiftable load', 'PV', 'Useful PV', 'PV surplus','Total baseload']
 
-    ax1.legend([plot1, plot2, plot3, plot4, plot5], labels)
+    ax1.legend([plot1, plot2, plot3, plot4, plot5, plot6], labels)
 
     ax1.set(ylabel='kWh', title=' c= {:f} // r={:f}'.format(var_1, var_2))
     ax2.set(xlabel='Timesteps', ylabel='€/kWh')
@@ -141,7 +142,7 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     ax2.grid(visible=True, which='minor',
              color='#999999', linestyle='-', alpha=0.07)
     
-    
+    # plt.savefig('fig1.png', dpi=300)
     
 
 # %%
