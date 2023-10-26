@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+    #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Created on Tue May 16 09:22:27 2023
@@ -81,9 +81,10 @@ datafolder=cwd / 'Data'
 raylog=cwd / 'raylog'
 prof_folder=raylog / 'profiles'
 resultsfolder=cwd / 'Results'
+storage_path='/home/omega/Downloads/ShareIST'
 
 
-#%% Test
+    #%% Test
 
 import test_build
 
@@ -115,7 +116,7 @@ import test_build
 # Good ones
 # test_exp_name='test-Feb13'
 # test_exp_name='test-shared-2ag-FCUL'
-# test_exp_name='test-shared-collective-reward-FCUL'
+test_exp_name='test-shared-collective-reward-FCUL'
 
 #DimRedux
 # exp_name ='agpol_cc_cluster'
@@ -126,8 +127,11 @@ import test_build
 
 # exp_name='bableas'
 # exp_name='ccenas-tune-cp'
-exp_name='post-tstep-bug'
-
+# exp_name='post-tstep-bug'
+# exp_name='storage-test'
+# exp_name='storage_test-win2'
+# exp_name='deb-test'
+exp_name='deb0'
 
 test_exp_name=exp_name
 
@@ -135,25 +139,41 @@ test_exp_name=exp_name
 
 
 tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,datafolder)
-
+            
 # tenv=NormalizeObs(tenv)
 
 tenv_data=tenv.data
-
+trainable_path = Path(best_checkpoint.path).parent #path of the trainbale folder to store results
+# trainable_path=''
 
 #%% Plot
 import test_agents
 
-full_state, env_state, metrics=test_agents.test(tenv, 
+full_state, env_state, metrics, results_filename_path=test_agents.test(tenv, 
                                                     tester, 
                                                     n_episodes=1,
-                                                    plot=True)
-    
+                                                    plot=True,
+                                                    results_path=trainable_path)
+
+
+#%% extract the kth day
+k=1
+w=96
+one_day=env_state2.iloc[k*w:(k+1)*w]
 
 
 
-#%%
-# from plotutils import *
+
+
+#%% make cost plots
+from plotutils import *
+make_boxplot(metrics,tenv)
+make_costplot(None,None,results_filename_path,save_fig=False)
+              
+#%%              
+
+
+
 # #import metrics from file
 # csv_list=get_files(resultsfolder / 'Train-PVHigh','.csv','metrics')
 
@@ -161,12 +181,12 @@ full_state, env_state, metrics=test_agents.test(tenv,
 # # metrics_com=metrics.loc['com']
 # # make_costplot(metrics,'plot-metrics-PPO-IL-Shared-TrainPVHigh-TestPVHigh.png', False)
 
-# make_boxplot(metrics,tenv)
+
 # # filename=resultsfolder / 'PicsSample' / 'joint_plot.png'
 
 # TotalCosts={}
 # for f in csv_list:
-#     # print(f)
+#     print(f)
 #     file_path=Path(f)
 #     metrics=pd.read_csv(f, index_col=0)
 #     new_filename='plot-' + file_path.name
