@@ -9,6 +9,7 @@ Created on Fri Feb 25 11:46:27 2022
 import numpy as np
 import pandas as pd
 import os
+from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy.random as rnd
 import time
@@ -208,13 +209,32 @@ def make_boxplot(metrics,env):
 
 
 
-def make_costplot(df,filename,save_fig):
-    m=df.loc['com']#only using community metrics in plots
+def make_costplot(df,filename_save,filename_import, save_fig):
+    """Import file flasg if if should be imported"""
     
-    exp_name=filename.name
-    exp_name=exp_name.replace('plot-metrics-',' ')
-    exp_name=exp_name.replace('.png',' ')
-    print(exp_name)
+    if filename_import:
+        m=pd.read_csv(filename_import)
+        filename_import=Path(filename_import)
+        filename_save=Path(os.path.join(filename_import.parent, 'cost_plot_'+ filename_import.stem))
+        filename_save=filename_save.with_suffix("." + 'png')
+        exp_name=filename_import.stem
+        print('imported data from ', filename_import)
+        pass
+
+    else:
+        print('imported data from metrics dataframe')
+        m=df.loc['com']#only using community metrics in plots
+        
+    
+    # if type(filename)==str:
+    #     exp_name=filename
+    # else:    
+    #     exp_name=filename.name
+    #     exp_name=exp_name.replace('plot-metrics-',' ')
+    #     exp_name=exp_name.replace('.png',' ')
+    #     print(exp_name)
+
+
     # sns.set_theme()
     
     # g=sns.jointplot(data=m, x="cost_var", y="x_ratio", hue='season',
@@ -226,10 +246,12 @@ def make_costplot(df,filename,save_fig):
     #                 height=7)
     
     
+    # fig, axs = plt.subplots(2, 1, figsize=(6, 8))
     
     g = sns.JointGrid(data=m, x="cost_var", y="x_ratio", 
                       height=7,
                       marginal_ticks=True)
+    
     # g.plot(sns.scatterplot, sns.histplot)
 
     
@@ -257,8 +279,8 @@ def make_costplot(df,filename,save_fig):
     
     g.ax_marg_y.remove()
 
-    if save_fig:
-        g.savefig(filename, dpi=300)
+    if save_fig: g.savefig(filename_save, dpi=300)
+    
 # make_boxplot(metrics,tenv)
 # %%
     # #PLots
