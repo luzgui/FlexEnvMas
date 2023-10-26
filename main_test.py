@@ -156,14 +156,10 @@ full_state, env_state, metrics, results_filename_path=test_agents.test(tenv,
                                                     results_path=trainable_path)
 
 
-#%% extract the kth day
+#%% extract the kth day from env_state
 k=1
 w=96
 one_day=env_state2.iloc[k*w:(k+1)*w]
-
-
-
-
 
 #%% make cost plots
 from plotutils import *

@@ -26,11 +26,11 @@ def make_tester(exp_name, raylog, datafolder):
     ## last checkpoint (may be equivalent to min entropy)
     # metric = '_metric/training_iteration'
     
-    metric = 'training_iteration'
-    # metric = 'episode_reward_mean'
+    # metric = 'training_iteration'
+    metric = 'episode_reward_mean'
     # metric='entropy'
-    mode='min'    
-    
+    # mode='min'    
+    mode='max'
     
     # log_dir=raylog
     
@@ -84,12 +84,14 @@ def make_tester(exp_name, raylog, datafolder):
     #we can only update the data. not the environment
     # bug - ned to come back here and figure out how to make two different environments with different data 
     best_config['env_config']['data']=test_env_data #update data
-    best_config['env_config']['env_info']='testing environment' 
+    best_config['env_config']['env_info']='testing environment'
+    #save the exp_name for further use in plot and metric functions
+    best_config['env_config']['exp_name']=exp_name
     
     ### try new initialization for testing purposes
-    best_config['env_config']['init_condition']='mode_window_seq'
+    # best_config['env_config']['init_condition']='mode_window_seq'
     # best_config['env_config']['init_condition']='mode_window'
-    # best_config['env_config']['init_condition']='mode_window_no-repeat'
+    best_config['env_config']['init_condition']='mode_window_no-repeat'
     
     
     #make config object to build
@@ -114,6 +116,9 @@ def make_tester(exp_name, raylog, datafolder):
     
     #Instantiate and restore agent
     tester=best_config_obj.build()
+    # tester.from_checkpoint(checkpoint=best_checkpoint)
+    
+    # tester.from_checkpoint(checkpoint=checkpoint_dir)
 
     
     # tester=PPO(best_config,env=best_config['env'])
