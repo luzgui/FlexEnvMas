@@ -11,14 +11,17 @@ from auxfunctions_shiftenv import *
 from shiftenvRLlib_mas import ShiftEnvMas
 from plotutils import makeplot
 from auxfunctions_shiftenv import get_post_data
+from termcolor import colored
+import os
 
 
 
 
-def test(tenv, tester, n_episodes, plot=True):
+def test(tenv, tester, n_episodes,results_path, plot=True):
+    """save_metrics=True will make Results from testing (plots and metrics) to be saved in the trainable folder (results_path) alongside the checkpoints"""
 
-    # n_episodes=1
     episode_metrics=pd.DataFrame()
+    env_state_conc=pd.DataFrame()
     
     
     #choose the policy mapping function according to policies in algorithm config
@@ -69,8 +72,11 @@ def test(tenv, tester, n_episodes, plot=True):
                                                        tenv,k),
                                                        episode_metrics])
         
+                
+        env_state_conc=pd.concat([env_state_conc, env_state.reset_index()],
+                                 axis=0).reset_index(drop=True)
         
-        
+                
         if plot: 
             # from plotutils import makeplot
             makeplot(T,
@@ -89,9 +95,24 @@ def test(tenv, tester, n_episodes, plot=True):
             
         k+=1
         
-    
+    #save results in a fodler inside the trainable folder
+    if results_path:
+        test_results_path=os.path.join(results_path,'test_results')
+        if not os.path.exists(test_results_path) and not os.path.isdir(test_results_path):
+            os.makedirs(test_results_path)
+            print(colored('folder created' ,'red'),test_results_path)
         
-    return full_state, env_state, episode_metrics
+        
+        filename='metrics_'+tenv.env_config['exp_name']+'_'+str(k)+'_eps'+'.csv'
+        filename=os.path.join(test_results_path,filename)
+        episode_metrics.to_csv(filename)
+        print(colored('Metrics saved to' ,'red'),filename)
+    else:
+        filename=''
+        
+        
+        
+    return full_state, env_state_conc, episode_metrics, filename
 
 
 
