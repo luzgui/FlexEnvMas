@@ -6,6 +6,7 @@ import random as rnd
 import re
 import math
 from termcolor import colored
+from icecream import ic
 
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
@@ -217,6 +218,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         #initial timestep
         self.tstep=self.get_init_tstep()
+        # self.tstep=35040
         self.tstep_init=self.tstep # initial timestep
         # print(colored('Initial timestep','red'),self.tstep)
         self.state['tstep']=self.tstep
@@ -360,7 +362,7 @@ class ShiftEnvMas(MultiAgentEnv):
         self.tstep+=1 # update timestep
         #check weather to end or not the episode
         self.check_term() 
-        
+        # ic(self.step)
         #saving history state in state_hist
         # self.state_hist.update(self.state.set_index([self.state.index,'tstep']))
         # self.state_hist=pd.concat([self.state_hist,self.state])
@@ -400,7 +402,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         self.make_state_norm() #make the normalized state
         
-        
+        # self.check_term() #do we need to terminate here?
         return self.get_env_obs(), self.reward, self.get_env_done(), {}
         
         
@@ -498,6 +500,7 @@ class ShiftEnvMas(MultiAgentEnv):
         "Returns the current done for all agents in a dictionary (observation, mask)"
         done_dict={aid:self.done.loc[aid]['done'] for aid in self.agents_id}
         done_dict['__all__']=all(self.done.values) #RLlib needs this
+        ic(done_dict)
         
         return done_dict
                 
@@ -611,6 +614,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         # self.minutes=self.data.iloc[self.tstep]['minutes']
         # print(colored('tstep','red'),self.tstep)
+        ic(self.tstep)
         self.minutes=self.data.loc['ag1', self.tstep]['minutes'] #this solves the bug that do not allow for initialziation at t different from zero
         # All agents share the same time referencial // 'ag1' is just the reference
         self.state['minutes']=self.minutes
@@ -729,7 +733,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         
     def check_term(self):
-        if self.tstep==self.get_term_cond():
+        if self.tstep>=self.get_term_cond():
             # print('last timestep',self.tstep)
             self.R_Total.append(self.R)
             # print('sparse', self.R)
