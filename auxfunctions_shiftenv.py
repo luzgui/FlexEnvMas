@@ -181,20 +181,15 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     
     results=ResultGrid(analysis_object)
                        
-                       
-    best_result=results.get_best_result()
-    best_checkpoint=best_result.checkpoint
+                 
+    # best_result=results.get_best_result(metric=metric,mode=mode)
+    # best_checkpoint=best_result.checkpoint
     df=results.get_dataframe()
-\
     
-    # Checkpoint()
-    
-    # restored_tuner = Tuner.restore(experiment_path, trainable=trainable_mas)
-    
-    # analysis_object.get_best_checkpoint(best_trial)
-    # checkpoint_x=Checkpoint(experiment_path)
-    # checkpoint_dir=Checkpoint.from_directory(experiment_path)
+    best_trial=analysis_object.get_best_trial(metric=metric, mode=mode)  
+    best_checkpoint=analysis_object.get_best_checkpoint(best_trial)
 
+    
     # with checkpoint_x.as_directory() as checkpoint_dir:
     #     analysis_object = ExperimentAnalysis(checkpoint_dir,
     #                                          default_metric=metric, 
@@ -208,7 +203,7 @@ def get_checkpoint(log_dir,exp_name,metric,mode):
     #get the best trial checkpoint
     # local_trial=analysis_object.get_best_trial()
     #identify the dir where is the best checkpoint according to metric and mode
-    best_trial=analysis_object.get_best_trial(metric=metric, mode=mode)
+    
     # checkpoint=analysis_object.get_best_checkpoint(best_trial)
     # checkpoint.path=best_path
 
