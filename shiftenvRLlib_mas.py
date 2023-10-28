@@ -458,14 +458,22 @@ class ShiftEnvMas(MultiAgentEnv):
             return {aid:self.get_agent_reward(aid) for aid in self.agents_id}
         
         elif self.mas_setup == 'cooperative_colective':
+            # this is the real cost of collective energy consumption. it is centralized information since it sums all the loads and subtracts the excess
             AgentLoads=[self.action.loc[agent]['action']*self.profile[agent][0] for agent in self.agents_id] #harcoded expression for agents with same profile
             
-            # R=sum(agents loads)- Excess
-            # this is the real cost of collective energy consumption.
-            # it is centralized information since it sums all the loads and subtracts the excess
+            #introduce a penalty for vioalating conditions
+            penalty_table=[]
+            for aid in self.agents_id:
+                if self.minutes == self.min_max-self.agents_params.loc[agent]['T_prof']*self.tstep_size and self.state.loc[agent]['y_s']  != self.agents_params.loc[agent]['T_prof']:
+                    penalty_table.append(True)
+            
+            penalty=-5*any(penalty_table) #a common penalty is imposed if any agent violates the constraints
+                    
+                    
             R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']
             # return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id} #this adds the term of individual reward
-            return {aid: R for aid in self.agents_id} #this adds the term of individual reward
+            
+            return {aid: R+penalty for aid in self.agents_id} #this adds the term of individual reward
             
             
     
@@ -500,7 +508,7 @@ class ShiftEnvMas(MultiAgentEnv):
         "Returns the current done for all agents in a dictionary (observation, mask)"
         done_dict={aid:self.done.loc[aid]['done'] for aid in self.agents_id}
         done_dict['__all__']=all(self.done.values) #RLlib needs this
-        ic(done_dict)
+        # ic(done_dict)
         
         return done_dict
                 
@@ -614,7 +622,7 @@ class ShiftEnvMas(MultiAgentEnv):
         
         # self.minutes=self.data.iloc[self.tstep]['minutes']
         # print(colored('tstep','red'),self.tstep)
-        ic(self.tstep)
+        # ic(self.tstep)
         self.minutes=self.data.loc['ag1', self.tstep]['minutes'] #this solves the bug that do not allow for initialziation at t different from zero
         # All agents share the same time referencial // 'ag1' is just the reference
         self.state['minutes']=self.minutes
