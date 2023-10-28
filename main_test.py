@@ -73,7 +73,7 @@ from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCo
 import cProfile
 import pstats
 from pstats import SortKey
-
+from icecream import ic
 #paths
 
 cwd=Path.cwd()
@@ -131,7 +131,9 @@ test_exp_name='test-shared-collective-reward-FCUL'
 # exp_name='storage-test'
 # exp_name='storage_test-win2'
 # exp_name='deb-test'
-exp_name='deb0'
+# exp_name='deb0'
+exp_name='deb2-CommonReward'
+# exp_name='debug'
 
 test_exp_name=exp_name
 
@@ -145,21 +147,39 @@ tenv, tester, best_checkpoint = test_build.make_tester(test_exp_name,raylog,data
 tenv_data=tenv.data
 trainable_path = Path(best_checkpoint.path).parent #path of the trainbale folder to store results
 # trainable_path=''
-
+# tenv.allowed_inits=[35040]
+# tenv.allowed_inits=[34944]
 #%% Plot
 import test_agents
 
 full_state, env_state, metrics, results_filename_path=test_agents.test(tenv, 
                                                     tester, 
-                                                    n_episodes=1,
-                                                    plot=True,
+                                                    n_episodes=364,
+                                                    plot=False,
+                                                    # results_path=None)
                                                     results_path=trainable_path)
 
 
+#%% find specific days
+# metrics=pd.read_csv(results_filename_path)
+metrics_zero=metrics.loc['com']
+metrics_zero=metrics_zero[metrics_zero.cost==0]
+
 #%% extract the kth day from env_state
-k=1
+k=344
 w=96
-one_day=env_state2.iloc[k*w:(k+1)*w]
+one_day=env_state.iloc[k*w:(k+1)*w]
+
+makeplot(tenv.Tw*1,
+          [],
+          one_day['shift_T'],
+          one_day[[k for k in one_day.columns if 'shift_ag' in k and 'coef' not in k]],
+          one_day['gen0_ag1'],
+          one_day['baseload_T'],
+          one_day['tar_buy'],
+          tenv, 
+          one_day['Cost_shift_T'].sum(),
+          0) #
 
 #%% make cost plots
 from plotutils import *
