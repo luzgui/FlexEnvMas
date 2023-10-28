@@ -464,10 +464,10 @@ class ShiftEnvMas(MultiAgentEnv):
             #introduce a penalty for vioalating conditions
             penalty_table=[]
             for aid in self.agents_id:
-                if self.minutes == self.min_max-self.agents_params.loc[agent]['T_prof']*self.tstep_size and self.state.loc[agent]['y_s']  != self.agents_params.loc[agent]['T_prof']:
+                if self.minutes == self.min_max-self.agents_params.loc[aid]['T_prof']*self.tstep_size and self.state.loc[aid]['y_s']  != self.agents_params.loc[aid]['T_prof']:
                     penalty_table.append(True)
             
-            penalty=-5*any(penalty_table) #a common penalty is imposed if any agent violates the constraints
+            penalty=-5*any(penalty_table) #a common penalty -5 is imposed if any agent violates the constraints
                     
                     
             R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']
