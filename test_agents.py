@@ -41,7 +41,7 @@ def test(tenv, tester, n_episodes,results_path, plot=True):
         mask_track=[]
     
         obs = tenv.reset()
-        
+            
         
         T=tenv.Tw*1
         # num_days_test=T/tenv.tstep_per_day
@@ -49,10 +49,19 @@ def test(tenv, tester, n_episodes,results_path, plot=True):
         # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
     
         for i in range(T):
+        # while any(tenv.done)==False:
+            
             actions=get_actions(obs, tester, tenv.agents_id,policy_mapping_func)
             obs, reward, done, info = tenv.step(actions)
+            # ic(len(tenv.state_hist.loc['ag1']))
+            # ic(len(tenv.action_hist.loc['ag1']))
+            # ic(len(tenv.reward_hist.loc['ag1']))
             
-            
+            # if done['__all__']==True:
+            #     print('episode terminated')
+            #     print('timestep: ', tenv.tstep)
+            #     break
+                
             #compute metrics per episode
             # cost=max(0,action*tenv.profile[0]-tenv.excess0)*tenv.tar_buy
             # delta_c=(tenv.load0+action*tenv.profile[0])-tenv.gen0
@@ -103,13 +112,22 @@ def test(tenv, tester, n_episodes,results_path, plot=True):
             print(colored('folder created' ,'red'),test_results_path)
         
         
-        filename='metrics_'+tenv.env_config['exp_name']+'_'+str(k)+'_eps'+'.csv'
-        filename=os.path.join(test_results_path,filename)
-        episode_metrics.to_csv(filename)
-        print(colored('Metrics saved to' ,'red'),filename)
-    else:
-        filename=''
+        filename_metrics='metrics_'+tenv.env_config['exp_name']+'_'+str(k)+'_eps'+'.csv'
+        filename_metrics=os.path.join(test_results_path,filename_metrics)
+        episode_metrics.to_csv(filename_metrics)
+        print(colored('Metrics saved to' ,'red'),filename_metrics)
         
+        filename_env_state='env_state_'+tenv.env_config['exp_name']+'_'+str(k)+'_eps'+'.csv'
+        filename_env_state=os.path.join(test_results_path,filename_env_state)
+        env_state_conc.to_csv(filename_env_state)
+        print(colored('Metrics saved to' ,'red'),filename_env_state)
+        
+        filename=[filename_metrics,filename_env_state]
+        
+    else:
+        filename_metrics=''
+        filename_env_state=''
+        filename=[filename_metrics,filename_env_state]
         
         
     return full_state, env_state_conc, episode_metrics, filename
@@ -153,7 +171,7 @@ def get_episode_metrics(full_state,env_state,environment,k):
         metrics.loc[ag,'cost']=full_state.loc[ag,'r_cost_pos'].sum()
         # metrics.loc[ag,'selfsuf']=full_state.loc[ag,'selfsuf'].sum()
         
-        #
+        # should per agent x_ratio have the sharing coefficient? 
         metrics.loc[ag,'x_ratio']=full_state.loc['ag1']['excess0'].sum()/environment.E_prof.loc[ag,'E_prof']
         
         
