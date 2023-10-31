@@ -132,7 +132,8 @@ test_exp_name='test-shared-collective-reward-FCUL'
 # exp_name='storage_test-win2'
 # exp_name='deb-test'
 # exp_name='deb0'
-exp_name='deb2-CommonReward'
+# exp_name='deb2-CommonReward'
+exp_name='deb3-ComR-pen'
 # exp_name='debug'
 
 test_exp_name=exp_name
@@ -149,26 +150,85 @@ trainable_path = Path(best_checkpoint.path).parent #path of the trainbale folder
 # trainable_path=''
 # tenv.allowed_inits=[35040]
 # tenv.allowed_inits=[34944]
+tenv.allowed_inits.pop() #remove last day to avoid the bug
+# tenv.allowed_inits=[33024]
 #%% Plot
 import test_agents
 
 full_state, env_state, metrics, results_filename_path=test_agents.test(tenv, 
                                                     tester, 
-                                                    n_episodes=364,
-                                                    plot=False,
+                                                    n_episodes=3,
+                                                    plot=True,
                                                     # results_path=None)
                                                     results_path=trainable_path)
+
+#%% get the files for metrics and full env state
+test_results_folder=os.path.join(trainable_path,'test_results')
+metrics_csv=[i for i in os.listdir(test_results_folder) if 'metrics' in i]
+env_state_csv=[i for i in os.listdir(test_results_folder) if 'env_state' in i]
+#imports
+env_state=pd.read_csv(os.path.join(test_results_folder,env_state_csv[0]))
+metrics=pd.read_csv(os.path.join(test_results_folder,metrics_csv[0]),index_col=0)
 
 
 #%% find specific days
 # metrics=pd.read_csv(results_filename_path)
-metrics_zero=metrics.loc['com']
-metrics_zero=metrics_zero[metrics_zero.cost==0]
+metrics=metrics.round(3)
+metrics_com=metrics.loc['com']
+
+# metrics_zero=metrics_zero[metrics_zero.cost==0]
+
+metrics_zero=metrics_com[metrics_com.cost==0] #zero cost solutions
+metrics_zero_x=metrics_com[metrics_com.x_ratio==0] #zero excess
+metrics_critical=metrics_com[metrics_com.x_ratio<=2] #excess below a quantity
+metrics_zero_var=metrics_com[metrics_com.cost_var==-1] # conservative solutions
+metrics_zero_var_plus=metrics_com[metrics_com.cost_var>0] # solutions worst than standart
+
+
+#check the days for which the costs are equal
+metrics_ag=metrics.loc[['ag1','ag2']][['test_epi','cost']]
+metrics_compare=pd.DataFrame()
+for k in range(metrics_ag.test_epi.max()+1):
+    m_temp=metrics_ag[metrics_ag.test_epi==k]
+    v=m_temp['cost'].duplicated().any()
+    if v==False:
+        metrics_compare=pd.concat([metrics_compare,m_temp])
+
+
+#%%make and plot data for individual comparison
+df_list=[]
+for aid in tenv.agents_id:
+    df_temp=metrics.loc[aid][['cost','test_epi']]
+    df_temp=df_temp.set_index('test_epi')
+    df_temp['cost_'+aid]=df_temp
+    df_temp=df_temp.drop('cost',axis=1)
+    df_list.append(df_temp)
+    df_ag=pd.concat(df_list,axis=1)
+
+df_ag=df_ag.loc[metrics_critical.test_epi]
+
+g = sns.JointGrid(data=df_ag, x="cost_ag1", y="cost_ag2", height=7, marginal_ticks=True)
+g.plot_joint(sns.scatterplot, s=50, alpha=0.9)
+g.plot_marginals(sns.histplot)
+g.set_axis_labels('1','2')
+g.fig.suptitle(len(df_ag))
+# g.fig.subplots_adjust(top = 0.9)
+
+#
+sns.set_theme(style="ticks")
+p=sns.jointplot(x=df_ag['cost_ag1'], y=df_ag['cost_ag2'], kind="scatter", color="#4CB391")
+p.fig.suptitle(len(df_ag))
+# { “scatter” | “kde” | “hist” | “hex” | “reg” | “resid” }
+    
 
 #%% extract the kth day from env_state
-k=344
+
+
+
+k=197
 w=96
 one_day=env_state.iloc[k*w:(k+1)*w]
+# one_day=tenv_data.iloc[k*w:(k+1)*w]
 
 makeplot(tenv.Tw*1,
           [],
@@ -184,7 +244,11 @@ makeplot(tenv.Tw*1,
 #%% make cost plots
 from plotutils import *
 make_boxplot(metrics,tenv)
-make_costplot(None,None,results_filename_path,save_fig=False)
+make_costplot(None,None,os.path.join(test_results_folder,metrics_csv[0]),save_fig=False)
+
+#critical days
+metrics_critical=metrics_com[metrics_com.x_ratio<=3]
+make_costplot(metrics_critical,None,None,save_fig=False)
               
 #%%              
 
