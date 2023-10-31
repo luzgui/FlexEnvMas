@@ -15,6 +15,7 @@ import numpy.random as rnd
 import time
 import random as rnd
 import seaborn as sns
+from icecream import ic
 
 
 # def makeplot(T, delta, sol, gen, load, tar, env, var_1, var_2):
@@ -146,7 +147,7 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     # plt.savefig('fig1.png', dpi=300)
     
 
-# %%
+# %% Community Aggregated plots
 def make_boxplot(metrics,env):
     
     m=metrics.loc['com']#only using community metrics in plots
@@ -213,7 +214,8 @@ def make_costplot(df,filename_save,filename_import, save_fig):
     """Import file flasg if if should be imported"""
     
     if filename_import:
-        m=pd.read_csv(filename_import)
+        m=pd.read_csv(filename_import,index_col=0)
+        m=m.loc['com']
         filename_import=Path(filename_import)
         filename_save=Path(os.path.join(filename_import.parent, 'cost_plot_'+ filename_import.stem))
         filename_save=filename_save.with_suffix("." + 'png')
@@ -224,6 +226,7 @@ def make_costplot(df,filename_save,filename_import, save_fig):
     else:
         print('imported data from metrics dataframe')
         m=df.loc['com']#only using community metrics in plots
+        exp_name='cenas'
         
     
     # if type(filename)==str:
@@ -269,7 +272,7 @@ def make_costplot(df,filename_save,filename_import, save_fig):
     g.set_axis_labels('% relative to minimum cost', 
                       'PV Excess to app energy needed ratio')
 
-    g.fig.suptitle(exp_name + 'Total year cost: %1.1f €' % m['cost'].sum())
+    g.fig.suptitle(exp_name + 'Total year cost: %1.1f €' % m['cost'].sum() +'  n= %1.1f' % int(len(m)) )
     g.fig.subplots_adjust(top = 0.9)
 
     # plt.axvline(x = 0, color = 'k',linestyle='--', label = 'min cost', alpha=0.6)
@@ -277,7 +280,7 @@ def make_costplot(df,filename_save,filename_import, save_fig):
     # plt.axvline(x = -1, color = 'k',ls='--', label = 'zero cost',alpha=0.6)
     # plt.axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy',alpha=0.6)
     
-    g.ax_marg_y.remove()
+    # g.ax_marg_y.remove()
 
     if save_fig: g.savefig(filename_save, dpi=300)
     
