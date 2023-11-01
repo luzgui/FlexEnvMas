@@ -74,6 +74,16 @@ import cProfile
 import pstats
 from pstats import SortKey
 from icecream import ic
+
+#pyomo
+from auxfunctions_opti import *
+from pyomo.environ import *
+from pyomo.opt import SolverFactory
+import scipy.io as sio
+import re 
+from itertools import compress
+
+
 #paths
 
 cwd=Path.cwd()
@@ -221,11 +231,13 @@ p.fig.suptitle(len(df_ag))
 # { “scatter” | “kde” | “hist” | “hex” | “reg” | “resid” }
     
 
+
+
+
+
 #%% extract the kth day from env_state
-
-
-
-k=197
+# k=359
+k=8
 w=96
 one_day=env_state.iloc[k*w:(k+1)*w]
 # one_day=tenv_data.iloc[k*w:(k+1)*w]
@@ -240,6 +252,47 @@ makeplot(tenv.Tw*1,
           tenv, 
           one_day['Cost_shift_T'].sum(),
           0) #
+
+
+#%%get centralized solution
+from opti.agentfunc import *
+
+H=tenv.Tw
+n=len(tenv.agents_id)
+agents_id=tenv.agents_id
+d={0:7,1:7}
+l={0:0.3,1:0.3}
+price=one_day['tar_buy'].values
+PV=one_day['gen0_ag1'].values
+base=one_day['baseload_T'].values
+alpha=0
+Violation=alpha*PV
+
+opt = SolverFactory('gurobi')
+
+model=Agent_C1(H,n,d,l,price,Violation,PV,base)
+Results=opt.solve(model,tee=True)
+
+from auxfunctions_opti import *
+Solutions=get_solution(model,tenv.agents_id)
+
+
+from plotutils import *
+makeplot(tenv.Tw*1,
+          [],
+          Solutions['shift_T'],
+          Solutions[[k for k in Solutions.columns if 'load' in k]],
+          Solutions['PV'],
+          Solutions['base'],
+           # Solutions['baseload_T'],
+          Solutions['tar'],
+          tenv, 
+          # Solutions['Cost_shift_T'].sum(),
+          model.objective(),
+          0) #
+
+
+
 
 #%% make cost plots
 from plotutils import *
