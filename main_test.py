@@ -143,8 +143,8 @@ test_exp_name='test-shared-collective-reward-FCUL'
 # exp_name='deb-test'
 # exp_name='deb0'
 # exp_name='deb2-CommonReward'
-exp_name='deb3-ComR-pen'
-# exp_name='debug'
+# exp_name='deb3-ComR-pen'
+exp_name='debug'
 
 test_exp_name=exp_name
 
@@ -237,7 +237,7 @@ p.fig.suptitle(len(df_ag))
 
 #%% extract the kth day from env_state
 # k=359
-k=8
+k=1
 w=96
 one_day=env_state.iloc[k*w:(k+1)*w]
 # one_day=tenv_data.iloc[k*w:(k+1)*w]
@@ -259,9 +259,13 @@ from opti.agentfunc import *
 
 H=tenv.Tw
 n=len(tenv.agents_id)
+# n=10
 agents_id=tenv.agents_id
-d={0:7,1:7}
-l={0:0.3,1:0.3}
+# agents_id=['ag'+str(k+1) for k in range(n)]
+d={k:7 for k in range(n)}
+l={k:0.3 for k in range(n)}
+# d={0:7,1:7,2:7}
+# l={0:0.3,1:0.3,2:0.3}
 price=one_day['tar_buy'].values
 PV=one_day['gen0_ag1'].values
 base=one_day['baseload_T'].values
@@ -274,7 +278,7 @@ model=Agent_C1(H,n,d,l,price,Violation,PV,base)
 Results=opt.solve(model,tee=True)
 
 from auxfunctions_opti import *
-Solutions=get_solution(model,tenv.agents_id)
+Solutions=get_solution(model,agents_id)
 
 
 from plotutils import *
@@ -292,7 +296,89 @@ makeplot(tenv.Tw*1,
           0) #
 
 
+#%% Generate comparison between RL and optimal solution
+k=len(metrics.loc['com'])
+# df_compare=pd.DataFrame(index=range(k))
+df_compare=pd.DataFrame(columns=['rl','opti'])
+for k in range(k):
+    
+    one_day=env_state.iloc[k*w:(k+1)*w]
+    
+    H=tenv.Tw
+    n=len(tenv.agents_id)
+    agents_id=tenv.agents_id
+    d={0:7,1:7}
+    l={0:0.3,1:0.3}
+    price=one_day['tar_buy'].values
+    PV=one_day['gen0_ag1'].values
+    base=one_day['baseload_T'].values
+    alpha=0
+    Violation=alpha*PV
 
+    opt = SolverFactory('gurobi')
+    model=Agent_C1(H,n,d,l,price,Violation,PV,base)
+    Results=opt.solve(model,tee=True)
+    
+    
+    data={'rl':[one_day['Cost_shift_T'].sum()],
+          'opti':[model.objective()]}
+    
+    df_compare=pd.concat([df_compare,pd.DataFrame(data)],axis=0)
+    df_compare=df_compare.reset_index(drop=True)
+    
+
+# df_compare.to_csv(os.path.join(test_results_folder,'compare_rl_opti.csv'))
+#%% plot the comparison
+df_compare=pd.read_csv(os.path.join(test_results_folder,'compare_rl_opti.csv'), index_col=0).round(3)
+
+# df_compare=df_compare.iloc[metrics_critical.test_epi.values]
+
+df_compare['opti_1']=df_compare['opti']+1e-9
+df_compare['rl_1']=df_compare['rl']+1e-9
+
+df_compare['RelDif']=(abs(df_compare['rl_1']-df_compare['opti_1'])/df_compare['opti_1'])*100
+
+df_compare['RelDif_max']=(abs(df_compare['rl_1']-df_compare['opti_1'])/df_compare['opti'].max())*100
+
+df_compare['opti_1']
+df_compare['RelDif_0']=(abs(df_compare['rl']-df_compare['opti'])/df_compare['opti'])*100
+df_compare['AbsDif']=abs(df_compare['rl']-df_compare['opti'])
+
+
+
+
+
+df_compare_critical=df_compare.iloc[metrics_critical['test_epi'].values]
+
+
+#multivariate plot
+sns.set_theme(style="ticks")
+p=sns.jointplot(x=df_compare['rl'], y=df_compare['opti'], kind="scatter", color="#4CB391")
+p.fig.suptitle(len(df_compare))
+x = np.linspace(0, df_compare[['rl','opti']].max().max(), 100)  # Adjust the range and data as needed
+y = x  # Create y as x for x = y
+plt.plot(x, y, label='x = y', color='blue', linestyle='--')
+p.ax_joint.grid(True)
+# { “scatter” | “kde” | “hist” | “hex” | “reg” | “resid” }
+
+#%%histogram
+# p=sns.histplot(data=df_compare, x='RelDif_max')
+p=sns.histplot(data=df_compare_critical, x='RelDif_max',bins=20)
+p.set_title('Rel. diff normalized by max opti cost')
+p.grid(True)
+p.set_xlabel('Difference to optimal solution (%)')
+p.set_ylabel('num days')
+
+
+bin_size=20
+bin_edges = np.linspace(0, 100, bin_size+1)
+bin_width = bin_edges[1] - bin_edges[0]
+bin_centers = bin_edges[:-1] + bin_width / 2
+
+
+bin_labels = ['{}%'.format(int(xtick_positions[i])) for i in range(bin_size)]
+# plt.xticks(xtick_positions, bin_labels,rotation=45)
+# plt.xticks(bin_centers,rotation=45)
 
 #%% make cost plots
 from plotutils import *
