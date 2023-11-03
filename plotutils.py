@@ -52,7 +52,13 @@ from icecream import ic
 # %%
 def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     
-    ag_colors=pd.DataFrame(['c','r'],index=sol_ag.columns)
+    # ag_colors=pd.DataFrame(['c','r'],index=sol_ag.columns)
+    color_list=['c','r',
+                'blue', 'green','magenta', 
+                'yellow', 'purple', 'orange',
+                'pink','brown']
+
+    ag_colors=pd.DataFrame(color_list[0:len(sol_ag.columns)],index=sol_ag.columns)
     ag_colors.columns=['color']
 
     useful_pv = pd.concat([load + sol, gen], axis=1).min(axis=1)
@@ -146,6 +152,8 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     
     # plt.savefig('fig1.png', dpi=300)
     
+
+
 
 # %% Community Aggregated plots
 def make_boxplot(metrics,env):
