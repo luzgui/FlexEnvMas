@@ -95,7 +95,14 @@ def make_env_data_mas(data,t_init,t_end, load_id, pv_factor, num_agents, agents_
     
     # delta and excess are COLLECTIVE, i.e computed based on aggregated quantities
     df['delta']=df[load_id].sum(axis=1)-df['gen']
-    df['excess']=[max(0,-df['delta'][k]) for k in range(t_init,t_end)] 
+    # df['excess']=[max(0,-df['delta'][k]) for k in range(t_init,t_end)] 
+    
+    #define a custom function to perform the max operation
+    def max_0(x):
+        return max(0, -x)
+    df['excess']=df['delta'].apply(max_0)
+
+    
     
     frames=[]
     for lid,aid in zip(load_id,agents_id):
