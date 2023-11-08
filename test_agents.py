@@ -97,7 +97,8 @@ def test(tenv, tester, n_episodes,results_path, plot=True):
                       env_state['tar_buy'],
                       tenv, 
                       env_state['Cost_shift_T'].sum(),
-                      0) #
+                      0,
+                      '') #
             
             
             
@@ -142,7 +143,8 @@ def get_episode_metrics(full_state,env_state,environment,k):
     metrics=pd.DataFrame(index=full_state.index.unique())
     Total_load=[]
     
-    
+    # import pdb
+    # pdb.pdb.set_trace()
     #Per agent metrics
     
     

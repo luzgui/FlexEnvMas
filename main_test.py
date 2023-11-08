@@ -126,7 +126,7 @@ import test_build
 # Good ones
 # test_exp_name='test-Feb13'
 # test_exp_name='test-shared-2ag-FCUL'
-test_exp_name='test-shared-collective-reward-FCUL'
+# test_exp_name='test-shared-collective-reward-FCUL'
 
 #DimRedux
 # exp_name ='agpol_cc_cluster'
@@ -143,8 +143,12 @@ test_exp_name='test-shared-collective-reward-FCUL'
 # exp_name='deb-test'
 # exp_name='deb0'
 # exp_name='deb2-CommonReward'
+
 # exp_name='deb3-ComR-pen'
-exp_name='debug'
+# exp_name='debug'
+
+exp_name='deb3-ComR-pen'
+# exp_name='deb-ComR-3agents-IL'
 
 test_exp_name=exp_name
 
@@ -167,15 +171,17 @@ import test_agents
 
 full_state, env_state, metrics, results_filename_path=test_agents.test(tenv, 
                                                     tester, 
-                                                    n_episodes=3,
+                                                    n_episodes=1,
                                                     plot=True,
-                                                    # results_path=None)
-                                                    results_path=trainable_path)
+                                                    results_path=None)
+                                                    # results_path=trainable_path)
 
 #%% get the files for metrics and full env state
 test_results_folder=os.path.join(trainable_path,'test_results')
 metrics_csv=[i for i in os.listdir(test_results_folder) if 'metrics' in i]
+print(metrics_csv)
 env_state_csv=[i for i in os.listdir(test_results_folder) if 'env_state' in i]
+print(env_state_csv)
 #imports
 env_state=pd.read_csv(os.path.join(test_results_folder,env_state_csv[0]))
 metrics=pd.read_csv(os.path.join(test_results_folder,metrics_csv[0]),index_col=0)
@@ -196,7 +202,7 @@ metrics_zero_var_plus=metrics_com[metrics_com.cost_var>0] # solutions worst than
 
 
 #check the days for which the costs are equal
-metrics_ag=metrics.loc[['ag1','ag2']][['test_epi','cost']]
+metrics_ag=metrics.loc[tenv.agents_id][['test_epi','cost']]
 metrics_compare=pd.DataFrame()
 for k in range(metrics_ag.test_epi.max()+1):
     m_temp=metrics_ag[metrics_ag.test_epi==k]
@@ -206,6 +212,7 @@ for k in range(metrics_ag.test_epi.max()+1):
 
 
 #%%make and plot data for individual comparison
+#Only makes sense for n=2
 df_list=[]
 for aid in tenv.agents_id:
     df_temp=metrics.loc[aid][['cost','test_epi']]
@@ -215,32 +222,47 @@ for aid in tenv.agents_id:
     df_list.append(df_temp)
     df_ag=pd.concat(df_list,axis=1)
 
-df_ag=df_ag.loc[metrics_critical.test_epi]
+# df_ag=df_ag.loc[metrics_critical.test_epi]
 
-g = sns.JointGrid(data=df_ag, x="cost_ag1", y="cost_ag2", height=7, marginal_ticks=True)
-g.plot_joint(sns.scatterplot, s=50, alpha=0.9)
-g.plot_marginals(sns.histplot)
-g.set_axis_labels('1','2')
-g.fig.suptitle(len(df_ag))
+# g = sns.JointGrid(data=df_ag, x="cost_ag1", y="cost_ag2", height=7, marginal_ticks=True)
+# g.plot_joint(sns.scatterplot, s=50, alpha=0.9)
+# g.plot_marginals(sns.histplot)
+# g.set_axis_labels('1','2')
+# g.fig.suptitle(len(df_ag))
 # g.fig.subplots_adjust(top = 0.9)
-
-#
+    
+# df_ag=df_ag.loc[metrics_critical.test_epi.values]
 sns.set_theme(style="ticks")
 p=sns.jointplot(x=df_ag['cost_ag1'], y=df_ag['cost_ag2'], kind="scatter", color="#4CB391")
 p.fig.suptitle(len(df_ag))
+p.ax_joint.set_xlabel('Cost for Agent 1 (€)')
+p.ax_joint.set_ylabel('Cost for Agent 2 (€)')
+# p.fig.suptitle('Costs compare btw Ag1 and Ag2 (days=365)', y=1.02)
+days=len(df_ag)
+# p.fig.suptitle(f'Costs compare between Agent 1 and Agent 2 (days={days})', y=1.02)
+
+
+x = np.linspace(0, 0.30, 100)  # Adjust the range and data as needed
+y = x  # Create y as x for x = y
+sns.lineplot(x=x, y=y, color='blue', ax=p.ax_joint)
+p.ax_joint.grid(True)
+plt.show()
 # { “scatter” | “kde” | “hist” | “hex” | “reg” | “resid” }
-    
-
-
+# p.savefig(os.path.join(test_results_folder,'compare_cost_2ag_365.png'), dpi=300)
 
 
 
 #%% extract the kth day from env_state
 # k=359
-k=1
+import plotutils
+k=13
 w=96
 one_day=env_state.iloc[k*w:(k+1)*w]
 # one_day=tenv_data.iloc[k*w:(k+1)*w]
+
+file=os.path.join(test_results_folder,f'day={k}_RL-IL_3ag_critical.png')
+
+# file=''
 
 makeplot(tenv.Tw*1,
           [],
@@ -251,7 +273,8 @@ makeplot(tenv.Tw*1,
           one_day['tar_buy'],
           tenv, 
           one_day['Cost_shift_T'].sum(),
-          0) #
+          0,
+          file) #
 
 
 #%%get centralized solution
@@ -282,6 +305,8 @@ Solutions=get_solution(model,agents_id)
 
 
 from plotutils import *
+file=os.path.join(test_results_folder,f'day={k}_opti_3ag_critical.png')
+# file=''
 makeplot(tenv.Tw*1,
           [],
           Solutions['shift_T'],
@@ -293,7 +318,8 @@ makeplot(tenv.Tw*1,
           tenv, 
           # Solutions['Cost_shift_T'].sum(),
           model.objective(),
-          0) #
+          0,
+          file) #
 
 
 #%% Generate comparison between RL and optimal solution
@@ -307,8 +333,8 @@ for k in range(k):
     H=tenv.Tw
     n=len(tenv.agents_id)
     agents_id=tenv.agents_id
-    d={0:7,1:7}
-    l={0:0.3,1:0.3}
+    d={k:7 for k in range(n)}
+    l={k:0.3 for k in range(n)}
     price=one_day['tar_buy'].values
     PV=one_day['gen0_ag1'].values
     base=one_day['baseload_T'].values
@@ -328,6 +354,7 @@ for k in range(k):
     
 
 # df_compare.to_csv(os.path.join(test_results_folder,'compare_rl_opti.csv'))
+
 #%% plot the comparison
 df_compare=pd.read_csv(os.path.join(test_results_folder,'compare_rl_opti.csv'), index_col=0).round(3)
 
@@ -349,6 +376,7 @@ df_compare['AbsDif']=abs(df_compare['rl']-df_compare['opti'])
 
 
 df_compare_critical=df_compare.iloc[metrics_critical['test_epi'].values]
+df_compare=df_compare_critical
 
 
 #multivariate plot
@@ -362,32 +390,50 @@ p.ax_joint.grid(True)
 # { “scatter” | “kde” | “hist” | “hex” | “reg” | “resid” }
 
 #%%histogram
-# p=sns.histplot(data=df_compare, x='RelDif_max')
-p=sns.histplot(data=df_compare_critical, x='RelDif_max',bins=20)
-p.set_title('Rel. diff normalized by max opti cost')
+p=sns.histplot(data=df_compare, x='RelDif_max')
+# p=sns.histplot(data=df_compare_critical, x='RelDif_max',bins=20)
+p.set_title(f'Rel. diff normalized by max opti cost (crit) (n={len(tenv.agents_id)}, days={len(df_compare)})')
 p.grid(True)
 p.set_xlabel('Difference to optimal solution (%)')
 p.set_ylabel('num days')
-
 
 bin_size=20
 bin_edges = np.linspace(0, 100, bin_size+1)
 bin_width = bin_edges[1] - bin_edges[0]
 bin_centers = bin_edges[:-1] + bin_width / 2
-
-
-bin_labels = ['{}%'.format(int(xtick_positions[i])) for i in range(bin_size)]
+# bin_labels = ['{}%'.format(int(xtick_positions[i])) for i in range(bin_size)]
 # plt.xticks(xtick_positions, bin_labels,rotation=45)
 # plt.xticks(bin_centers,rotation=45)
 
+plt.savefig(os.path.join(test_results_folder,
+                          f'RelDiff_{len(df_compare)}_rl_cc_{len(tenv.agents_id)}g.png'),
+                        dpi=300)
+
+# p.ax_joint.grid(True)
+plt.show()
+# { “scatter” | “kde” | “hist” | “hex” | “reg” | “resid” }
+
+
 #%% make cost plots
 from plotutils import *
-make_boxplot(metrics,tenv)
-make_costplot(None,None,os.path.join(test_results_folder,metrics_csv[0]),save_fig=False)
+# make_boxplot(metrics,tenv)
+filename_save=os.path.join(test_results_folder,f'cost_plot_n={len(tenv.agents_id)}_364.png')
+filename_save=''
+make_costplot(df=None,
+              filename_save=filename_save,
+              filename_import=os.path.join(test_results_folder,metrics_csv[0]),
+              n_agents=len(tenv.agents_id), 
+              save_fig=True)
 
 #critical days
-metrics_critical=metrics_com[metrics_com.x_ratio<=3]
-make_costplot(metrics_critical,None,None,save_fig=False)
+filename_save=os.path.join(test_results_folder,f'cost_plot_n={len(tenv.agents_id)}_critic_days.png')
+# filename_save=''
+# metrics_critical=metrics_com[metrics_com.x_ratio<=2]
+make_costplot(df=metrics_critical,
+              filename_save=filename_save,
+              filename_import=None,
+              n_agents=len(tenv.agents_id),
+              save_fig=True)
               
 #%%              
 

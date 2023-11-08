@@ -50,7 +50,7 @@ from icecream import ic
 
 
 # %%
-def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
+def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2,filename_save):
     
     # ag_colors=pd.DataFrame(['c','r'],index=sol_ag.columns)
     color_list=['c','r',
@@ -150,7 +150,10 @@ def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2):
     ax2.grid(visible=True, which='minor',
              color='#999999', linestyle='-', alpha=0.07)
     
-    # plt.savefig('fig1.png', dpi=300)
+    
+    if filename_save:
+        plt.savefig(filename_save, dpi=300)
+        print('saved figure to', filename_save)
     
 
 
@@ -162,6 +165,7 @@ def make_boxplot(metrics,env):
     
     
     min_cost=env.tar_buy*env.E_prof['E_prof'].sum()
+    
 
     #boxplot
      
@@ -218,8 +222,11 @@ def make_boxplot(metrics,env):
 
 
 
-def make_costplot(df,filename_save,filename_import, save_fig):
+def make_costplot(df,filename_save,filename_import,n_agents, save_fig):
     """Import file flasg if if should be imported"""
+    # import pdb
+    # pdb.pdb.set_trace()
+    n=n_agents
     
     if filename_import:
         m=pd.read_csv(filename_import,index_col=0)
@@ -280,7 +287,13 @@ def make_costplot(df,filename_save,filename_import, save_fig):
     g.set_axis_labels('% relative to minimum cost', 
                       'PV Excess to app energy needed ratio')
 
-    g.fig.suptitle(exp_name + 'Total year cost: %1.1f €' % m['cost'].sum() +'  n= %1.1f' % int(len(m)) )
+    # g.fig.suptitle(exp_name + 'Total year cost: %1.1f €' % m['cost'].sum() +'  n= %1.1f' % int(len(m)))
+    
+    
+    # text='Critical days (excess < 2)'
+    text=''
+    g.fig.suptitle(text + 'num agents = %d' % int(n) + ' / ' + '  num days= %d' % int(len(m)))
+    
     g.fig.subplots_adjust(top = 0.9)
 
     # plt.axvline(x = 0, color = 'k',linestyle='--', label = 'min cost', alpha=0.6)
@@ -289,7 +302,6 @@ def make_costplot(df,filename_save,filename_import, save_fig):
     # plt.axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy',alpha=0.6)
     
     # g.ax_marg_y.remove()
-
     if save_fig: g.savefig(filename_save, dpi=300)
     
 # make_boxplot(metrics,tenv)
