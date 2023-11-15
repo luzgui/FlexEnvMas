@@ -51,6 +51,9 @@ from ray.rllib.utils.torch_utils import convert_to_torch_tensor
 from termcolor import colored
 
 from models2 import *
+#debug
+from icecream import ic
+import pdb
 
 tf1, tf, tfv = try_import_tf()
 torch, nn = try_import_torch()
@@ -87,11 +90,145 @@ OPPONENT_ACTION = "opponent_action"
 # )
 
 
-class CentralizedValueMixin:
-    """Add method to evaluate the central value function from the model."""
-    def __init__(self):
-            self.compute_central_vf = self.model.central_value_function
-#%%
+
+#%% Centralized Critic Post Process
+
+# Grabs the opponent obs/act and includes it in the experience train_batch,
+# and computes GAE using the central vf predictions.
+def cc_postprocessing(policy, 
+                      sample_batch, 
+                      other_agent_batches=None, 
+                      episode=None):
+
+    n_agents=policy.config['env_config']['num_agents']
+    n_agents_other=n_agents-1 #NUmber of other agents
+    
+    # the observation dimension that is input to the policy model is the sum of the 'action_mask' and 'observation' (49+2=51). 
+    # This is a trick to get that value that we cannot get from the config dictionary
+    
+    obs_space=policy.config['observation_space']
+    obs_dim=0
+    for key in obs_space.keys():
+        obs_dim+=obs_space[key].shape[0]
+
+    
+    if policy.loss_initialized():
+        # breakpoint()
+        # assert other_agent_batches is not None
+        # opponent_batch_list = list(other_agent_batches.values())
+
+        # agents_id = ['ag'+i for i in range(len(other_agent_batches))]
+        # other_agents_id=list(other_agent_batches.keys())
+        
+        # global_obs_batch = np.stack(
+        # [other_agent_batches[aid][2]["obs"] for aid in other_agents_id],axis=1)
+
+        # global_action_batch = np.stack(
+        # [other_agent_batches[aid][2]["actions"] for aid in other_agents_id],axis=1)
+        
+        # import pdb
+        # pdb.pdb.set_trace()
+
+        # also record the opponent obs and actions in the trajectory
+        
+        # sample_batch[OPPONENT_OBS] = opponent_batch[SampleBatch.CUR_OBS]
+        # sample_batch[OPPONENT_ACTION] = opponent_batch[SampleBatch.ACTIONS]
+        
+        # sample_batch[OPPONENT_OBS] = global_obs_batch
+        # sample_batch[OPPONENT_ACTION] = global_action_batch
+        
+        
+        # sample_batch["opponent_obs"] = global_obs_batch
+        # sample_batch["opponent_action"] = global_action_batch
+        
+        
+        # import pdb
+        # pdb.pdb.set_trace()
+        
+        # overwrite default VF prediction with the central VF
+        # sample_batch[SampleBatch.VF_PREDS] = convert_to_numpy(
+        #     policy.compute_central_vf(
+        #         sample_batch[SampleBatch.CUR_OBS],
+        #         sample_batch[OPPONENT_OBS],
+        #         sample_batch[OPPONENT_ACTION],))
+        
+        assert other_agent_batches is not None
+        opponent_batch_list = list(other_agent_batches.values())
+        
+        other_agents_id=list(other_agent_batches.keys())
+        
+        global_obs_batch = np.stack(
+        [other_agent_batches[aid][2]["obs"] for aid in other_agents_id],axis=1)
+        global_obs_batch=global_obs_batch.reshape((len(global_obs_batch),n_agents_other*obs_dim))
+        
+        
+        global_action_batch = np.stack(
+        [other_agent_batches[aid][2]["actions"] for aid in other_agents_id],axis=1)
+        
+        sample_batch["opponent_obs"] = global_obs_batch
+        sample_batch["opponent_action"] = global_action_batch
+        
+        
+        # import pdb
+        # pdb.pdb.set_trace()
+        print('computing central value function')
+        sample_batch['vf_preds'] = convert_to_numpy(
+            policy.compute_central_vf(
+                sample_batch['obs'],
+                sample_batch['opponent_obs'],
+                sample_batch['opponent_action'],))
+        print('finished computing central value function')
+        
+    else:
+        # Policy hasn't been initialized yet, use zeros.
+        # print('HERE')
+        
+        len_batch=len(sample_batch)
+        zero_obs=np.zeros((len_batch,obs_dim))
+        zero_opp_obs=np.zeros((len_batch,obs_dim*n_agents_other))
+        zero_opp_actions=np.zeros((len_batch,n_agents_other))
+        zero_vf_preds=np.zeros((len_batch,))
+        
+
+        
+        sample_batch[OPPONENT_OBS] = zero_opp_obs
+        sample_batch[OPPONENT_ACTION] = zero_opp_actions
+        sample_batch[SampleBatch.VF_PREDS] = np.zeros((len_batch,))
+        
+        # import pdb
+        # pdb.pdb.set_trace()
+        
+        # sample_batch[OPPONENT_OBS] = np.zeros_like(sample_batch[SampleBatch.CUR_OBS])
+        # sample_batch[OPPONENT_ACTION] = np.zeros_like(sample_batch[SampleBatch.ACTIONS])
+        # sample_batch[SampleBatch.VF_PREDS] = np.zeros_like(
+        #     sample_batch[SampleBatch.REWARDS], dtype=np.float32
+        # )
+        
+        # sample_batch[[OPPONENT_ACTION]
+        
+
+    completed = sample_batch["dones"][-1]
+    if completed:
+        last_r = 0.0
+    else:
+        last_r = sample_batch[SampleBatch.VF_PREDS][-1]
+    
+    # print(colored('Computing advantages...','red'))
+    train_batch = compute_advantages(
+        sample_batch,
+        last_r,
+        policy.config["gamma"],
+        policy.config["lambda"],
+        use_gae=policy.config["use_gae"],
+    )
+    # print(colored('Finished postprocess...','green'))
+   
+    return train_batch
+
+
+
+
+
 
 # Grabs the opponent obs/act and includes it in the experience train_batch,
 # and computes GAE using the central vf predictions.
@@ -107,10 +244,12 @@ def centralized_critic_postprocessing(policy,
     if (pytorch and hasattr(policy, "compute_central_vf")) or (
         not pytorch and policy.loss_initialized()
     ):
+        # breakpoint()
         assert other_agent_batches is not None
-        # print('other batches',other_agent_batches.values())
-        [(_,_, opponent_batch)] = list(other_agent_batches.values())
-
+        # [(_,_,opponent_batch)] = list(other_agent_batches.values())
+        [(_,_,opponent_batch),
+          (_,_,opponent_batch)] = list(other_agent_batches.values())
+    
         # also record the opponent obs and actions in the trajectory
         sample_batch[OPPONENT_OBS] = opponent_batch[SampleBatch.CUR_OBS]
         sample_batch[OPPONENT_ACTION] = opponent_batch[SampleBatch.ACTIONS]
@@ -132,10 +271,6 @@ def centralized_critic_postprocessing(policy,
                 .numpy()
             )
         else:
-            # print('cur_obs',sample_batch[SampleBatch.CUR_OBS])
-            # print('opp_obs',sample_batch[OPPONENT_OBS])
-            # print('opp_act',sample_batch[OPPONENT_ACTION])
-            # print(colored('Computing VF..','red'))
             sample_batch[SampleBatch.VF_PREDS] = convert_to_numpy(
                 policy.compute_central_vf(
                     sample_batch[SampleBatch.CUR_OBS],
@@ -172,8 +307,12 @@ def centralized_critic_postprocessing(policy,
 # Copied from PPO but optimizing the central value function.
 def loss_with_central_critic(policy, base_policy, model, dist_class, train_batch):
     # Save original value function.
-    vf_saved = model.value_function
+            
+    # import pdb
+    # pdb.pdb.set_trace()
 
+    vf_saved = model.value_function
+    
     # Calculate loss with a custom value function.
     model.value_function = lambda: policy.model.central_value_function(
         train_batch[SampleBatch.CUR_OBS],
@@ -198,30 +337,42 @@ def central_vf_stats(policy, train_batch):
     }
 #%%
 
+class CentralizedValueMixin:
+    """Add method to evaluate the central value function from the model."""
+    def __init__(self):
+            self.compute_central_vf = self.model.central_value_function
+
+
 def get_ccppo_policy(base):
     class CCPPOTFPolicy(CentralizedValueMixin, base):
         def __init__(self, observation_space, action_space, config):
             base.__init__(self, observation_space, action_space, config)
             CentralizedValueMixin.__init__(self)
-
+        
+        # import pdb
+        # pdb.pdb.set_trace()
+        
         @override(base)
         def loss(self, model, dist_class, train_batch):
             # Use super() to get to the base PPO policy.
             # This special loss function utilizes a shared
             # value function defined on self, and the loss function
             # defined on PPO policies.
+            # import pdb
+            # pdb.pdb.set_trace()
+
             return loss_with_central_critic(
                 self, super(), model, dist_class, train_batch
             )
-
+        
         @override(base)
         def postprocess_trajectory(
             self, sample_batch, other_agent_batches=None, episode=None
         ):
-            return centralized_critic_postprocessing(
+            return cc_postprocessing(
                 self, sample_batch, other_agent_batches, episode
             )
-
+        
         @override(base)
         def stats_fn(self, train_batch: SampleBatch):
             stats = super().stats_fn(train_batch)
