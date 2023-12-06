@@ -1,11 +1,3 @@
-    #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May 16 09:22:27 2023
-
-@author: omega
-"""
-
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -147,8 +139,11 @@ import test_build
 # exp_name='deb3-ComR-pen'
 # exp_name='debug'
 
-exp_name='deb3-ComR-pen'
+# exp_name='deb3-ComR-pen'
 # exp_name='deb-ComR-3agents-IL'
+# exp_name='debug-newCC'
+exp_name='debug-newCC-3agents'
+
 
 test_exp_name=exp_name
 

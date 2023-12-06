@@ -15,7 +15,7 @@ import cProfile
 
 def trainable_mas(config):
     
-    n_iters=1
+    n_iters=3
     checkpoint_freq=1000
     
     # trainer=PPO(config, env=config["env"])

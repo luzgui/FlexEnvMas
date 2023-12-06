@@ -65,7 +65,9 @@ from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCo
 import cProfile
 import pstats
 from pstats import SortKey
-
+from rich import print
+from rich.console import Console
+from rich.syntax import Syntax
 #paths
 
 cwd=Path.cwd()
@@ -73,7 +75,11 @@ datafolder=cwd / 'Data'
 raylog=cwd / 'raylog'
 prof_folder=raylog / 'profiles'
 resultsfolder=cwd / 'Results'
-
+#
+with open(cwd / 'checklist_new_machine.md', "r", encoding="utf-8") as file:
+    markdown_text = file.read()
+console = Console()
+console.print(markdown_text, style="red")
 
 ##############################################################################
 
@@ -124,7 +130,7 @@ register_env("shiftenv", env_creator)
     #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='storage-test'
+exp_name='debug-newCC-3agents'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'

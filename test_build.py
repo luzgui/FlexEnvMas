@@ -47,7 +47,10 @@ def make_tester(exp_name, raylog, datafolder):
     
     #index for load and for agent is also 'ag'
     # test_load_id=['ag10','ag13','ag14'] #selct new loads for testing
-    test_load_id=['ag10','ag13'] #selct new loads for testing
+    test_load_id=['ag1','ag2','ag3']
+    # test_load_id=['ag1','ag2'] #test on the same houses as training
+    
+    # test_load_id=['ag10','ag13'] #selct new loads for testing
     #10 and 13 are from the same cluster
     num_agents=len(test_load_id)
     test_agents_id=['ag'+str(k+1) for k in range(num_agents)] #choose which agents are in play

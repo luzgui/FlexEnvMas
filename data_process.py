@@ -26,7 +26,10 @@ def make_env_config(datafolder):
     timesteps=len(data)-1
     
     
-    load_id=['ag1','ag2']
+    # load_id=['ag1','ag2']
+    load_id=['ag1','ag2','ag3']
+    
+    # load_id=['ag1','ag2','ag3','ag4']
     # load_id=['ag1']
     
     
@@ -44,8 +47,8 @@ def make_env_config(datafolder):
     
     
     #members of the cluster from which we can make blends (happening inside make_env_data_mas function)
-    cluster=[2,3,6,8]
-    # cluster=[]
+    # cluster=[2,3,6,8]
+    cluster=[]
     # cluster=[2,3,6,8,4,5]
     
     
