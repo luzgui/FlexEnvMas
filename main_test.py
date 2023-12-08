@@ -74,7 +74,9 @@ from pyomo.opt import SolverFactory
 import scipy.io as sio
 import re 
 from itertools import compress
-
+from rich import print
+from rich.console import Console
+from rich.syntax import Syntax
 
 #paths
 
@@ -84,7 +86,11 @@ raylog=cwd / 'raylog'
 prof_folder=raylog / 'profiles'
 resultsfolder=cwd / 'Results'
 storage_path='/home/omega/Downloads/ShareIST'
-
+#
+with open(cwd / 'checklist_new_machine.md', "r", encoding="utf-8") as file:
+    markdown_text = file.read()
+console = Console()
+console.print(markdown_text, style="red")
 
     #%% Test
 
@@ -142,7 +148,9 @@ import test_build
 # exp_name='deb3-ComR-pen'
 # exp_name='deb-ComR-3agents-IL'
 # exp_name='debug-newCC'
-exp_name='debug-newCC-3agents'
+# exp_name='debug-newCC-3agents'
+# exp_name='debug-ray28'
+exp_name='deb-newCC-n2'
 
 
 test_exp_name=exp_name
@@ -166,10 +174,10 @@ import test_agents
 
 full_state, env_state, metrics, results_filename_path=test_agents.test(tenv, 
                                                     tester, 
-                                                    n_episodes=1,
-                                                    plot=True,
-                                                    results_path=None)
-                                                    # results_path=trainable_path)
+                                                    n_episodes=364,
+                                                    plot=False,
+                                                    # results_path=None)
+                                                    results_path=trainable_path)
 
 #%% get the files for metrics and full env state
 test_results_folder=os.path.join(trainable_path,'test_results')
@@ -250,7 +258,7 @@ plt.show()
 #%% extract the kth day from env_state
 # k=359
 import plotutils
-k=13
+k=22
 w=96
 one_day=env_state.iloc[k*w:(k+1)*w]
 # one_day=tenv_data.iloc[k*w:(k+1)*w]
@@ -272,7 +280,7 @@ makeplot(tenv.Tw*1,
           file) #
 
 
-#%%get centralized solution
+#%%get centralized solution for the kth day from env_state
 from opti.agentfunc import *
 
 H=tenv.Tw
@@ -418,7 +426,7 @@ make_costplot(df=None,
               filename_save=filename_save,
               filename_import=os.path.join(test_results_folder,metrics_csv[0]),
               n_agents=len(tenv.agents_id), 
-              save_fig=True)
+              save_fig=False)
 
 #critical days
 filename_save=os.path.join(test_results_folder,f'cost_plot_n={len(tenv.agents_id)}_critic_days.png')
@@ -428,7 +436,7 @@ make_costplot(df=metrics_critical,
               filename_save=filename_save,
               filename_import=None,
               n_agents=len(tenv.agents_id),
-              save_fig=True)
+              save_fig=False)
               
 #%%              
 

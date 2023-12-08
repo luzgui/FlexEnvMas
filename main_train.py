@@ -130,7 +130,7 @@ register_env("shiftenv", env_creator)
     #%% Make experiment/train Tune config
 import experiment_build
 
-exp_name='debug-newCC-3agents'
+exp_name='debug-ray28'
 
 # pol_type='shared_pol'
 pol_type='agent_pol'
