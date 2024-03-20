@@ -86,7 +86,7 @@ class CCActionMaskModel(TFModelV2):
         # pdb.pdb.set_trace()
         
         #%% Need to hardcode n_opp_agents everytime we change the number of agents
-        n_opp_agents=2
+        n_opp_agents=1
         
         
         # h_size=95
@@ -170,6 +170,8 @@ class CCActionMaskModel(TFModelV2):
 
 
 
+
+#%%
 class ActionMaskModel(TFModelV2):
     """Model that handles simple discrete action masking.
     This assumes the outputs are logits for a single Categorical action dist.

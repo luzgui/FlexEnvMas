@@ -26,8 +26,8 @@ def make_env_config(datafolder):
     timesteps=len(data)-1
     
     
-    # load_id=['ag1','ag2']
-    load_id=['ag1','ag2','ag3']
+    load_id=['ag1','ag2']
+    # load_id=['ag1','ag2','ag3']
     
     # load_id=['ag1','ag2','ag3','ag4']
     # load_id=['ag1']

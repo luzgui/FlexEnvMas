@@ -83,6 +83,13 @@ console.print(markdown_text, style="red")
 
 ##############################################################################
 
+#%% import experiment config
+config_file='config_exp.json'
+# config_file = sys.argv[1]
+config = read_config(config_file)
+print(config)
+sys.exit()
+
 
 #%% Make environment config / Data
 import data_process

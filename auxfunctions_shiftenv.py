@@ -23,6 +23,7 @@ from ray.train import RunConfig, CheckpointConfig, Checkpoint
 from trainable import trainable_mas
 from icecream import ic
 
+import json
 
 def make_cyclical(series, max_val): # transforma valores como dia e hora em valores cíclicos de sin e cos para remover efeitos indesejados
     data_sin = np.sin( 2 * np.pi * series / max_val )
@@ -180,6 +181,8 @@ def self_suf(env,action):
 def get_checkpoint(log_dir,exp_name,metric,mode):
     #Recover the tune object from the dir
     # The trainable must be initialized # reuslts must be stored in the same analysis object
+    # import pdb
+    # pdb.pdb.set_trace()
     experiment_path=os.path.join(log_dir, exp_name)
     analysis_object = ExperimentAnalysis(experiment_path,
                                          default_metric=metric, 
@@ -489,4 +492,7 @@ def get_files(folder,filetype,keyword):
     return filetype_list
     
     
-
+def read_config(file_path):
+    with open(file_path, 'r') as f:
+        config = json.load(f)
+    return config
