@@ -19,7 +19,7 @@ seed: 1024
 log_level: DEBUG
 
 #rollouts
-num_rollout_workers: 0
+num_rollout_workers: 1
 
 #Framework
 framework: tf2

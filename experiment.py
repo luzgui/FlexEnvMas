@@ -26,7 +26,7 @@ from ray.tune import TuneConfig
 from ray.tune.experiment import trial
 from obs_wrapper import *
 
-from auxfunctions_shiftenv import *
+# from auxfunctions_shiftenv import *
 from termcolor import colored
 
 from dataprocessor import YAMLParser
@@ -51,7 +51,7 @@ from ray.tune import TuneConfig
 from ray.tune.experiment import trial
 from obs_wrapper import *
 
-from auxfunctions_shiftenv import *
+# from auxfunctions_shiftenv import *
 from termcolor import colored
 
 #%%
@@ -158,5 +158,18 @@ class Experiment():
     
     def get_resources(self):
         pass
+    
+    def get_resources(self):
+        num_cpu=self.config['num_cpu']
+        num_gpu=self.config['num_gpu']
+        cpu_factor=self.config['cpu_factor']
+        
+        b={'CPU': num_cpu,'GPU': num_gpu}
+        
+        resources=tune.PlacementGroupFactory([{'CPU': 1.0}]+ [b]*cpu_factor)
+        
+        return resources
+        
+        # resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': num_cpu}] * 6)
 
         

@@ -138,10 +138,9 @@ config=experiment.make_algo_config(ppo_config)
 config_tune=experiment.make_tune_config()
 config_run=experiment.make_run_config(raylog.as_posix())
 
-
-resources=tune.PlacementGroupFactory([{'CPU': 1.0}] + [{'CPU': 1.0}] * 6)
-
-trainable_resources = tune.with_resources(trainable_mas, resources)
+resources=experiment.get_resources()
+trainable_func=Trainable(file_experiment).trainable
+trainable_resources = tune.with_resources(trainable_func, resources)
 
 spill_1=raylog / 'spill1'
 spill_2=raylog / 'spill2'
