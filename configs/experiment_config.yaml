@@ -1,0 +1,27 @@
+# experiment config
+exp_name: refact3_cc
+
+pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
+
+algorithm:
+  name: PPO #DQN ....
+  config: 'ppo_config.yaml'
+environment_cls: 'FlexEnv'
+
+#tune config
+mode: max
+metric: episode_reward_mean
+
+# Run config
+verbose: 1
+
+
+
+#resources
+
+# CPU: 1.0}] + [{'CPU': 1.0}] * 6)
+
+#resources FCUL
+# b={'CPU':3,'GPU':0.1}
+# resources=tune.PlacementGroupFactory([b]*10)
+# config.num_rollout_workers=10

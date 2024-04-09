@@ -86,7 +86,7 @@ class CCActionMaskModel(TFModelV2):
         # pdb.pdb.set_trace()
         
         #%% Need to hardcode n_opp_agents everytime we change the number of agents
-        n_opp_agents=1
+        n_opp_agents=2
         
         
         # h_size=95

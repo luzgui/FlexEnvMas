@@ -99,7 +99,11 @@ def cc_postprocessing(policy,
                       sample_batch, 
                       other_agent_batches=None, 
                       episode=None):
-
+    # import pdb
+    # pdb.pdb.set_trace()
+    # print('config AQUI XXXX:', policy.config)
+    # print('ENV config AQUI XXXX:', policy.config['env_config'])
+    
     n_agents=policy.config['env_config']['num_agents']
     n_agents_other=n_agents-1 #NUmber of other agents
     
@@ -110,7 +114,7 @@ def cc_postprocessing(policy,
     obs_dim=0
     for key in obs_space.keys():
         obs_dim+=obs_space[key].shape[0]
-
+        
     
     if policy.loss_initialized():
         # breakpoint()
@@ -161,9 +165,26 @@ def cc_postprocessing(policy,
         [other_agent_batches[aid][2]["obs"] for aid in other_agents_id],axis=1)
         global_obs_batch=global_obs_batch.reshape((len(global_obs_batch),n_agents_other*obs_dim))
         
+
+        ##
+        try:
+            print('AQUI!!')
+            global_action_batch = np.stack(
+            [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
+
+        except Exception as e:
+            print("An error occurred:", e)
+            from ray.util import pdb
+            pdb.set_trace() 
+    
+    
+        # from ray.util import pdb
+        # pdb.set_trace()
         
-        global_action_batch = np.stack(
-        [other_agent_batches[aid][2]["actions"] for aid in other_agents_id],axis=1)
+        # ic(other_agent_batches)
+        
+        # global_action_batch = np.stack(
+        # [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
         
         sample_batch["opponent_obs"] = global_obs_batch
         sample_batch["opponent_action"] = global_action_batch
