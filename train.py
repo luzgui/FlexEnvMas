@@ -6,10 +6,10 @@ Created on Thu Mar  7 15:01:52 2024
 @author: omega
 """
 
-import os
-from os import path
+
 from pathlib import Path
-import sys
+import time
+import json
 
 
 cwd=Path.cwd()
@@ -20,62 +20,28 @@ algos_config = configs / 'algos_configs'
 
 
 from community import Community
-from dataprocessor import *
-
-#env classes
 from environment import FlexEnv
 from state import StateVars
 from experiment import Experiment
 from experiment_test import SimpleTests
+from trainable import Trainable
 
 #ray + gym
-from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
-
-import gymnasium as gym
-
 import ray #ray2.0 implementation
-from ray import tune, air, train
-from ray.tune import analysis, ExperimentAnalysis, TuneConfig
-from ray.tune.experiment import trial
-
-#PPO algorithm
-from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
-from ray.rllib.env.env_context import EnvContext
+from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
+from ray.tune.registry import register_env
+from ray import tune
 #models
 from ray.rllib.models import ModelCatalog
-from ray.rllib.utils.pre_checks import env
 
 # Custom Model
 from models2 import ActionMaskModel, CCActionMaskModel
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 
-#System
-import os
-from os import path
-from pathlib import Path
-import sys
-import time
-import datetime
-from datetime import datetime
-import json
-
 #Custom functions
-# from shiftenvRLlib import ShiftEnv
-
 from models2 import ActionMaskModel, CCActionMaskModel
 
-
-
-import random
-
-from trainable import *
-from obs_wrapper import *
-
-
-from auxfunctions_CC import *
-
-import time
 start_time = time.time()
 
 
@@ -118,7 +84,7 @@ envi=FlexEnv(env_config)
 #%%
 menvi=MultiAgentEnvCompatibility(envi)
 menvi._agent_ids=['ag1', 'ag2', 'ag3']
-from ray.tune.registry import register_env
+
 def env_creator(env_config):
     # return NormalizeObs(menv_base)  # return an env instance
     new_env=MultiAgentEnvCompatibility(envi)
