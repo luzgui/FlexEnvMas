@@ -6,7 +6,6 @@ Created on Thu Mar  7 14:57:51 2024
 @author: omega
 """
 import pandas as pd
-import yaml
 from agents import Agent
 from resources import *
 from dataprocessor import YAMLParser, GecadDataProcessor, DataProcessor

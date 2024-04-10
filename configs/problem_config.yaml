@@ -8,9 +8,9 @@ time_units: mins
 #dataset
 dataset_unit: kwh #kw or kwh
 
-data_info:
-  data_file: 'Dataset_gecad_changed.xlsx'
-  data_proc_cls: GecadDataProcessor
+# data_info:
+#   data_file: 'Dataset_gecad_changed.xlsx'
+#   data_proc_cls: GecadDataProcessor
 
 #Data Range
 t_init: 0
