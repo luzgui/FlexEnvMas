@@ -14,7 +14,7 @@ mode: max
 metric: episode_reward_mean
 
 # Run config
-verbose: 1
+verbose: 0
 
 #trainable config
 n_iters: 3

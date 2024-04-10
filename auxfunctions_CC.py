@@ -168,7 +168,7 @@ def cc_postprocessing(policy,
 
         ##
         try:
-            print('AQUI!!')
+            # print('AQUI!!')
             global_action_batch = np.stack(
             [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
 
@@ -192,13 +192,13 @@ def cc_postprocessing(policy,
         
         # import pdb
         # pdb.pdb.set_trace()
-        print('computing central value function')
+        # print('computing central value function')
         sample_batch['vf_preds'] = convert_to_numpy(
             policy.compute_central_vf(
                 sample_batch['obs'],
                 sample_batch['opponent_obs'],
                 sample_batch['opponent_action'],))
-        print('finished computing central value function')
+        # print('finished computing central value function')
         
     else:
         # Policy hasn't been initialized yet, use zeros.
