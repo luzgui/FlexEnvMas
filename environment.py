@@ -233,7 +233,8 @@ class FlexEnv(MultiAgentEnv):
         # self.hist.append(self.y) # CHECK IF NEEDED
         
         #Initial energy to consume
-        self.state['E_prof_rem'].update(self.agents_params['E_prof'])
+        # self.state['E_prof_rem'].update(self.agents_params['E_prof'])
+        self.state.update({'E_prof_rem': self.agents_params['E_prof']})
 
         
         #update forecasts
@@ -628,7 +629,8 @@ class FlexEnv(MultiAgentEnv):
         # Binary variables
         
         #y update
-        self.state['y'].update(self.action['action']) #matches by index
+        # self.state['y'].update(self.action['action']) #matches by index
+        self.state.update({'y': self.action['action']})
         #y_1 and y_s update
         for aid in self.agents_id:
             self.state.loc[aid,'y_s']+=self.action.loc[aid]['action'] #update y_s
@@ -649,6 +651,7 @@ class FlexEnv(MultiAgentEnv):
         if self.minutes==0: #It restarts in the beggining of the day 
             # print('estou aqui')
             self.state['E_prof_rem'].update(self.agents_params['E_prof'])
+            # self.state.update({'E_prof_rem': self.agents_params['E_prof']}, inplace=True)
             self.state['y_s'].update(0)
             
 
@@ -865,7 +868,7 @@ class FlexEnv(MultiAgentEnv):
                 
     def check_hist_within_lims(self):
         # result_df=pd.DataFrame(columns=self.state_hist.columns, index=self.agents_id)
-        print('Aqui estou Manuel Acacio')
+        # print('Aqui estou Manuel Acacio')
         result_df=self.state_hist.copy()
         result_df=result_df.loc[result_df.index.str.contains('ag')]
         result_df.loc[:, :] = np.nan
