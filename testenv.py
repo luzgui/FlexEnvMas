@@ -14,7 +14,6 @@ import datetime
 from datetime import datetime
 from termcolor import colored
 
-from auxfunctions_shiftenv import get_post_data
 from dataprocessor import DataPostProcessor
 
 import pandas as pd
@@ -56,16 +55,19 @@ class TestEnv():
         
             mask_track=[]
         
-            obs = self.env.reset()
+            # obs = self.env.reset()
                 
             
             T=self.env.Tw*1
             # num_days_test=T/tenv.tstep_per_day
-        
+            
             # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
-        
+            
             for i in range(T):
             # while any(tenv.done)==False:
+                print(i)
+                if i==0:
+                    obs = self.env.reset()
                 
                 actions=self.get_actions(obs,policy_mapping_func)
                 obs, reward, done, info = self.env.step(actions)
@@ -75,7 +77,7 @@ class TestEnv():
                 
                 # if done['__all__']==True:
                 #     print('episode terminated')
-                #     print('timestep: ', tenv.tstep)
+                #     print('timestep: ', self.env.tstep)
                 #     break
                     
                 #compute metrics per episode
