@@ -9,7 +9,7 @@ Created on Fri Mar  8 11:31:38 2024
 import pandas as pd
 import numpy as np
 import yaml
-from utilities import *
+from utilities import utilities
 
 
 class YAMLParser:
@@ -156,8 +156,6 @@ class GecadDataProcessor():
         Extract the agent specific data for each agent
         Data ids must be columns from a pandas dataframe
         """
-        # import pdb
-        # pdb.pdb.set_trace()
         
         return self.data[data_ids]
     
@@ -219,7 +217,8 @@ class DataPostProcessor:
             state_hist=self.env.state_hist.loc[aid][0:T] 
             action_hist=self.env.action_hist.loc[aid]    
             reward_hist=self.env.reward_hist.loc[aid]
-       
+
+            
             df=pd.concat([df,
                            pd.concat([state_hist,action_hist, reward_hist],
                         axis=1)])
