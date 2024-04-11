@@ -80,6 +80,9 @@ class FlexEnv(MultiAgentEnv):
         #get the possoble initial timeslots from data        
         #get all o mionutes index
         self.allowed_inits=self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
+        self.allowed_inits.pop() #remove last day due to the existence of an extra timestep at the end of the episode that produces and error for T+1
+        
+        
         
         #AGENTS INDIVIDUAL parameters
         #Appliance profile    
@@ -344,17 +347,16 @@ class FlexEnv(MultiAgentEnv):
         else:
             self.action_hist=pd.concat([self.action_hist,self.action])
             self.reward_hist=pd.concat([self.reward_hist, pd.DataFrame.from_dict(self.reward, orient='index',columns=['reward'])])
-            
+         
+        
         self.tstep+=1 # update timestep
         #check weather to end or not the episode
-        self.check_term() 
+        Done=self.check_term() 
         # ic(self.step)
         #saving history state in state_hist
         # self.state_hist.update(self.state.set_index([self.state.index,'tstep']))
         # self.state_hist=pd.concat([self.state_hist,self.state])
        
-        
-        
         # print(self.tstep)
         #update state variables  
         self.state_update()
@@ -364,36 +366,15 @@ class FlexEnv(MultiAgentEnv):
         
         #update all masks
         self.update_all_masks() 
-        
-        # print(self.state['E_prof_rem'])
-        # self.R+=self.reward
         self.R={aid:self.R[aid]+self.reward[aid] for aid in self.agents_id}
-        
-        # self.r=self.reward
-        
-        
-        
-        
+
         self.state_hist=pd.concat([self.state_hist,self.state])
-        
-        
-        
-        ###########   Things I dont know exactly what they make or if are important ####
-        #accumulated total cost
-        # self.c_T+=self.cost_s
-        
-        
-        # info={aid:'learning ongoing' for aid in self.agents_id}
-        # info={info[k] for k in info}
-        
-        # obs=self.get_env_obs()
-        
-        # self.assert_type(obs)
         
         self.make_state_norm() #make the normalized state
         
         # self.check_term() #do we need to terminate here?
-        return self.get_env_obs(), self.reward, self.get_env_done(), {}
+        # return self.get_env_obs(), self.reward, self.get_env_done(), {}
+        return self.get_env_obs(), self.reward, self.env_done, {}
         
         
     
@@ -710,22 +691,22 @@ class FlexEnv(MultiAgentEnv):
         
     def check_term(self):
         if self.tstep>=self.get_term_cond():
-            # print('last timestep',self.tstep)
+            
             self.R_Total.append(self.R)
-            
-
             print(self.R)
-            # print(self.mask)
-
             self.n_episodes+=1
-            
             self.done.loc[self.agents_id] = True #update done for all agents
-
+            self.env_done=self.get_env_done()
             self.check_hist_within_lims()
-            # return self.get_env_obs(), self.reward, self.get_env_done(), {'episode has ended'}
+
+            return True
         
         else:
+            
             self.done.loc[self.agents_id] = False
+            self.env_done=self.get_env_done()
+            
+            return False
     
     def get_term_cond(self):
         "A function to get the correct episode termination condition according to weather it is in window or horizon mode defined in the self.done_cond variable"
