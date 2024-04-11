@@ -1,5 +1,5 @@
 # experiment config
-exp_name: refact3_cc
+exp_name: refact4
 
 pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
 
@@ -17,7 +17,7 @@ metric: episode_reward_mean
 verbose: 0
 
 #trainable config
-n_iters: 3
+n_iters: 1
 checkpoint_freq: 1000
 
 #resources

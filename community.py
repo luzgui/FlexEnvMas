@@ -7,7 +7,7 @@ Created on Thu Mar  7 14:57:51 2024
 """
 import pandas as pd
 from agents import Agent
-from resources import *
+from resources import ShiftApp
 from dataprocessor import YAMLParser, GecadDataProcessor, DataProcessor
 
 class Community:
