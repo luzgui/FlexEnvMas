@@ -1,5 +1,5 @@
 # experiment config
-exp_name: refact4
+exp_name: fcul1-debug
 
 pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
 
