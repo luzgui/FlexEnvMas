@@ -21,6 +21,17 @@ class YAMLParser:
         with open(file, 'r') as f:
             data = yaml.load(f,Loader=yaml.FullLoader) 
         return data
+    
+    def write_yaml(self,file, key, value):
+        with open(file, 'r') as f:
+            data = yaml.load(f,Loader=yaml.FullLoader)
+        
+        data[key] = value
+         
+        with open(file, "w") as f:
+            yaml.dump(data, f, default_flow_style=False)
+        
+        
 
 
 class DataProcessor():
