@@ -39,8 +39,6 @@ import datetime
 from datetime import datetime
 
 #Custom functions
-# from shiftenvRLlib import ShiftEnv
-from auxfunctions_shiftenv import *
 from plotutils import *
 from models2 import ActionMaskModel, CCActionMaskModel
 
