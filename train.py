@@ -15,8 +15,8 @@ import json
 cwd=Path.cwd()
 datafolder=cwd / 'Data'
 raylog=cwd / 'raylog'
-configs=cwd / 'configs'
-algos_config = configs / 'algos_configs'
+configs_folder=cwd / 'configs'
+algos_config = configs_folder / 'algos_configs'
 
 
 from community import Community
@@ -25,6 +25,8 @@ from state import StateVars
 from experiment import Experiment
 from experiment_test import SimpleTests
 from trainable import Trainable
+from dataprocessor import YAMLParser
+from utilities import ConfigsParser
 
 #ray + gym
 import ray #ray2.0 implementation
@@ -44,18 +46,22 @@ from models2 import ActionMaskModel, CCActionMaskModel
 
 start_time = time.time()
 
+#%% exp_name
+exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
+configs=ConfigsParser(configs_folder, exp_name)
 
+file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars,file_experiment, ppo_config=configs.get_configs()
 #%% get configs
-file_ag_conf= configs / 'agents_config.yaml'
-file_apps_conf= configs / 'apps_config.yaml'
-file_scene_conf = configs / 'scenario_config.yaml'
-file_prob_conf = configs / 'problem_config.yaml'
-file_vars = configs / 'state_vars.yaml'
-# file_vars = configs / 'state_vars_fixed.yaml'
-file_experiment = configs / 'experiment_config.yaml'
+# file_ag_conf= configs / 'agents_config.yaml'
+# file_apps_conf= configs / 'apps_config.yaml'
+# file_scene_conf = configs / 'scenario_config.yaml'
+# file_prob_conf = configs / 'problem_config.yaml'
+# file_vars = configs / 'state_vars.yaml'
+# # file_vars = configs / 'state_vars_fixed.yaml'
+# file_experiment = configs / 'experiment_config.yaml'
 
-#algos configs
-ppo_config=algos_config / 'ppo_config.yaml'
+# #algos configs
+# ppo_config=algos_config / 'ppo_config.yaml'
 
 #%% import datafiles and agent dataprocessor
 # gecad_dataset=datafolder / 'Dataset_gecad_changed.xlsx'
@@ -123,18 +129,18 @@ tuner = tune.Tuner(
       run_config=config_run)
 
 #%% Simple agent test
-# from experiment_test import SimpleTests
-# from testenv import *
-# dummy_tester=DummyTester(envi)
-# simpletest=SimpleTestEnv(envi, dummy_tester)
-# full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+from experiment_test import SimpleTests
+from testenv import *
+dummy_tester=DummyTester(envi)
+simpletest=SimpleTestEnv(envi, dummy_tester)
+full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
 
-# simpletest.test_full_state(full_state)
+simpletest.test_full_state(full_state)
 
 
 #%% Train
-results=tuner.fit()
-print(results.errors)
+# results=tuner.fit()
+# print(results.errors)
 # 
 
 #%% Time
