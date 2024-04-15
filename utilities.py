@@ -72,6 +72,8 @@ class ConfigsParser():
         - vars
         - experiment_config
         - self.algo_config_file
+        
+        exp_name must be a folder name or wwill return an error
         """
         from dataprocessor import YAMLParser #import here due to circular error
         # files=self.get_exp_configs()

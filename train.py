@@ -46,22 +46,11 @@ from models2 import ActionMaskModel, CCActionMaskModel
 
 start_time = time.time()
 
-#%% exp_name
+#%% exp_name + get configs
 exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
 configs=ConfigsParser(configs_folder, exp_name)
 
 file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars,file_experiment, ppo_config=configs.get_configs()
-#%% get configs
-# file_ag_conf= configs / 'agents_config.yaml'
-# file_apps_conf= configs / 'apps_config.yaml'
-# file_scene_conf = configs / 'scenario_config.yaml'
-# file_prob_conf = configs / 'problem_config.yaml'
-# file_vars = configs / 'state_vars.yaml'
-# # file_vars = configs / 'state_vars_fixed.yaml'
-# file_experiment = configs / 'experiment_config.yaml'
-
-# #algos configs
-# ppo_config=algos_config / 'ppo_config.yaml'
 
 #%% import datafiles and agent dataprocessor
 # gecad_dataset=datafolder / 'Dataset_gecad_changed.xlsx'
