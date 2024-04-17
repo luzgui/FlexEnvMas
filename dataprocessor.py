@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 import yaml
 from utilities import utilities
+from metrics import Metrics
 
 
 class YAMLParser:
@@ -99,9 +100,9 @@ class DataProcessor():
         In this version, each agent is seeying community quantities but also individual quantities
         
         """
-        
-        total_PV = pd.DataFrame({'gen_com':pv_factor*sum(agent.data[agent.pv_id] for agent in agent_dict.values())})
-        total_load = pd.DataFrame({'load_com':sum(agent.data[agent.id] for agent in agent_dict.values())})
+    
+        total_PV = pd.DataFrame({'gen_com':pv_factor*sum(agent.data['gen'] for agent in agent_dict.values())})
+        total_load = pd.DataFrame({'load_com':sum(agent.data['load'] for agent in agent_dict.values())})
         df=pd.concat([total_PV,total_load], axis=1)
         
         utilities().print_info('delta and excess are computed with community agregated load')
@@ -114,8 +115,8 @@ class DataProcessor():
         for agent in agent_dict.values():
             df_agent = pd.concat([agent.data[t_init:t_end],df[t_init:t_end]],axis=1)
             df_agent = df_agent.set_index(df_agent.index.map(lambda x: (f"{agent.id}",x)))
-            df_agent = df_agent.rename(columns={agent.id: 'load', agent.pv_id: 'gen'})
-            
+            # df_agent = df_agent.rename(columns={agent.id: 'load', agent.pv_id: 'gen'})
+
             final_df = pd.concat([final_df,df_agent])
             
         utilities().print_info('Local fix: Making gen the gen_com by erasing the columns in the df. this must be addressed if we wnat flexibility in the way observation space is defined')
@@ -167,8 +168,15 @@ class GecadDataProcessor():
         Extract the agent specific data for each agent
         Data ids must be columns from a pandas dataframe
         """
+        agent_data=self.data[data_ids]
+        agent_data_copy=agent_data.copy()
+        new_column_names = ['minutes', 'load', 'gen']
+
+        # Rename columns using the new column names
+        agent_data_copy.rename(columns=dict(zip(agent_data_copy.columns, new_column_names)), inplace=True)
+
         
-        return self.data[data_ids]
+        return agent_data_copy
     
     
     def get_clean_data(self,file) -> pd.DataFrame:
@@ -215,6 +223,7 @@ class DataPostProcessor:
     def __init__(self, env):
         self.env=env
         self.ds_unit=self.env.com.problem_conf['dataset_unit']
+        self.metrics=Metrics(env)
     
     def get_post_data(self):
         """This function produces dataframes for analysing results from the environment itself, i.e, the environment stores all the state-action history and from there we can recover and post-process data"""
@@ -431,7 +440,7 @@ class DataPostProcessor:
         return df
         
 
-        
+
     def get_episode_metrics(self,full_state,env_state,k):
         agents_id=full_state.index.unique()
         metrics=pd.DataFrame(index=full_state.index.unique())
