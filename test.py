@@ -58,7 +58,7 @@ ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 
 from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
-
+from ray.tune.registry import register_env
 #profiling
 import cProfile
 import pstats
@@ -75,9 +75,14 @@ from itertools import compress
 from rich import print
 from rich.console import Console
 from rich.syntax import Syntax
+
 from experiment_test import ExperimentTest
 from testenv import TestEnv
-
+from trainable import Trainable
+from utilities import ConfigsParser
+from community import Community
+from state import StateVars
+from environment import FlexEnv
 #paths
 
 cwd=Path.cwd()
@@ -87,26 +92,76 @@ prof_folder=raylog / 'profiles'
 resultsfolder=cwd / 'Results'
 storage_path='/home/omega/Downloads/ShareIST'
 
+configs_folder=cwd / 'configs'
+
+#%% exp_name + get configs for experiment
+exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
+configs=ConfigsParser(configs_folder, exp_name)
+
+_, file_apps_conf, file_scene_conf, _ ,file_vars,file_experiment, ppo_config=configs.get_configs()
+
+#%% get configs for testing environment
+configs=ConfigsParser(configs_folder, 'testing')
+# between training and testing the difference is the agents config and the problem config
+file_ag_conf,_,_,file_prob_conf,_,_,_=configs.get_configs()
+
+#%%Make test env
+#dataset
+gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
+         
+test_com=Community(file_ag_conf,
+              file_apps_conf,
+              file_scene_conf,
+              file_prob_conf,
+              gecad_dataset)
+
+
+com_vars=StateVars(file_vars)
+
+
+
+#%%  Make environment   
+test_env_config={'community': test_com,
+            'com_vars': com_vars,
+            'num_agents': test_com.num_agents}
+   
+tenvi=FlexEnv(test_env_config)
 
 #%%
+menvi=MultiAgentEnvCompatibility(tenvi)
+menvi._agent_ids=['ag1', 'ag2', 'ag3']
+
+def env_creator(env_config):
+    # return NormalizeObs(menv_base)  # return an env instance
+    new_env=MultiAgentEnvCompatibility(tenvi)
+    new_env._agents_ids=tenvi._agent_ids
+    return new_env
+    # return MultiAgentEnvCompatibility(envi)
+    # return menv_base
+
+register_env("flexenv", env_creator)
+
+#%%Trainable
+trainable_func=Trainable(file_experiment)._trainable
 
 
-
-test=ExperimentTest(envi,
-          config_run.name, 
+#%% get checkpoint and create tester
+from experiment_test import ExperimentTest
+test=ExperimentTest(tenvi,
+          exp_name, 
           raylog,
-          experiment.config,
-          trainable_mas,
-          PPO)
+          file_experiment,
+          trainable_func)
 
-test_agent=test.get_tester()
+tester=test.get_tester(trainable_func)
+
 
 #%%
 
 from testenv import TestEnv
-tester=TestEnv(envi, test_agent)
+env_tester=TestEnv(tenvi, tester)
 
-full_state, env_state, metrics, results_filename_path=tester.test(
+full_state, env_state, metrics, results_filename_path=env_tester.test(
                                                     n_episodes=1,
                                                     plot=True,
                                                     results_path=None)
