@@ -22,6 +22,7 @@ from ray.tune import analysis, ExperimentAnalysis, TuneConfig
 from ray.tune.experiment import trial
 
 #PPO algorithm
+from auxfunctions_CC import CentralizedCritic
 from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
 from ray.rllib.env.env_context import EnvContext
 #models
@@ -96,41 +97,55 @@ resultsfolder=cwd / 'Results'
 storage_path='/home/omega/Downloads/ShareIST'
 
 
-from dataprocessor import DataPostProcessor
+from dataprocessor import DataPostProcessor, YAMLParser
+from utilities import utilities
 
 #%% Test Class
 class ExperimentTest():
     def __init__(self,test_env, 
                  test_exp_name, 
                  log_dir, 
-                 test_experiment_config,
-                 trainable,
-                 tester):
+                 train_experiment_config_file,
+                 trainable):
         
         self.env=test_env
         self.exp_name=test_exp_name
         self.dir=log_dir
-        self.config=test_experiment_config
+        self.train_experiment_config=YAMLParser().load_yaml(train_experiment_config_file)
         self.trainable=trainable
-        self.tester=tester
+        
+        self.algo_name=self.train_experiment_config['algorithm']['name']
+        
+        if self.algo_name == 'PPO':
+            self.tester=PPO
+        
+        elif self.algo_name == 'CentralizedCritic':
+            self.tester=CentralizedCritic
+        
+        # self.tester=tester
         
     def simple_transition(env):
         pass
     
     
-    def get_tester(self):
+    def get_tester(self, trainable):
         experiment_path=os.path.join(self.dir, self.exp_name)
-        
+        # import pdb
+        # pdb.pdb.set_trace()
         restored_tuner = tune.Tuner.restore(experiment_path,trainable=self.trainable)
+        # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
         result_grid = restored_tuner.get_results()
         best_res=result_grid.get_best_result()
         config=best_res.config
+        
+        utilities.print_info('num_workers changed sue to resource scarcicity')
+        config['num_workers']=1
         checkpoint=best_res.checkpoint
         tester=self.tester(config, env=config["env"])
         tester.restore(checkpoint)
         
  
-        print(self.config['mode'],checkpoint)
+        # print(self.config['mode'],checkpoint)
         
         return tester
 
