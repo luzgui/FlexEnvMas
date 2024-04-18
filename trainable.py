@@ -7,12 +7,12 @@ import pandas as pd
 import numpy as np
 import random
 from ray import tune
-from auxfunctions_CC import *
+from auxfunctions_CC import CentralizedCritic
 from termcolor import colored
 from ray import train
 from dataprocessor import YAMLParser
 
-import cProfile
+# import cProfile
 
 class Trainable():
     def __init__(self,
@@ -27,6 +27,8 @@ class Trainable():
     
     
     
+    def _trainable(self, config):
+        return self.trainable(config)
     
     def trainable(self,config):
         
