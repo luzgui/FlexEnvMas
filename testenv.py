@@ -62,10 +62,10 @@ class TestEnv():
             # num_days_test=T/tenv.tstep_per_day
             
             # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
-            
+            print('testing....')
             for i in range(T):
             # while any(tenv.done)==False:
-                print(i)
+                # print(i)
                 if i==0:
                     obs = self.env.reset()
                 
