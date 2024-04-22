@@ -22,7 +22,6 @@ class utilities:
         print(colored(message,'red'))
         print(colored(f"@ '{function_name}' at line {line_number}",'green'))
         
-        
 
 class ConfigsParser():
     def __init__(self,configs_folder, exp_name):
@@ -45,22 +44,7 @@ class ConfigsParser():
                 file_name, file_extension = os.path.splitext(file)
                 current_dict[file_name] = file
         return result
-    
-    def get_exp_configs(self):
-        """
-        get the config folder corresponding to the experment name
-        """
-        files=self.traverse_folder()
-        for key in files.keys():
-            if key == self.exp_name:
-                import pdb
-                pdb.pdb.set_trace()
-                self.exp_folder=Path(self.folder) / key
-                return files[key]
-            else:
-                print('using template configs')
-                return files['template'] #return the template config folder
-        
+     
     
     def make_configs(self):
         """
@@ -76,7 +60,7 @@ class ConfigsParser():
         exp_name must be a folder name or wwill return an error
         """
         from dataprocessor import YAMLParser #import here due to circular error
-        # files=self.get_exp_configs()
+
         files=self.traverse_folder()
         files=files[self.exp_name]
         self.exp_folder=Path(self.folder) / self.exp_name
@@ -93,8 +77,31 @@ class ConfigsParser():
         
     def get_configs(self):
         return self.agents_config, self.apps_config, self.scene_config, self.problem_config, self.state_vars, self.experiment_config,self.algo_config_file
+    
+    def print_experiment_info(self):
+        from dataprocessor import YAMLParser #import here due to circular error
+        msg=YAMLParser().load_yaml(self.experiment_config)['info']
+        print(colored(msg,'red'))
         
         
+
+class FolderUtils():
+    @staticmethod
+    def get_file_in_folder(folder_path, file_type):
+        """
+        Scan a folder and return a list of CSV files in it.
+        
+        Args:
+        - folder_path (str): The path to the folder to scan.
+        
+        Returns:
+        - csv_files (list): A list of CSV files found in the folder.
+        """
+        csv_files = []
+        for file in os.listdir(folder_path):
+            if file.endswith(file_type):
+                csv_files.append(os.path.join(folder_path, file))
+        return csv_files
 
 
 
