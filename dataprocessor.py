@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import yaml
 from utilities import utilities
-from metrics import Metrics
+# from metrics import Metrics
 
 
 class YAMLParser:
@@ -223,7 +223,7 @@ class DataPostProcessor:
     def __init__(self, env):
         self.env=env
         self.ds_unit=self.env.com.problem_conf['dataset_unit']
-        self.metrics=Metrics(env)
+        # self.metrics=Metrics(env)
     
     def get_post_data(self):
         """This function produces dataframes for analysing results from the environment itself, i.e, the environment stores all the state-action history and from there we can recover and post-process data"""
