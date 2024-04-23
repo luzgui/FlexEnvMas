@@ -101,9 +101,11 @@ configs=ConfigsParser(configs_folder, exp_name)
 _, file_apps_conf, file_scene_conf, _ ,file_vars,file_experiment, ppo_config=configs.get_configs()
 
 #%% get configs for testing environment
-configs=ConfigsParser(configs_folder, 'testing')
+test_config_file=configs_folder / 'test_config.yaml'
+test_name=YAMLParser().load_yaml(test_config_file)['test_name']
+test_configs=ConfigsParser(configs_folder, test_name)
 # between training and testing the difference is the agents config and the problem config
-file_ag_conf,_,_,file_prob_conf,_,_,_=configs.get_configs()
+file_ag_conf,_,_,file_prob_conf,_,_,_=test_configs.get_configs()
 
 #%%Make test env
 #dataset
@@ -129,7 +131,7 @@ tenvi=FlexEnv(test_env_config)
 
 #%%
 menvi=MultiAgentEnvCompatibility(tenvi)
-menvi._agent_ids=['ag1', 'ag2', 'ag3']
+# menvi._agent_ids=['ag1', 'ag2', 'ag3']
 
 def env_creator(env_config):
     # return NormalizeObs(menv_base)  # return an env instance
@@ -159,14 +161,13 @@ tester=test.get_tester(trainable_func)
 #%%
 
 from testenv import TestEnv
-env_tester=TestEnv(tenvi, tester)
+env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
 
 full_state, env_state, metrics, results_filename_path=env_tester.test(
                                                     n_episodes=1,
                                                     plot=True,
-                                                    results_path=None)
+                                                    results_path=resultsfolder)
 
- # results_path=Path(cp.path).parent
 
 
 

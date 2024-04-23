@@ -14,7 +14,7 @@ import datetime
 from datetime import datetime
 from termcolor import colored
 
-from dataprocessor import DataPostProcessor
+from dataprocessor import DataPostProcessor, YAMLParser
 
 import pandas as pd
 import numpy as np
@@ -22,11 +22,15 @@ import numpy as np
 from plots import Plots
 
 class TestEnv():
-    def __init__(self,env, tester):
+    def __init__(self,env, tester, file_experiment,test_config_file):
         self.env=env
         self.tester=tester
         self.processor=DataPostProcessor(env)
         self.plot=Plots()
+        self.experiment_config=YAMLParser().load_yaml(file_experiment)
+        self.test_config=YAMLParser().load_yaml(test_config_file)
+        self.exp_name=self.experiment_config['exp_name']
+        self.test_name= self.test_config['test_name']
         
         
     def test(self,n_episodes,results_path, plot=True):
@@ -47,47 +51,22 @@ class TestEnv():
         else:
             policy_mapping_func=self.policy_mapping_fn
             
-
-
         k=0
         
         while k < n_episodes:
         
             mask_track=[]
         
-            # obs = self.env.reset()
-                
-            
             T=self.env.Tw*1
-            # num_days_test=T/tenv.tstep_per_day
-            
-            # metrics_episode=pd.DataFrame(columns=['cost','delta_c','gamma'], index=range(T))
+
             print('testing....')
             for i in range(T):
-            # while any(tenv.done)==False:
-                # print(i)
                 if i==0:
                     obs = self.env.reset()
                 
                 actions=self.get_actions(obs,policy_mapping_func)
                 obs, reward, done, info = self.env.step(actions)
-                # ic(len(tenv.state_hist.loc['ag1']))
-                # ic(len(tenv.action_hist.loc['ag1']))
-                # ic(len(tenv.reward_hist.loc['ag1']))
-                
-                # if done['__all__']==True:
-                #     print('episode terminated')
-                #     print('timestep: ', self.env.tstep)
-                #     break
-                    
-                #compute metrics per episode
-                # cost=max(0,action*tenv.profile[0]-tenv.excess0)*tenv.tar_buy
-                # delta_c=(tenv.load0+action*tenv.profile[0])-tenv.gen0
-                # gamma=self_suf(tenv,action)
-                
-                
-                # metrics_episode.iloc[i]=[cost,delta_c,gamma]
-                
+
                 
             # we are summing the total cost and making a mean for delta    
 
@@ -115,7 +94,7 @@ class TestEnv():
                           env_state['Cost_shift_T'].sum(),
                           0,
                           '') #
-                
+                self.plot.makeplot_bar(env_state, None)
                 
                 
                 
@@ -123,21 +102,22 @@ class TestEnv():
             
         #save results in a fodler inside the trainable folder
         if results_path:
-            test_results_path=os.path.join(results_path,'test_results')
+            folder_name='Train_'+self.exp_name + '_'+'Test_'+self.test_name 
+            test_results_path=os.path.join(results_path,folder_name)
             if not os.path.exists(test_results_path) and not os.path.isdir(test_results_path):
                 os.makedirs(test_results_path)
                 print(colored('folder created' ,'red'),test_results_path)
             
             
-            filename_metrics='metrics_'+self.env.env_config['exp_name']+'_'+str(k)+'_eps'+'.csv'
+            filename_metrics='metrics_'+str(k)+'_eps'+'.csv'
             filename_metrics=os.path.join(test_results_path,filename_metrics)
             episode_metrics.to_csv(filename_metrics)
             print(colored('Metrics saved to' ,'red'),filename_metrics)
             
-            filename_env_state='env_state_'+self.env.env_config['exp_name']+'_'+str(k)+'_eps'+'.csv'
+            filename_env_state='env_state_'+str(k)+'_eps'+'.csv'
             filename_env_state=os.path.join(test_results_path,filename_env_state)
             env_state_conc.to_csv(filename_env_state)
-            print(colored('Metrics saved to' ,'red'),filename_env_state)
+            print(colored('env_state saved to' ,'red'),filename_env_state)
             
             filename=[filename_metrics,filename_env_state]
             
@@ -169,6 +149,9 @@ class TestEnv():
             actions = {aid:self.tester.compute_single_action(obs[0][aid],
                                                          policy_id=map_func(aid)) for aid in self.env.agents_id}
         return actions
+    
+
+        
          
          
 class SimpleTestEnv(TestEnv):
@@ -178,7 +161,7 @@ class SimpleTestEnv(TestEnv):
         self.processor=DataPostProcessor(env)
         self.plot=Plots()
         self.counter=0
-        super().__init__(env, tester)
+        # super().__init__(env, tester)
      
         
 
