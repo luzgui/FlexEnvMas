@@ -83,6 +83,7 @@ from utilities import ConfigsParser
 from community import Community
 from state import StateVars
 from environment import FlexEnv
+from plots import Plots
 #paths
 
 cwd=Path.cwd()
@@ -129,7 +130,7 @@ test_env_config={'community': test_com,
    
 tenvi=FlexEnv(test_env_config)
 
-#%%
+
 menvi=MultiAgentEnvCompatibility(tenvi)
 # menvi._agent_ids=['ag1', 'ag2', 'ag3']
 
@@ -158,7 +159,7 @@ test=ExperimentTest(tenvi,
 tester=test.get_tester(trainable_func)
 
 
-#%%
+#%% Test environment
 
 from testenv import TestEnv
 env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
@@ -169,5 +170,16 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
                                                     results_path=resultsfolder)
 
 
+#%% Optimal Solution
+from optimize import CommunityOptiModel
+from plots import Plots
+model=CommunityOptiModel(tenvi)
+solutions=model.solve_model_yearly()
+folder=env_tester.folder_name
+solutions.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_solutions.csv'))
 
 
+# model.make_model(100)
+# opti_sol=model.solve_model()
+# Plots().makeplot_bar(opti_sol,None)
+# Plots().plot_energy_usage(opti_sol,None)

@@ -31,6 +31,7 @@ class TestEnv():
         self.test_config=YAMLParser().load_yaml(test_config_file)
         self.exp_name=self.experiment_config['exp_name']
         self.test_name= self.test_config['test_name']
+        self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.test_name 
         
         
     def test(self,n_episodes,results_path, plot=True):
@@ -102,8 +103,7 @@ class TestEnv():
             
         #save results in a fodler inside the trainable folder
         if results_path:
-            folder_name='Train_'+self.exp_name + '_'+'Test_'+self.test_name 
-            test_results_path=os.path.join(results_path,folder_name)
+            test_results_path=os.path.join(results_path,self.folder_name)
             if not os.path.exists(test_results_path) and not os.path.isdir(test_results_path):
                 os.makedirs(test_results_path)
                 print(colored('folder created' ,'red'),test_results_path)
