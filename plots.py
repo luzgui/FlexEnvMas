@@ -198,10 +198,14 @@ class Plots():
         #         bottom += sol_ag[ag]
         # import pdb
         # pdb.pdb.set_trace()
-        sol_ag.plot(ax=ax1, kind='bar', stacked=True)
+        # sol_ag.plot(ax=ax1, kind='bar', stacked=True)
         # for i, ag in enumerate(sol_ag.columns):
         #     color = ag_colors.loc[ag]['color']
         #     ax1.fill_between(np.arange(len(sol))/4, sol_ag[ag] + i * 10, facecolor=color, edgecolor='k', alpha=0.6, label=ag)
+        
+        for ag in sol_ag.columns: 
+            ax1.fill_between(np.arange(len(sol)), sol_ag[ag].values.astype(
+                'float64'), facecolor=ag_colors.loc[ag]['color'],edgecolor='k', alpha=0.6)  # ,
             
         # stacked_load = np.zeros(len(sol))
         # for ag in sol_ag.columns:
