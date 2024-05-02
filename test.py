@@ -174,10 +174,10 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 from optimize import CommunityOptiModel
 from plots import Plots
 model=CommunityOptiModel(tenvi)
-solutions=model.solve_model_yearly()
+objectives, solutions=model.solve_model_yearly()
 folder=env_tester.folder_name
 solutions.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_solutions.csv'))
-
+objectives.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_objectives.csv'))
 
 # model.make_model(100)
 # opti_sol=model.solve_model()

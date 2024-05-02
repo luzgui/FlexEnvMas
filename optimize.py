@@ -26,28 +26,36 @@ class CommunityOptiModel():
     
     
     def solve_model(self):
+        """
+        Solve a single model
+        """
         opt = SolverFactory('gurobi')
         self.results=opt.solve(self.model,tee=True)
         return self.get_solution()
         
     def solve_model_yearly(self):
+        """
+        Solve a sequence of daily models and saves the results
+        """
         # total_num_days=len(self.env.allowed_inits)
         total_num_days=10
         solutions=[]
+        objectives=[]
         for day in range(total_num_days):
             self.make_model(day)
-            times=self.get_one_day_env_data(day).loc['ag1']['minutes']
-            sol=self.solve_model()
+            t_init, times=self.get_one_day_env_data(day)
+            times=times.loc['ag1']['minutes']
+            objective, sol=self.solve_model()
             sol['day']=day
-            # import pdb
-            # pdb.pdb.set_trace()
-            # sol['minutes']=times.values
             sol.insert(0,'minutes',times.values)
             sol = sol.set_index(times.index)
             solutions.append(sol)
+            data = {'timestep': [t_init], 'day': [day], 'objective': [objective]}
+            objectives.append(pd.DataFrame(data))
+            
         result_df = pd.concat(solutions, ignore_index=True)
-        # save it to the correct place
-        return result_df
+        objectives_df=pd.concat(objectives, ignore_index=True)
+        return objectives_df, result_df
             
     
     def make_model(self,day_num):
@@ -83,7 +91,7 @@ class CommunityOptiModel():
         c=self.env.com.agents['ag1'].tariff #bug
         
         #data only for the day we are instatiating the model
-        data=self.get_one_day_env_data(day_num)
+        _, data=self.get_one_day_env_data(day_num)
         
         Ppv=data.loc['ag1']['gen'].values #bug
         
@@ -250,8 +258,10 @@ class CommunityOptiModel():
             # H=len(c)
             # nI=len(model.I)
             # agents=np.array([value(model.I[t]) for t in model.I])
+        
+        objective=self.model.objective()
             
-        return df
+        return objective, df
     
     
     def get_one_day_timeslot(self,day_num):
@@ -263,5 +273,5 @@ class CommunityOptiModel():
     def get_one_day_env_data(self,day_num):
          t_init=self.get_one_day_timeslot(day_num)
          t_end=t_init+self.env.Tw
-         return self.env.com.com_data.loc[:, slice(t_init, t_end-1), :]
+         return t_init, self.env.com.com_data.loc[:, slice(t_init, t_end-1), :]
          

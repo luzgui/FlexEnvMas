@@ -12,6 +12,10 @@ import pandas as pd
 
 
 class Analyzer():
+    """
+    From results_folder produces an object with all the needed data and methods to perform analysis 
+    """
+    
     def __init__(self,results_folder):
         self.folder=results_folder
         self.plot=Plots()
@@ -28,6 +32,10 @@ class Analyzer():
                 self.metrics=pd.read_csv(f)
             elif 'env_state' in f:
                 self.state=pd.read_csv(f,index_col=0)
+            elif 'solutions' in f:
+                self.opti_sol=pd.read_csv(f)
+            elif 'objectives' in f:
+                self.opti_objective=pd.read_csv(f)
     
     def get_one_day_data(self,day_num):
         """extract one day from env_state"""
@@ -36,6 +44,7 @@ class Analyzer():
         
         
 class AnalyzerMulti():
+    "Class to compare experiments"
     def __init__(self,analyzer_list):
         """gets a list of analyzer experiment objects and performs comparison between experiments"""
         self.analyzer_list=analyzer_list
