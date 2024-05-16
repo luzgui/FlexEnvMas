@@ -109,10 +109,10 @@ class FlexEnv(MultiAgentEnv):
         self.max_gen=round(self.processor.get_limits(self.data, 'max', 'gen'),2)
         
         # #update missing variables HERE
-        self.com_vars.update_var_list(['gen','load', 'excess'], 'max', self.max_gen)
-        self.com_vars.update_var_list(['gen','load', 'excess'], 'min', 0)
-        self.com_vars.update_var('E_prof_rem', 'max',self.agents_params['E_prof'].max())
-        self.com_vars.update_var('y_s', 'max',self.agents_params['T_prof'].max() )
+        # self.com_vars.update_var_list(['gen','load', 'excess'], 'max', self.max_gen)
+        # self.com_vars.update_var_list(['gen','load', 'excess'], 'min', 0)
+        # self.com_vars.update_var('E_prof_rem', 'max',self.agents_params['E_prof'].max())
+        # self.com_vars.update_var('y_s', 'max',self.agents_params['T_prof'].max() )
         
         #unormalized state variables
         self.state_vars_unormal, _ = self.com_vars.get_state_vars(normalize=False)  
@@ -121,15 +121,16 @@ class FlexEnv(MultiAgentEnv):
         self.state_vars, self.vars_list=self.com_vars.get_state_vars(self.com.problem_conf['normalization'])  
         
         self.var_class={'gen','load','delta','excess'} #this list of variables will be tested in update_forecasts()
-            
+        
+        #Number of variables to be used
+        self.var_dim=len(self.state_vars.keys())
         
         #extract the names of variables in env.data and take out the minutes that we dont need    
         # self.ag_var_class=[k for k in self.data.keys() if 'ag' in k]
 
         self.obs=None   
             
-        #Number of variables to be used
-        self.var_dim=len(self.state_vars.keys())
+        
                 
         #Action space        
         self.action_space = spaces.Discrete(2) # ON/OFF
@@ -221,10 +222,11 @@ class FlexEnv(MultiAgentEnv):
         # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
         
         self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
-        self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
+        # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
         
         #inititialize binary variables
-        self.state[['y','y_1','y_s']]=0
+        # self.state[['y','y_1','y_s']]=0
+        self.state[['y_s']]=0
         
         
         # Initialize history of actions
@@ -242,6 +244,9 @@ class FlexEnv(MultiAgentEnv):
         
         #update forecasts
         self.update_forecast()
+        
+        for aid in self.agents_id:
+            self.state.loc[aid,'pv_sum']=self.data.loc['ag1'][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
         
         
         #Initial mask: # we concede full freedom for the appliance 
@@ -587,7 +592,7 @@ class FlexEnv(MultiAgentEnv):
         # self.state['tar_buy0'], _ =self.get_tariffs(1)
         
         self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
-        self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
+        # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
     
         #update forecasts
         self.update_forecast()
@@ -611,21 +616,22 @@ class FlexEnv(MultiAgentEnv):
         
         #y update
         # self.state['y'].update(self.action['action']) #matches by index
-        self.state.update({'y': self.action['action']})
+        # self.state.update({'y': self.action['action']})
+        
         #y_1 and y_s update
         for aid in self.agents_id:
             self.state.loc[aid,'y_s']+=self.action.loc[aid]['action'] #update y_s
             
-            if self.tstep > self.tstep_init+1:
-                # self.y_1=self.hist[-2] #penultiumate element to get the previous action
-                # self.state.loc[aid,'y_1']=self.state_hist.loc[aid,self.tstep-1]['y']
-                # self.state.copy().loc[aid]['y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
-                self.state_hist=self.state_hist.astype('object')
-                # self.state.at[aid,'y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
-                a=self.state_hist.loc[aid][self.state_hist.loc[aid,'tstep']==self.tstep-1]['y']
-                self.state.at[aid,'y_1']=a.loc[aid]
-            else:
-                self.state.loc[aid,'y_1']=0
+        #     if self.tstep > self.tstep_init+1:
+        #         # self.y_1=self.hist[-2] #penultiumate element to get the previous action
+        #         # self.state.loc[aid,'y_1']=self.state_hist.loc[aid,self.tstep-1]['y']
+        #         # self.state.copy().loc[aid]['y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
+        #         self.state_hist=self.state_hist.astype('object')
+        #         # self.state.at[aid,'y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
+        #         a=self.state_hist.loc[aid][self.state_hist.loc[aid,'tstep']==self.tstep-1]['y']
+        #         self.state.at[aid,'y_1']=a.loc[aid]
+        #     else:
+        #         self.state.loc[aid,'y_1']=0
 
 
         # E_pro_rem and y_s
@@ -643,7 +649,12 @@ class FlexEnv(MultiAgentEnv):
             self.state.loc[aid,'E_prof_rem']-=new_e_val
             self.state.loc[aid,'E_prof_rem']=round(self.state.loc[aid,'E_prof_rem'],2)
             
+            # for var in ['gen','load','excess']:
+            #     self.state.loc[aid,var]=self.data.loc[agent,self.tstep][var]
+            
+            self.state.loc[aid,'pv_sum']=self.data.loc[aid][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
 
+        
 
 
     def update_all_masks(self):
@@ -652,9 +663,11 @@ class FlexEnv(MultiAgentEnv):
         for aid in self.agents_id:
 
             if self.action.loc[aid]['action']==1 and self.state.loc[aid]['y_s'] < self.agents_params.loc[aid]['T_prof']:
+            # if self.action.loc[aid]['action']==1 and self.state.loc[aid]['E_prof_rem'] > 0:
                 self.mask.loc[aid]=[0.0,1.0]
     
             elif self.state.loc[aid]['y_s'] >= self.agents_params.loc[aid]['T_prof']:
+            # if self.state.loc[aid]['E_prof_rem'] <= 0:
                 self.mask.loc[aid]=[1.0,0.0]
                 
             else:
@@ -859,7 +872,22 @@ class FlexEnv(MultiAgentEnv):
             max_val=self.state_vars_unormal[key]['max']
             min_val=self.state_vars_unormal[key]['min']
             result_df[key]=(vals >= min_val) & (vals <= max_val)    
-        assert result_df.all().all(), 'something is outside of limits'
+        # assert result_df.all().all(), 'something is outside of limits'
+        # import pdb
+        # pdb.pdb.set_trace()
+        try:
+            assert result_df.all().all(), 'something is outside of limits'
+        except AssertionError as e:
+            print(e)
+            print(result_df)
+            false_indices = result_df.index[result_df.isin([False]).any(axis=1)]
+            false_columns = result_df.columns[result_df.isin([False]).any(axis=0)]
+            print("Rows with False values:")
+            print(false_indices)
+            print("Columns with False values:")
+            print(false_columns)
+        
+        
         return result_df
                 
     # def check_obs_within_lims(self):
