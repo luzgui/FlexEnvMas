@@ -210,7 +210,7 @@ class FlexEnv(MultiAgentEnv):
         # self.tstep=35040
         self.tstep_init=self.tstep # initial timestep
         # print(colored('Initial timestep','red'),self.tstep)
-        self.state['tstep']=self.tstep
+        # self.state['tstep']=self.tstep
         #minutes
         
         self.state['minutes']=self.minutes
@@ -584,7 +584,7 @@ class FlexEnv(MultiAgentEnv):
     def state_update(self):
         
         #Variables update
-        self.state['tstep']=float(self.tstep)
+        # self.state['tstep']=float(self.tstep)
 
         #Tariffs
         # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
@@ -758,6 +758,10 @@ class FlexEnv(MultiAgentEnv):
                     self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['E_prof']
                     
                 
+                if key == 'pv_sum':
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum()
+                
+                
                 for var in self.var_class:
                     if var in key:
                         
@@ -864,6 +868,7 @@ class FlexEnv(MultiAgentEnv):
         # result_df=pd.DataFrame(columns=self.state_hist.columns, index=self.agents_id)
         # print('Aqui estou Manuel Acacio')
         result_df=self.state_hist.copy()
+        result_df = result_df.astype(float)
         result_df=result_df.loc[result_df.index.str.contains('ag')]
         result_df.loc[:, :] = np.nan
         
