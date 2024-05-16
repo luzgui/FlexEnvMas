@@ -37,8 +37,7 @@ class CommunityOptiModel():
         """
         Solve a sequence of daily models and saves the results
         """
-        # total_num_days=len(self.env.allowed_inits)
-        total_num_days=10
+        total_num_days=len(self.env.allowed_inits)
         solutions=[]
         objectives=[]
         for day in range(total_num_days):
@@ -50,10 +49,11 @@ class CommunityOptiModel():
             sol.insert(0,'minutes',times.values)
             sol = sol.set_index(times.index)
             solutions.append(sol)
-            data = {'timestep': [t_init], 'day': [day], 'objective': [objective]}
+            data = {'tstep': [t_init], 'day': [day], 'objective': [objective]}
             objectives.append(pd.DataFrame(data))
             
         result_df = pd.concat(solutions, ignore_index=True)
+        result_df.insert(0, 'tstep', result_df.index)
         objectives_df=pd.concat(objectives, ignore_index=True)
         return objectives_df, result_df
             
