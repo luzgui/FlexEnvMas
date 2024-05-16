@@ -84,17 +84,6 @@ class TestEnv():
             
                     
             if plot: 
-                self.plot.makeplot(T,
-                          [],
-                          env_state['shift_T'],
-                          env_state[[k for k in env_state.columns if 'shift_ag' in k and 'coef' not in k]],
-                          env_state['gen0_ag1'],
-                          env_state['baseload_T'],
-                          env_state['tar_buy_ag1'], #BUG
-                          self.env, 
-                          env_state['Cost_shift_T'].sum(),
-                          0,
-                          '') #
                 self.plot.makeplot_bar(env_state, None)
                 
                 
