@@ -268,7 +268,7 @@ class DataPostProcessor:
             df.loc[aid,'coef_shift_base']=df.loc[aid]['shift_base']/df.loc[aid]['shift_base_T'] #sharing/load coefficient considering shiftable and base load
             df.loc[aid,'coef_shift_base']=df.loc[aid,'coef_shift_base'].fillna(0)
 
-            utilities().print_info('Cost compting: Real individual cost for each agent AFFECTED by the sharingf coefficient, i.e, we assume that excess is shared according to the load level of each agent')
+            utilities().print_info('Individual Cost computing: Real individual cost for each agent AFFECTED by the sharing coefficient, i.e, we assume that excess is shared according to the APPLIANCE load level of each agent')
             
             df.loc[aid,'r_cost']=(df.loc[aid]['shift']-df.loc[aid,'coef_shift']*df.loc[aid,'excess0'])*df.loc[aid,'tar_buy']
             
@@ -522,6 +522,7 @@ class DataPostProcessor:
         
         #year season
         metrics['day']=self.env.tstep_init/self.env.tstep_per_day
+        metrics['tstep']=self.env.tstep_init
         metrics['season']=self.get_season(metrics.loc['com']['day'])
         
         
@@ -575,3 +576,14 @@ class DataPostProcessor:
         return g
             
 
+
+class OptiDataPostProcessor(DataPostProcessor):
+    def __init__(self, env):
+        self.env=env
+        
+    def get_episode_metrics(self, solution, k):
+        pass
+        
+        
+        
+    
