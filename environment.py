@@ -22,7 +22,7 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
 from state_vars import *
 from termcolor import colored
 
-from dataprocessor import DataProcessor
+from dataprocessor import DataProcessor, EnvDataProcessor
 from utilities import *
 
 class FlexEnv(MultiAgentEnv):
@@ -42,6 +42,7 @@ class FlexEnv(MultiAgentEnv):
         self.env_config=env_config
         
         self.processor=DataProcessor()
+        
         self.com=self.env_config['community']
         self.com_vars=self.env_config['com_vars']
               
@@ -51,12 +52,14 @@ class FlexEnv(MultiAgentEnv):
         self._agent_ids=self.agents_id
         
         self.info = self.com.problem_conf['env_info']
-        
+        self.Tw=self.com.problem_conf["window_size"] #window horizon
         
         
         self.data=self.com.com_data
+        self.env_processor=EnvDataProcessor(self.data,self.Tw) #environment data processor
         
-        self.stats=self.get_data_stats() #define this in an environment processor
+        self.stats=self.env_processor.get_data_stats() #define this in an environment processor
+        self.daily_stats=self.env_processor.get_daily_stats()
           
         self.tstep_size=self.com.problem_conf['step_size']
         
@@ -64,7 +67,7 @@ class FlexEnv(MultiAgentEnv):
         self.T=self.com.problem_conf['t_end']-self.com.problem_conf['t_init']
         
         
-        self.Tw=self.com.problem_conf["window_size"] #window horizon
+        
         self.tstep_per_day=self.com.problem_conf['tstep_per_day']
         # self.dh=self.tstep_size*(1/60.0) # Conversion factor power-energy
         self.dh=self.com.problem_conf['step_size']*(1/60.0)
@@ -79,7 +82,8 @@ class FlexEnv(MultiAgentEnv):
         
         #get the possoble initial timeslots from data        
         #get all o mionutes index
-        self.allowed_inits=self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
+        # self.allowed_inits=self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
+        self.allowed_inits=self.env_processor.get_allowed_inits()
         self.allowed_inits.pop() #remove last day due to the existence of an extra timestep at the end of the episode that produces and error for T+1
         
         
@@ -759,7 +763,11 @@ class FlexEnv(MultiAgentEnv):
                     
                 
                 if key == 'pv_sum':
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum()
+                    # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum()
+                    self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.daily_stats.loc[aid,'mean']['gen'])/(self.daily_stats.loc[aid,'max']['gen']-self.daily_stats.loc[aid,'min']['gen'])
+                    # print('state_sum',self.state.loc[aid,key])
+                    # print('norm', self.state_norm.loc[aid,key])
+                    # print('data_sum',self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum())
                 
                 
                 for var in self.var_class:
@@ -807,14 +815,7 @@ class FlexEnv(MultiAgentEnv):
                     
                 
                     
-        
-    
-    def get_data_stats(self):
-        stats={}
-        for aid in self.agents_id:
-            stats[aid]=self.data.loc[aid].describe()        
-        return stats
-        
+                
     
     
     def assert_type(self,obs):

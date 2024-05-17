@@ -585,5 +585,55 @@ class OptiDataPostProcessor(DataPostProcessor):
         pass
         
         
+
+class EnvDataProcessor():
+    """
+    This class only makes sense with environment data outputed from DataProcessor
+    """
+    def __init__(self, env_data, window):
+        self.data=env_data
+        self.Tw=window
+    
+    
+    def get_one_day(self,t_start,t_end):
+        return self.data.loc[(slice(None), slice(t_start, t_end)), :]
+    
+    def get_daily_stats(self):
+        allowed_inits=self.get_allowed_inits()
+        daily_stats=[]
+        for ts in allowed_inits:
+            one_day=self.get_one_day(ts,ts+self.Tw)
+            daily_stats.append(one_day.groupby(level=0).sum())
+            
+        merged=pd.concat(daily_stats)
+        merged=merged.drop(columns=['minutes'])
+        stats={}
+        agents=self.data.index.levels[0]
+        for agent in agents:
+            stats[agent]=merged.loc[agent].describe()   
+        
+        return pd.concat(stats)  
+    
+
+    def get_data_stats(self):
+        stats={}
+        agents=self.data.index.levels[0]
+        for agent in agents:
+            stats[agent]=self.data.loc[agent].describe()        
+        return stats        
+
+    
+    def get_allowed_inits(self):
+        """
+        returns the initial timeslot for each day, i.e, time=00:00
+        """
+        return self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
+
+    
+        
+        
+        
+        
+        
         
     
