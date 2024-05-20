@@ -153,9 +153,6 @@ class FlexEnv(MultiAgentEnv):
         self.init_cond=self.com.problem_conf['init_condition'] 
         
         
-        # app conection counter
-        # self.count=0
-        
         #seed 
         # self.seed=config['seed']
         # self.seed=np.random.seed(config['seed'])
@@ -166,12 +163,9 @@ class FlexEnv(MultiAgentEnv):
         #VARIABLE INITIATIATIONS
         #initiate N X var_dim dataframe for storing state
         self.state=pd.DataFrame(index = self.agents_id+['global'],columns=self.state_vars.keys())
-        
-        #Auxiliary variables used to compute intermediary quantities
-        # self.cost_aux=pd.DataFrame(index = self.agents_id+['global'],columns=['cost','cost_s','cost_s_x'])
-        
-        # self.delta_aux=pd.DataFrame(index = self.agents_id+['global'],columns=['cost','cost_s','cost_s_x'])
-        
+        #tracks some variables that are not used in observation as an input to policy but are needed for post processing
+        self.state_shadow=pd.DataFrame(index = self.agents_id+['global'],columns=['tstep'])
+                
         #Mask
         #we have a dataframe cell for each action mask
         self.mask=pd.DataFrame(index = self.agents_id, columns=np.arange(self.action_space.n))
@@ -214,7 +208,7 @@ class FlexEnv(MultiAgentEnv):
         # self.tstep=35040
         self.tstep_init=self.tstep # initial timestep
         # print(colored('Initial timestep','red'),self.tstep)
-        # self.state['tstep']=self.tstep
+        self.state_shadow['tstep']=self.tstep
         #minutes
         
         self.state['minutes']=self.minutes
@@ -258,43 +252,6 @@ class FlexEnv(MultiAgentEnv):
         
         
         
-        # self.obs={"action_mask": np.array([1,1]), # we concede full freedom for the appliance 
-        #       "observations": self.get_obs()
-        #       }
-
-
-
-###########   Things I dont know exactly what they make or if are important ####
-
-
-        # self.L_s=np.zeros(self.T)
-        # self.load_s=0   
-        # self.R=0
-        # self.r=0
-        # self.c_T=0
-        # self.t_shift=0
-        # self.load_s=0 #machine starts diconected
-        
-        
-        
-        # #Costs and deltas that depend on the action are not used in observation
-        
-        # self.delta_c=(self.load0+self.load_s)-self.gen0
-        # self.delta_s=self.load_s-self.gen0
-        
-        # # self.load_s=self.L_s[0] #initialize with the first element in L_s
-        
-        
-
-        # (self.load0+self.load_s)-self.gen0
-        # self.cost=max(0,self.delta_c)*self.tar_buy + min(0,self.delta_c)*self.tar_sell
-        # self.cost_s=max(0,self.delta_s)*self.tar_buy + min(0,self.delta_s)*self.tar_sell
-        
-        # self.excess=max(0,-self.delta0)   
-        # self.cost_s_x=max(0,self.load_s-self.excess0)*self.tar_buy + min(0,self.load_s-self.excess0)*self.tar_sell
-        
-        
-        
         ### Conditions for random timsetep @ start
         
         # if the random initial time step is after the delivery time it must not turn on
@@ -312,6 +269,7 @@ class FlexEnv(MultiAgentEnv):
         
         #initialy history is just the all history
         self.state_hist=self.state.copy()
+        self.state_hist=pd.concat([self.state_hist,self.state_shadow], axis=1)
 
 
         self.make_state_norm() #make the self.state_norm attribute for the normalized state
@@ -377,7 +335,10 @@ class FlexEnv(MultiAgentEnv):
         self.update_all_masks() 
         self.R={aid:self.R[aid]+self.reward[aid] for aid in self.agents_id}
 
-        self.state_hist=pd.concat([self.state_hist,self.state])
+        
+        self.state_hist=pd.concat([self.state_hist,pd.concat([self.state,self.state_shadow],axis=1)])
+
+        
         
         self.make_state_norm() #make the normalized state
         
@@ -588,7 +549,12 @@ class FlexEnv(MultiAgentEnv):
     def state_update(self):
         
         #Variables update
-        # self.state['tstep']=float(self.tstep)
+        # self.state_shadow['tstep']=float(self.tstep)
+        # import pdb
+        # pdb.pdb.set_trace()
+        self.state_shadow=pd.DataFrame({'tstep': [self.tstep]*(len(self.agents_id)+1)},index=self.state.index)
+        # self.state_shadow=pd.concat([self.state_shadow,new_df])
+        
 
         #Tariffs
         # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
