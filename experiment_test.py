@@ -87,6 +87,8 @@ from rich import print
 from rich.console import Console
 from rich.syntax import Syntax
 
+import json
+
 #paths
 
 cwd=Path.cwd()
@@ -132,6 +134,15 @@ class ExperimentTest():
         experiment_path=os.path.join(self.dir, self.exp_name)
         # import pdb
         # pdb.pdb.set_trace()
+        
+        spill_1=raylog / 'spill1'
+        spill_2=raylog / 'spill2'
+
+        ray.init(_system_config={"local_fs_capacity_threshold": 0.99,
+                                 "object_spilling_config": json.dumps({"type": "filesystem",
+                                                                       "params": {"directory_path":[spill_1.as_posix(),
+                                                                                                    spill_2.as_posix()],}},)},)
+        
         restored_tuner = tune.Tuner.restore(experiment_path,trainable=self.trainable)
         # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
         result_grid = restored_tuner.get_results()
@@ -143,6 +154,7 @@ class ExperimentTest():
         checkpoint=best_res.checkpoint
         tester=self.tester(config, env=config["env"])
         tester.restore(checkpoint)
+        print('restored the following checkpoint',checkpoint)
         
  
         # print(self.config['mode'],checkpoint)
