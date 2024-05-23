@@ -166,18 +166,31 @@ env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
 
 full_state, env_state, metrics, results_filename_path=env_tester.test(
                                                     n_episodes=1,
-                                                    plot=True,
+                                                    plot=False,
                                                     results_path=resultsfolder)
 
+#%% Random action agent test
+# from experiment_test import SimpleTests
+# from testenv import BaselineTest, DummyTester
+# dummy_tester=DummyTester(tenvi)
+# baselinetest=BaselineTest(tenvi, dummy_tester)
 
+# k=2
+# print(k)
+# folder=cwd / 'Results' /'testing_baseline_3ag' / f'iter_{k}'
+# baselinetest.folder_name=folder
+# full_state, env_state_conc, episode_metrics, filename = baselinetest.test(364,folder,plot=False)
+    # full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+
+# simpletest.test_full_state(full_state)
 #%% Optimal Solution
-from optimize import CommunityOptiModel
-from plots import Plots
-model=CommunityOptiModel(tenvi)
-objectives, solutions=model.solve_model_yearly()
-folder=env_tester.folder_name
-solutions.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_solutions.csv'))
-objectives.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_objectives.csv'))
+# from optimize import CommunityOptiModel
+# from plots import Plots
+# model=CommunityOptiModel(tenvi)
+# objectives, solutions=model.solve_model_yearly()
+# folder=env_tester.folder_name
+# solutions.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_solutions.csv'))
+# objectives.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_objectives.csv'))
 
 # model.make_model(100)
 # opti_sol=model.solve_model()
