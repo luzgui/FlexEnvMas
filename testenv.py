@@ -150,20 +150,27 @@ class SimpleTestEnv(TestEnv):
         self.processor=DataPostProcessor(env)
         self.plot=Plots()
         self.counter=0
+        self.action_plan=self.get_action_plan()
         # super().__init__(env, tester)
      
         
 
         
     def get_actions(self, obs, map_func):
-        "Overrides the superclass methods"
-        action_plan=self.get_action_plan()        
-        actions = {aid: action_plan[aid][self.counter] for aid in self.env.agents_id}
-        self.counter+=1
+        "Overrides the superclass methods"   
+        actions = {aid: self.action_plan[aid][self.counter] for aid in self.env.agents_id}
+        
+        if self.counter <= self.env.Tw-2:
+            self.counter+=1
+        else:
+            self.action_plan=self.get_action_plan()
+            self.counter=0
+            
         return actions
     
         
     def get_action_plan(self):
+        "fixed action plan"
         actions={}
         starts=dict(zip(self.env.agents_id, [47,48,49,32,36,45,50][0:len(self.env.agents_id)]))
         
@@ -216,6 +223,31 @@ class SimpleTestEnv(TestEnv):
             print('rewardsxx:' f'"cens {aid}"')
 
 
+
+class BaselineTest(SimpleTestEnv):
+    "Implements agents that start at random timeslots during the day"
+    def __init__(self,env, tester):
+        self.env=env
+        self.tester=tester
+        self.processor=DataPostProcessor(env)
+        self.plot=Plots()
+        self.counter=0
+        self.action_plan=self.get_action_plan()
+    
+    def get_action_plan(self):
+        actions={}
+        n_agents=len(self.env.agents_id)
+        random_starts=np.random.randint(0, self.env.Tw-10, size=n_agents)
+        starts=dict(zip(self.env.agents_id, random_starts))
+        
+        for ag in self.env.agents_id:
+            agent=self.env.com.get_agent_obj(ag)
+            D=agent.apps[0].duration/self.env.tstep_size
+            actions[ag]=self.create_binary_vector(self.env.Tw,D,starts[ag])
+        
+        return actions
+
+            
 class DummyTester:
     def __init__(self,env):
         self.config=DummyConfig(env)
@@ -223,8 +255,4 @@ class DummyTester:
         
 class DummyConfig:
     def __init__(self,env):
-        self.policies={aid: None for aid in env.agents_id} 
-                
-    
-        
-        
+        self.policies={aid: None for aid in env.agents_id}         
