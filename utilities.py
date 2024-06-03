@@ -102,6 +102,12 @@ class FolderUtils():
             if file.endswith(file_type):
                 csv_files.append(os.path.join(folder_path, file))
         return csv_files
+    
+    @staticmethod
+    def make_folder(folder):
+        if not os.path.exists(folder) and not os.path.isdir(folder):
+            os.makedirs(folder)
+            print(colored('folder created' ,'red'),folder)
 
 
 
