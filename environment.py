@@ -471,16 +471,13 @@ class FlexEnv(MultiAgentEnv):
         
         '''
         
-
+        
         if self.init_cond == 'mode_window':
             
             # t=rnd.randrange(0, self.T-self.Tw-1) # a random initial state in the whole year
             # t=rnd.choice([k*self.Tw for k in range(int((self.T/self.Tw)-1))])
             
             t=rnd.choice(self.allowed_inits)
-            # t=70176
-            # t=70080
-            # t=69984
             
             # we allways start at the beggining of the day and advance Tw timesteps but choose randomly what day we start
             assert self.data.loc['ag1',t]['minutes']==0, 'initial timeslot not 0'

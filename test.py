@@ -169,6 +169,20 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
                                                     plot=False,
                                                     results_path=resultsfolder)
 
+
+#%%Simple test for experimentation
+#if we want to test a specific day
+tstep_init=17664
+tenvi.allowed_inits=[tstep_init]
+
+from experiment_test import SimpleTests
+from testenv import SimpleTestEnv, DummyTester
+dummy_tester=DummyTester(tenvi)
+simpletest=SimpleTestEnv(tenvi, dummy_tester)
+
+full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+
+
 #%% Random action agent test
 # from experiment_test import SimpleTests
 # from testenv import BaselineTest, DummyTester
@@ -184,15 +198,15 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 
 # simpletest.test_full_state(full_state)
 #%% Optimal Solution
-# from optimize import CommunityOptiModel
-# from plots import Plots
-# model=CommunityOptiModel(tenvi)
+from optimize import CommunityOptiModel
+from plots import Plots
+model=CommunityOptiModel(tenvi)
 # objectives, solutions=model.solve_model_yearly()
 # folder=env_tester.folder_name
 # solutions.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_solutions.csv'))
 # objectives.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_objectives.csv'))
 
-# model.make_model(100)
-# opti_sol=model.solve_model()
-# Plots().makeplot_bar(opti_sol,None)
+model.make_model(23)
+obj,opti_sol=model.solve_model()
+Plots().makeplot_bar(opti_sol,None)
 # Plots().plot_energy_usage(opti_sol,None)
