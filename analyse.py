@@ -74,20 +74,41 @@ storage_path='/home/omega/Downloads/ShareIST'
 configs_folder=cwd / 'configs'
 
 #%% 
-from analyzer import Analyzer
+from analyzer import Analyzer, AnalyzerMulti
 from plots import Plots
-folder_name= resultsfolder / YAMLParser().load_yaml(configs_folder / 'results_config.yaml')['folder_name']
-analyse=Analyzer(folder_name)
+exp_group_defs=YAMLParser().load_yaml(configs_folder / 'results_config.yaml')
 
-one_day=analyse.get_one_day_data(day_num=0)
+#%% Comparison experiment
+results_config=configs_folder / 'results_config.yaml'
+anal_test_name='exp_group1'
+analyse_multi=AnalyzerMulti(results_config, anal_test_name)
 
-metrics=analyse.metrics
-state=analyse.state
+#%% plots (multi experiment)
+analyse_multi.plot_year_cost(save=True)
+analyse_multi.plot_multi_joint(x='x_ratio',y='save_rate',save=True)
+analyse_multi.plot_per_agent_cost_multi_hist(save=True)
 
-#%%5
-plot=Plots()
-# plot.plot_energy_usage(one_day,filename_save=folder_name / 'pic2') #
-plot.makeplot_bar(one_day,filename_save=folder_name / 'pic_bar')
+
+#%% dataframes
+
+baseline_costs=analyse.get_baseline_costs()
+costs=analyse.get_cost_compare()
+costs_per_agent=analyse.get_per_agent_costs()
+
+data_opti=analyse.get_one_day_data(184, 'opti')
+data_rl=analyse.get_one_day_data(184, 'rl')
+
+
+costs_multi=analyse_multi.get_multi_cost_compare()
+
+
+# analyse.plot_joint(x='x_ratio',y='save_rate',save=False)
+# analyse.plot_cost_hist(save=False)
+
+analyse.plot_one_day(184, 'opti')
+analyse.plot_one_day(184, 'rl')
+
 
 #%%
+
 
