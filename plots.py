@@ -18,6 +18,7 @@ from icecream import ic
 import seaborn as sns
 
 class Plots():
+    plt.rcParams['figure.dpi'] = 300
     @staticmethod
     def makeplot(T, delta, sol,sol_ag, gen, load, tar, env, var_1, var_2,filename_save):
         """
@@ -287,7 +288,8 @@ class Plots():
             sns.barplot(x=time, y=colname, data=sol_ag, label=colname, color=sns.color_palette("pastel")[i], ax=ax, bottom=bottom,width=width,dodge=dodge,edgecolor=edgecolor)
             bottom += sol_ag[colname]
             
-            ax.set_title(f'Community shiftable cost: {cost} (€)')
+            
+            ax.set_title(f'Community shiftable cost: {round(cost,2)} (€)')
             
             ax.set_xlabel('hours of the day')
             ax.set_ylabel('kWh')
@@ -307,7 +309,258 @@ class Plots():
             print('saved figure to', filename_save)
         
         
+    @staticmethod
+    def make_jointplot(data,x_var,y_var,filename_save):
+        
+        """Import file flasg if if should be imported"""
+        
+        g = sns.JointGrid(data=data, x=x_var, y=y_var, 
+                          height=7,
+                          marginal_ticks=True)
+        
+        g.plot_joint(sns.scatterplot, s=50, alpha=0.9)
+        g.plot_marginals(sns.histplot,kde=True)
+        
+        a=0.2
+        # g.refline(x=0, color='b', alpha=a, label = 'min cost')
+        # g.refline(x=-1,color='g',alpha=a)
+        # g.refline(x=1,color='k',alpha=a)
+        g.refline(x=1)
+        g.refline(y=0)
+        
     
+        g.set_axis_labels('Daily PV availability compared to appliance energy need (-)',f'Daily Savings Rate (-)')
+    
+        # g.fig.suptitle(exp_name + 'Total year cost: %1.1f €' % m['cost'].sum() +'  n= %1.1f' % int(len(m)))
+        
+        
+        # text='Daily difference in cost'
+        text=f'Daily Savings Rate (computed from {x_var}) '
+        g.fig.suptitle(text + '(N = %d' % int(3) + ' / ' + 'days= %d)' % int(len(data)))
+        
+        g.fig.subplots_adjust(top = 0.9)
+        
+        # plt.axvline(x = 0, color = 'k',linestyle='--', label = 'min cost', alpha=0.6)
+        # plt.axvline(x = 1, color = 'k',linestyle='--', label = 'max cost',alpha=0.6)
+        # plt.axvline(x = -1, color = 'k',ls='--', label = 'zero cost',alpha=0.6)
+        # plt.axhline(y = 1, color = 'c',linestyle='--', label = 'min_energy',alpha=0.6)
+        
+        g.ax_joint.grid(True)
+        g.ax_joint.grid(True, color='gray', linestyle='--', linewidth=0.3)
 
+        if filename_save: g.savefig(filename_save, dpi=300)
+        
+    @staticmethod
+    def make_multi_jointplot(data,x_var,y_var,filename_save):
+        # List of dataframes
+        dataframes = data
+        x_var = x_var
+        y_var = y_var
+
+        # Plot multiple dataframes
+        fig, ax = plt.subplots(figsize=(10, 7))
+
+        # Plot multiple dataframes on the main plot
+        for ds in dataframes:
+            sns.scatterplot(x=x_var, y=y_var, data=dataframes[ds], s=50, alpha=0.9, ax=ax,label=ds)
+        
+        # Add reference lines
+        ax.axhline(y=0, color='gray', linestyle='--', linewidth=0.5)
+        ax.axvline(x=1, color='gray', linestyle='--', linewidth=0.5)
+        
+        # Set axis labels
+        ax.set_xlabel('Daily PV availability compared to appliance energy need (-)')
+        ax.set_ylabel('Daily Savings Rate (-)')
+        
+        # Set title
+        text = f'Daily Savings Rate (computed from {x_var}) '
+        fig.suptitle(text + '(N = %d' % len(dataframes) + ' / ' + 'days= %d)' % sum(len(df) for df in dataframes))
+        
+        # Add grid lines
+        ax.grid(True)
+        ax.grid(True, color='gray', linestyle='--', linewidth=0.3)
+        ax.legend()
+        # Show the plot
+        
+        # Show the plot
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
+        plt.show()
+           
+    def make_compare_plot(data,filename_save):
+        """it accepts metrics dataframe and plots the cost of each agent against every other agent
+        
+        """
+        
+        # List of variables
+        variables = data
+
+        # Determine the number of variables
+        num_vars = len(variables)
+
+        # Calculate the number of rows and columns for subplots
+        num_rows = num_vars
+        num_cols = num_vars
+
+        # Create subplots
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(5*num_cols, 5*num_rows))
+
+        # Flatten axes if there's only one row
+        if num_rows == 1:
+            axes = [axes]
+
+        # Create scatter plots for each pair of variables
+        for i in range(num_vars):
+            for j in range(num_vars):
+                # if i != j:
+                    sns.scatterplot(x=variables[j], y=variables[i], ax=axes[i][j])
+                    axes[i][j].set_xlabel(f'Variable {j+1}')
+                    axes[i][j].set_ylabel(f'Variable {i+1}')
+                    axes[i][j].set_title(f'Variable {j+1} vs Variable {i+1}')
+                    min_val = min(variables[i] + variables[j])
+                    max_val = max(variables[i] + variables[j])
+                    axes[i][j].plot([min_val, max_val], [min_val, max_val], color='r', linestyle='--')
+
+                    
+        # Adjust layout
+        plt.tight_layout()
+        
+        if filename_save: plt.savefig(filename_save, dpi=300)
+        # Show plots
+        plt.show()
+        
+
+    @staticmethod
+    def make_compare_plot2(data, filename_save=None):
+        """
+        Accepts a DataFrame and plots the scatter plot of the values in each pair of columns, 
+        using the column names as labels.
+        
+        Parameters:
+            data (DataFrame): The input DataFrame containing the data.
+            filename_save (str): Optional. File name to save the plot.
+        """
+        # List of variables
+        variables = data.columns
     
+        # Determine the number of variables
+        num_vars = len(variables)
+    
+        # Calculate the number of rows and columns for subplots
+        num_rows = num_vars
+        num_cols = num_vars
+    
+        # Create subplots
+        fig, axes = plt.subplots(num_rows, num_cols, figsize=(5*num_cols, 5*num_rows))
+    
+        # Flatten axes if there's only one row
+        if num_rows == 1:
+            axes = [axes]
+    
+        # Create scatter plots for each pair of variables
+        for i in range(num_vars):
+            for j in range(num_vars):
+                # Skip plotting if same variable
+                # if i == j:
+                #     axes[i][j].axis('off')
+                #     continue
+                # import pdb
+                # pdb.pdb.set_trace()
+                sns.scatterplot(data=data, x=variables[j], y=variables[i], ax=axes[i][j])
+                # axes[i][j].set_xlabel(variables[j])
+                # axes[i][j].set_ylabel(variables[i])
+                # axes[i][j].set_title(f'{variables[j]} vs {variables[i]}')
+                # # Add diagonal line
+                min_val = min(data[variables[i]].min(), data[variables[j]].min())
+                max_val = max(data[variables[i]].max(), data[variables[j]].max())
+                axes[i][j].plot([min_val, max_val], [min_val, max_val], color='r', linestyle='--')
+                axes[i][j].xaxis.set_major_locator(plt.MaxNLocator(nbins=5))
+                axes[i][j].yaxis.set_major_locator(plt.MaxNLocator(nbins=5))
+    
+        # Adjust layout
+        plt.tight_layout()
+        
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
+        # Show plots
+        plt.show()
+        
+    @staticmethod
+    def make_multi_histogram(data, filename_save):
+        fig, axes = plt.subplots(1, 2, figsize=(15, 5), sharey=True)
+
+        for ax,obj_id in zip(axes,data):
             
+            df=data[obj_id]
+            max_val=df.max().max()
+            min_val=df.min().min()
+            
+            val_width = max_val - min_val
+            n_bins = 10
+            bin_width = val_width/n_bins
+            # import pdb
+            # pdb.pdb.set_trace()
+            
+            hist=sns.histplot(
+                data=df,
+                multiple='dodge',
+                ax=ax,
+                bins=n_bins,
+                binrange=(min_val, max_val),
+                edgecolor='.3',
+                linewidth=.5,
+                stat='count',
+                shrink=.7,
+            )
+            
+
+
+            
+            ticks = np.arange(0, 0.14, bin_width)
+            ax.set_xticks(ticks)
+            ax.set_xticklabels([f'{tick:.2f}' for tick in ticks])
+        
+            # Add title and legends
+            print('vla')
+            ax.set_title(obj_id, fontsize=15)
+            ax.set_xlabel('€/kWh (daily cost per appliance load)', fontsize=12)
+            # plt.ylabel('Num of Days', fontsize=12)
+        fig.suptitle('Per agent daily costs in the testing comunity')
+        
+        # Show the plot
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
+        
+        plt.show()
+                
+        
+    @staticmethod    
+    def plotline_smooth(df,filename_save):
+        "data must be a dataframe with original signal and smoothed signal"
+        plt.figure(figsize=(10, 6))
+        sns.lineplot(data=df, x=df.index, y=df, label='Original', color='blue', alpha=0.5)
+        sns.lineplot(data=df, x=df.index, y='moving_average', label='Moving Average', color='red')
+        
+        # Add title and labels
+        plt.title('Original Series and Moving Average')
+        plt.xlabel('Index')
+        plt.ylabel('Value')
+        plt.legend()
+        
+        # Show the plot
+        plt.show()
+        
+    @staticmethod   
+    def plot_barplot(df,filename_save):
+        palette = sns.color_palette("RdYlGn_r", len(df))
+        sns.barplot(data=df,palette=palette)
+        plt.xlabel('Model')
+        plt.ylabel('€')
+        plt.title('Yearlly mean cost')
+        
+        # Show the plot
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
+        
+        
+        
