@@ -72,7 +72,9 @@ class CommunityOptiModel():
         Ppv: vector with PV production (vector)
         """
         
-        H=self.env.Tw
+        # H=self.env.Tw
+        _, data=self.get_one_day_env_data(day_num)
+        H=len(data.loc['ag1'])
         nI=self.env.com.num_agents
         
         d={}
@@ -88,10 +90,10 @@ class CommunityOptiModel():
         
         
         utilities.print_info('Theres a BUG here when using the tariff for agent 1 for all agents. Need to solve it')
-        c=self.env.com.agents['ag1'].tariff #bug
+        c=self.env.com.agents['ag1'].tariff[0:H] #bug
         
         #data only for the day we are instatiating the model
-        _, data=self.get_one_day_env_data(day_num)
+        
         
         Ppv=data.loc['ag1']['gen'].values #bug
         
@@ -273,5 +275,6 @@ class CommunityOptiModel():
     def get_one_day_env_data(self,day_num):
          t_init=self.get_one_day_timeslot(day_num)
          t_end=t_init+self.env.Tw
+         # t_end=t_init+8
          return t_init, self.env.com.com_data.loc[:, slice(t_init, t_end-1), :]
          
