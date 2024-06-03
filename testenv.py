@@ -172,7 +172,8 @@ class SimpleTestEnv(TestEnv):
     def get_action_plan(self):
         "fixed action plan"
         actions={}
-        starts=dict(zip(self.env.agents_id, [47,48,49,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [47,48,49,32,36,45,50][0:len(self.env.agents_id)]))
+        starts=dict(zip(self.env.agents_id, [48,30,12,32,36,45,50][0:len(self.env.agents_id)]))
         
         for ag in self.env.agents_id:
             agent=self.env.com.get_agent_obj(ag)
