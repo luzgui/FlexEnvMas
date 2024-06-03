@@ -129,6 +129,11 @@ class Community:
             df.loc[agent.id,'tar_buy']= agent.get_tar_by_mins(timeslot)
             
         return df
+    
+        
+    
+
+        
             
             
         
