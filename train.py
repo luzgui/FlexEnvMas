@@ -68,7 +68,6 @@ com=Community(file_ag_conf,
 com_vars=StateVars(file_vars)
 
 
-
 #%%  Make environment   
 env_config={'community': com,
             'com_vars': com_vars,
@@ -76,6 +75,8 @@ env_config={'community': com,
    
 envi=FlexEnv(env_config)
 
+df_list=envi.env_processor.get_daily_stats()
+# merged=envi.env_processor.merge_df_list_on_agents(df_list)
 #%%
 menvi=MultiAgentEnvCompatibility(envi)
 menvi._agent_ids=['ag1', 'ag2', 'ag3']
@@ -118,19 +119,23 @@ tuner = tune.Tuner(
       run_config=config_run)
 
 #%% Simple agent test
-from experiment_test import SimpleTests
-from testenv import *
-dummy_tester=DummyTester(envi)
-simpletest=SimpleTestEnv(envi, dummy_tester)
-full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+# from experiment_test import SimpleTests
+# from testenv import *
+# dummy_tester=DummyTester(envi)
+# # simpletest=SimpleTestEnv(envi, dummy_tester)
+# simpletest=SimpleTestEnvRandom(envi, dummy_tester)
 
-simpletest.test_full_state(full_state)
+# folder=cwd / 'Results' /'LocalDebug_Baseline_3ag'
+# simpletest.folder_name=folder
+# full_state, env_state_conc, episode_metrics, filename = simpletest.test(364,folder,plot=True)
+
+# simpletest.test_full_state(full_state)
 
 
 #%% Train
-# results=tuner.fit()
-# print(results.errors)
-# 
+results=tuner.fit()
+print(results.errors)
+# # 
 
 #%% Time
 end_time = time.time()

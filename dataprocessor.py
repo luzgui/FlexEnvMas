@@ -250,11 +250,12 @@ class DataPostProcessor:
             df.loc[aid,'shift_base']=df.loc[aid]['action']*self.env.com.agents[aid].apps[0].get_profile(self.ds_unit,self.env.tstep_size)[0]+df.loc[aid]['load0'] #for each agent the sum of its shiftable load with its base load
             
         df['shift'].name='shiftable load for each agent'
-        
+        # import pdb
+        # pdb.pdb.set_trace()
         #Sum all variables over the agents for each timestep
         df_group=df.groupby('tstep').sum() # In this dataframe al variables are summed
         
-
+        
         
         for aid in self.env.agents_id: 
             df.loc[aid,'shift_T']=df_group['shift'].values #sum of all shiftable loads for all agents
