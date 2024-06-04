@@ -619,7 +619,7 @@ class FlexEnv(MultiAgentEnv):
             # for var in ['gen','load','excess']:
             #     self.state.loc[aid,var]=self.data.loc[agent,self.tstep][var]
             
-            self.state.loc[aid,'pv_sum']=self.data.loc[aid][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
+            self.state.loc[aid,'pv_sum']=self.data.loc[aid][self.tstep:self.tstep_init+self.Tw]['excess'].sum()
 
         
 
