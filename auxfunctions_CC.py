@@ -61,36 +61,6 @@ torch, nn = try_import_torch()
 OPPONENT_OBS = "opponent_obs"
 OPPONENT_ACTION = "opponent_action"
 
-#%%
-
-# parser = argparse.ArgumentParser()
-
-
-# parser.add_argument(
-#     "--framework",
-#     choices=["tf", "tf2", "torch"],
-#     default="tf",
-#     help="The DL framework specifier.",
-# )
-
-# parser.add_argument(
-#     "--as-test",
-#     action="store_true",
-#     help="Whether this script should be run as a test: --stop-reward must "
-#     "be achieved within --stop-timesteps AND --stop-iters.",
-# )
-# parser.add_argument(
-#     "--stop-iters", type=int, default=100, help="Number of iterations to train."
-# )
-# parser.add_argument(
-#     "--stop-timesteps", type=int, default=100000, help="Number of timesteps to train."
-# )
-# parser.add_argument(
-#     "--stop-reward", type=float, default=7.99, help="Reward at which we stop training."
-# )
-
-
-
 #%% Centralized Critic Post Process
 
 # Grabs the opponent obs/act and includes it in the experience train_batch,
@@ -324,7 +294,7 @@ def centralized_critic_postprocessing(policy,
     # print(colored('Finished postprocess...','green'))
     return train_batch
 
-#%%
+#%% loss_with_central_critic
 # Copied from PPO but optimizing the central value function.
 def loss_with_central_critic(policy, base_policy, model, dist_class, train_batch):
     # Save original value function.
@@ -348,7 +318,7 @@ def loss_with_central_critic(policy, base_policy, model, dist_class, train_batch
 
     return loss
 
-#%%
+#%% central_vf_stats
 def central_vf_stats(policy, train_batch):
     # Report the explained variance of the central value function.
     return {
@@ -356,14 +326,14 @@ def central_vf_stats(policy, train_batch):
             train_batch[Postprocessing.VALUE_TARGETS], policy._central_value_out
         )
     }
-#%%
+#%% CentralizedValueMixin
 
 class CentralizedValueMixin:
     """Add method to evaluate the central value function from the model."""
     def __init__(self):
             self.compute_central_vf = self.model.central_value_function
 
-
+#%% get_ccppo_policy
 def get_ccppo_policy(base):
     class CCPPOTFPolicy(CentralizedValueMixin, base):
         def __init__(self, observation_space, action_space, config):
@@ -405,7 +375,7 @@ def get_ccppo_policy(base):
 
 CCPPOStaticGraphTFPolicy = get_ccppo_policy(PPOTF1Policy)
 CCPPOEagerTFPolicy = get_ccppo_policy(PPOTF2Policy)
-#%%
+#%% CentralizedCritic
 
 # class CCPPOTorchPolicy(CentralizedValueMixin, PPOTorchPolicy):
 #     def __init__(self, observation_space, action_space, config):
@@ -437,4 +407,4 @@ class CentralizedCritic(PPO):
             return CCPPOEagerTFPolicy
 
 
-#%%
+

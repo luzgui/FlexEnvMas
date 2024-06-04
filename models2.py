@@ -25,7 +25,7 @@ torch, nn = try_import_torch()
 
 
 
-
+#%% CC Action Mask Model
 class CCActionMaskModel(TFModelV2):
     """Multi-agent model that implements a centralized value function.
     with an action mask model"""
@@ -102,11 +102,11 @@ class CCActionMaskModel(TFModelV2):
         
         #BUG
         # Do we need the number of agents?
-        central_vf_dense = tf.keras.layers.Dense(
-            96, activation=tf.nn.tanh, name="c_vf_dense"
-        )(concat_obs)
-        
-        central_vf_out = tf.keras.layers.Dense(1, activation=None, name="c_vf_out")(central_vf_dense)
+        central_vf_dense = tf.keras.layers.Dense(256, activation=tf.nn.tanh, name="c_vf_dense")(concat_obs)
+        hidden_layer1 = tf.keras.layers.Dense(256, activation=tf.nn.tanh)(central_vf_dense)
+        hidden_layer2 = tf.keras.layers.Dense(256, activation=tf.nn.tanh)(hidden_layer1)
+        hidden_layer3 = tf.keras.layers.Dense(256, activation=tf.nn.tanh)(hidden_layer2)
+        central_vf_out = tf.keras.layers.Dense(1, activation=None, name="c_vf_out")(hidden_layer3)
         
         # self.central_vf = tf.keras.Model(
         #     inputs=[obs, opp_obs, opp_act], outputs=central_vf_out,
@@ -171,7 +171,7 @@ class CCActionMaskModel(TFModelV2):
 
 
 
-#%%
+#%% Action Mask Model
 class ActionMaskModel(TFModelV2):
     """Model that handles simple discrete action masking.
     This assumes the outputs are logits for a single Categorical action dist.
