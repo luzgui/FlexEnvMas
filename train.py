@@ -101,7 +101,8 @@ config_tune=experiment.make_tune_config()
 config_run=experiment.make_run_config(raylog.as_posix())
 
 resources=experiment.get_resources()
-trainable_func=Trainable(file_experiment).trainable
+trainable_obj=Trainable(file_experiment)
+trainable_func=trainable_obj.trainable
 trainable_resources = tune.with_resources(trainable_func, resources)
 
 spill_1=raylog / 'spill1'
