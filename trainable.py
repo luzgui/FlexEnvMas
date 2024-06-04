@@ -39,10 +39,10 @@ class Trainable():
         algo_name=self.exper_config['algorithm']['name']
         
         if algo_name == 'PPO':
-            trainer=PPO(config, env=config["env"])
+            self.trainer=PPO(config, env=config["env"])
         
         elif algo_name == 'CentralizedCritic':
-            trainer=CentralizedCritic(config)
+            self.trainer=CentralizedCritic(config)
         
         print(colored(f'{algo_name} Trainer created.','red'))
                 
@@ -56,7 +56,7 @@ class Trainable():
         
         for i in range(self.n_iters):
             print(colored('training...','red'))
-            train_results=trainer.train()
+            train_results=self.trainer.train()
     
             #Metrics we are gonna log from full train_results dict
             metrics={'episode_reward_max', 
@@ -76,7 +76,7 @@ class Trainable():
             if i % self.checkpoint_freq == 0:
                 print(colored('Iteration:','red'),i)
                 print(colored('Reporting and checkpointing...','green'))
-                save_result=trainer.save()
+                save_result=self.trainer.save()
                 # trainer.save_checkpoint()
                 cp_path=save_result.checkpoint.path
                 checkpoint_object=train.Checkpoint.from_directory(cp_path)
@@ -89,7 +89,7 @@ class Trainable():
             
 
             
-        trainer.stop()
+        self.trainer.stop()
 
 
 # def trainable_mas(config):
