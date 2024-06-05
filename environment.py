@@ -727,7 +727,7 @@ class FlexEnv(MultiAgentEnv):
                 
                 if key == 'pv_sum':
                     # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum()
-                    self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.daily_stats.loc[aid,'mean']['gen'])/(self.daily_stats.loc[aid,'max']['gen']-self.daily_stats.loc[aid,'min']['gen'])
+                    self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.daily_stats.loc[aid,'mean']['excess'])/(self.daily_stats.loc[aid,'max']['excess']-self.daily_stats.loc[aid,'min']['excess'])
                     # print('state_sum',self.state.loc[aid,key])
                     # print('norm', self.state_norm.loc[aid,key])
                     # print('data_sum',self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum())
