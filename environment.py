@@ -71,7 +71,8 @@ class FlexEnv(MultiAgentEnv):
         self.tstep_per_day=self.com.problem_conf['tstep_per_day']
         # self.dh=self.tstep_size*(1/60.0) # Conversion factor power-energy
         self.dh=self.com.problem_conf['step_size']*(1/60.0)
-        self.tstep_init=self.com.problem_conf['t_init'] #initial timestep in each episode
+        self.tstep_init=self.com.problem_conf['t_init'] #initial timestep of the episode
+        self.tstep_end=self.com.problem_conf['t_end'] #final timestep of the dataset
         
         # FORECAST
         self.t_ahead_hours = self.com.problem_conf["t_ahead_hours"] #number of hours to look ahead
@@ -520,12 +521,15 @@ class FlexEnv(MultiAgentEnv):
                     t=int(t[0])
                     
                     # if self.tstep+self.t_ahead*t >= self.tstep_init+self.T: #if forecast values fall outside global horizon T
-                    if self.tstep+self.t_ahead*t >= self.T-1: #if forecast values fall outside global horizon T
+                    # if self.tstep+self.t_ahead*t >= self.T-1: #if forecast values fall outside global horizon T
+                    if self.tstep+self.t_ahead*t >= self.tstep_end-1: #if forecast values fall outside global horizon T
                         
                         # setattr(self,k, 0)
                         # print('if')
                         # print('step',self.tstep)
-                        # print('step+tahead', self.tstep+self.t_ahead*t)
+                        # print('step+tahead',self.t_ahead*t)
+                        # import pdb
+                        # pdb.pdb.set_trace()
                         # print('self.T+init', self.tstep_init+self.T)
                         self.state.loc[agent,k]=0
                         # self.state.loc[agent,k]=0 # maybe this to solve the 'value is trying to be set on a copy of a slice from a DataFrame' warning
