@@ -38,8 +38,10 @@ from ray.rllib.models import ModelCatalog
 
 # Custom Model
 from models2 import ActionMaskModel, CCActionMaskModel
+from models_rnn import LSTMActionMaskModel
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
+ModelCatalog.register_custom_model("lstm_model", LSTMActionMaskModel)
 
 #Custom functions
 from models2 import ActionMaskModel, CCActionMaskModel
