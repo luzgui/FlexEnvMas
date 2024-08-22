@@ -82,7 +82,7 @@ class LSTMActionMaskModel(RecurrentNetwork):
         # self.rnn_model.summary()
 
 
-    @override(ModelV2)
+    # @override(ModelV2)
     def forward(
         self,
         input_dict,
@@ -110,7 +110,7 @@ class LSTMActionMaskModel(RecurrentNetwork):
         
         
         inputs = add_time_dimension(
-            padded_inputs=flat_inputs, seq_lens=seq_lens, framework="tf"
+            padded_inputs=flat_inputs, seq_lens=seq_lens, framework="tf2"
         )
         output, new_state = self.forward_rnn(
             inputs,
@@ -122,8 +122,8 @@ class LSTMActionMaskModel(RecurrentNetwork):
         inf_mask = tf.maximum(tf.math.log(action_mask), tf.float32.min)
         # masked_output = output + inf_mask
         
-        masked_output=tf.add(output,tf.reshape(inf_mask, output.shape))
-        
+        masked_output=tf.add(output,tf.reshape(inf_mask, tf.shape(output)))
+        # breakpoint()
         return tf.reshape(masked_output, [-1, self.num_outputs]), new_state
         # return tf.reshape(output, [-1, self.num_outputs]), new_state
 
