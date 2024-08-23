@@ -266,6 +266,8 @@ class DataPostProcessor:
             df.loc[aid,'coef_shift']=df.loc[aid]['shift']/df.loc[aid]['shift_T'] #sharing/load coeficient considering only the shiftable loads
             df.loc[aid,'coef_shift']=df.loc[aid,'coef_shift'].fillna(0)
             
+            # import pdb
+            # pdb.pdb.set_trace()
             df.loc[aid,'coef_shift_base']=df.loc[aid]['shift_base']/df.loc[aid]['shift_base_T'] #sharing/load coefficient considering shiftable and base load
             df.loc[aid,'coef_shift_base']=df.loc[aid,'coef_shift_base'].fillna(0)
 

@@ -80,35 +80,42 @@ exp_group_defs=YAMLParser().load_yaml(configs_folder / 'results_config.yaml')
 
 #%% Comparison experiment
 results_config=configs_folder / 'results_config.yaml'
-anal_test_name='exp_group1'
+anal_test_name='exp_group2'
 analyse_multi=AnalyzerMulti(results_config, anal_test_name)
 
 #%% plots (multi experiment)
-analyse_multi.plot_year_cost(save=True)
-analyse_multi.plot_multi_joint(x='x_ratio',y='save_rate',save=True)
-analyse_multi.plot_per_agent_cost_multi_hist(save=True)
+analyse_multi.plot_year_cost(save=False)
+analyse_multi.plot_multi_joint(x='x_ratio',y='save_rate',save=False)
+analyse_multi.plot_per_agent_cost_multi_hist(save=False)
 
+analyse_multi.plot_multi_metrics(save=False)
+
+analyse_multi.analyser_objs['IL'].plot_one_day(11, 'rl')
+one_day=analyse_multi.analyser_objs['IL'].get_one_day_data(11, 'rl')
 
 #%% dataframes
 
-baseline_costs=analyse.get_baseline_costs()
-costs=analyse.get_cost_compare()
-costs_per_agent=analyse.get_per_agent_costs()
+bl=analyse_multi.analyser_objs['Random_baseline'].get_baseline_costs()
+bl_IL=analyse_multi.analyser_objs['IL'].get_baseline_costs()
 
-data_opti=analyse.get_one_day_data(184, 'opti')
-data_rl=analyse.get_one_day_data(184, 'rl')
+costs=analyse_multi.get_multi_cost_compare()
 
+analyse_multi.plot_per_agent_year_cost(save=True)
 
 costs_multi=analyse_multi.get_multi_cost_compare()
 
+base_costs=analyse_multi.analyser_objs['IL'].get_baseline_costs()
 
-# analyse.plot_joint(x='x_ratio',y='save_rate',save=False)
-# analyse.plot_cost_hist(save=False)
+algo='CC'
+per_agent=analyse_multi.analyser_objs[algo].get_per_agent_costs()
+per_agent_m=per_agent.describe()
+per_agent_sum=per_agent.sum()
+per_agent_mean=per_agent.mean()
 
-analyse.plot_one_day(184, 'opti')
-analyse.plot_one_day(184, 'rl')
+analyse_multi.analyser_objs[algo].plot_one_day(11,'opti')
 
 
 #%%
-
-
+baseline_analyse=Analyzer(analyse_multi.baseline, analyse_multi.baseline)
+base_per_agent_cost=baseline_analyse.get_per_agent_costs()
+baseline_analyse.plot_one_day(0, 'rl')

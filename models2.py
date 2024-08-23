@@ -208,8 +208,9 @@ class ActionMaskModel(TFModelV2):
 
     def forward(self, input_dict, state, seq_lens):
         # Extract the available actions tensor from the observation.
+        
         action_mask = input_dict["obs"]["action_mask"]
-
+        
         # Compute the unmasked logits.
         logits, _ = self.internal_model({"obs": input_dict["obs"]["observations"]})
 
@@ -220,7 +221,6 @@ class ActionMaskModel(TFModelV2):
         # Convert action_mask into a [0.0 || -inf]-type mask.
         inf_mask = tf.maximum(tf.math.log(action_mask), tf.float32.min)
         masked_logits = logits + inf_mask
-
         # Return masked logits.
         return masked_logits, state
 
