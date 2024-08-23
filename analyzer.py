@@ -72,14 +72,19 @@ class Analyzer():
     def get_baseline_costs(self):
         baseline_files=FolderUtils().get_file_in_folder(self.baseline_folder,'.csv')
         baseline_costs=[]
+        n=0
         for f in baseline_files:
             if 'metrics' in f:
+                n+=1
                 self.baseline_metrics=pd.read_csv(f,index_col=0,decimal=',')
                 self.baseline_metrics=self.baseline_metrics.drop(columns='season')
                 self.baseline_metrics=self.baseline_metrics.astype(float)
                 self.baseline_metrics['day'] = self.baseline_metrics['day'].astype(float).astype(int)
                 baseline_costs.append(self.baseline_metrics.loc['com'][['day','cost']])
                 # df=self.baseline_metrics.join(self.baseline_metrics)
+        
+        print(f'Baseline mean computed from {n} runs')
+        
         day=self.baseline_metrics.loc['com']['day']
 
         df=pd.concat(baseline_costs, axis=1)
@@ -174,10 +179,13 @@ class Analyzer():
         
     
     
-    def plot_one_day(self,day_num,source):
+    def plot_one_day(self,day_num,source,save=False):
         data=self.get_one_day_data(day_num, source)
         
-        file_name=str(self.folder / ('profile_' + f'day_{day_num}_'+f'source_{source}'))
+        
+        file_name=None
+        if save:
+            file_name=str(self.folder / ('profile_' + f'day_{day_num}_'+f'source_{source}'))
         self.plot.makeplot_bar(data, file_name)
         
 
@@ -244,6 +252,7 @@ class AnalyzerMulti():
         for label in exp_dict:
             exp_dict[label]=Analyzer(self.results_folder / exp_dict[label],self.baseline)
         
+        exp_dict['Random_baseline']=Analyzer(self.baseline, self.baseline)
         return exp_dict
     
     def get_multi_cost_compare(self):
@@ -294,13 +303,68 @@ class AnalyzerMulti():
         df['opti']=data[obj_id]['objective']
         df['rand']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
         
+        utilities().print_info('possible bug with random baseline costs vs rand')
+        df=df.drop(columns=['Random_baseline'])
         data_sorted=df.mean().sort_values()
+        
+        # import pdb
+        # pdb.pdb.set_trace()
         
         file_name=None
         if save:
             file_name=str(self.compare_results_folder / 'models_barplot.png')
         
         self.plot.plot_barplot(data_sorted,file_name)
+        
+        
+    def plot_per_agent_year_cost(self,save=False):
+        data={}
+        for obj_id in self.analyser_objs:
+            data_agent=self.analyser_objs[obj_id].get_per_agent_costs()
+            
+            for k in data_agent.columns:
+                if 'E' not in k:
+                    data_agent=data_agent.drop(columns=k)
+            
+            data_agent=data_agent.mean()
+            # data_agent=data_agent.sum()
+            data[obj_id]=data_agent
+        
+        df=pd.DataFrame(data)
+        
+        reshaped_df = df.stack().reset_index()
+        reshaped_df.columns = ['Label', 'Category', 'Value']
+        
+            
+        file_name=None
+        if save:
+            file_name=str(self.compare_results_folder / 'yearlly_mean_per_agent.png')
+        
+        # return data
+        self.plot.plot_multi_bar(reshaped_df,file_name)
+            
+            
+    def plot_multi_metrics(self,save=False):
+        data={}
+        metrics=['episode_reward_mean']
+        for obj_id in self.analyser_objs:
+            if obj_id == 'Random_baseline':
+                continue  # Skip the specific key
+            for m in metrics:
+                # import pdb
+                # pdb.pdb.set_trace()
+                data_agent=pd.DataFrame(self.analyser_objs[obj_id].progress[m]).rolling(300).mean()
+                # data_agent[m+'smooth']=data_agent[m].rolling(20).mean()
+                data[obj_id]=data_agent
+         
+        filename_save=None        
+        if save:
+            filename_save=str(self.compare_results_folder / 'mean_reward.png')
+             
+             
+        self.plot.plotline_smooth(data, filename_save)
+        
+        
         
             
         
