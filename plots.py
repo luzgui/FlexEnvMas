@@ -296,8 +296,8 @@ class Plots():
             
             ax.set_xticks(range(0, len(data)+1, 4))  #  every hour ticks
             ax.set_xticklabels(range(0, 25))
-
-
+            
+            
             
             # Gridlines
             ax.grid(visible=True, which='major', alpha=0.3)
@@ -535,17 +535,26 @@ class Plots():
                 
         
     @staticmethod    
-    def plotline_smooth(df,filename_save):
+    def plotline_smooth(data,filename_save):
         "data must be a dataframe with original signal and smoothed signal"
         plt.figure(figsize=(10, 6))
-        sns.lineplot(data=df, x=df.index, y=df, label='Original', color='blue', alpha=0.5)
-        sns.lineplot(data=df, x=df.index, y='moving_average', label='Moving Average', color='red')
+        palette=sns.color_palette()
+        i=0
+        for obj_id in data:
+            # sns.lineplot(data=data[obj_id], label=obj_id)
+            sns.lineplot(data=data[obj_id], x=data[obj_id].index, y='episode_reward_mean', label=obj_id, color=palette[i])
+            i+=1
+            # sns.lineplot(data=df, x=df.index, y='moving_average', label='Moving Average', color='red')
         
         # Add title and labels
-        plt.title('Original Series and Moving Average')
+        plt.title('Community Mean Reward')
         plt.xlabel('Index')
         plt.ylabel('Value')
+        plt.grid(True)
         plt.legend()
+        
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
         
         # Show the plot
         plt.show()
@@ -559,6 +568,17 @@ class Plots():
         plt.title('Yearlly mean cost')
         
         # Show the plot
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
+    @staticmethod        
+    def plot_multi_bar(df,filename_save):
+        plt.figure(figsize=(8, 6))
+        sns.barplot(data=df,x='Category', y='Value', hue='Label', dodge=True)
+        plt.xlabel('Model')
+        plt.ylabel('mean yearlly value (€/kWh)')
+        plt.title('Yearly mean cost per agent')
+        # plt.show()
+        
         if filename_save:
             plt.savefig(filename_save, dpi=300)
         
