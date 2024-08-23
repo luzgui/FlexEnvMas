@@ -1,3 +1,11 @@
 #exp_name
 
-exp_name: fcul1-debug
+# exp_name: fcul1-3ag-IL
+# exp_name: fcul1
+exp_name: local-debug
+# exp_name: fcul1-3ag-CC-newobs
+# exp_name: fcul1-3ag-IL-newobs
+#exp_name: fcul1-3ag-IL-newnet
+# exp_name: fcul1-3ag-IL-oldnet
+# exp_name: fcul1-3ag-CC-oldnet
+#exp_name: fcul1-3ag-IL-1day
