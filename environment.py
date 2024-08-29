@@ -19,7 +19,7 @@ from icecream import ic
 
 from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
 
-from state_vars import *
+# from state_vars import *
 from termcolor import colored
 
 from dataprocessor import DataProcessor, EnvDataProcessor

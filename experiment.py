@@ -15,7 +15,7 @@ ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 from ray.rllib.algorithms.ppo import PPO #trainer
 from ray.rllib.algorithms.ppo import PPOConfig #config
 
-from shiftenvRLlib_mas import ShiftEnvMas
+# from shiftenvRLlib_mas import ShiftEnvMas
 
 from ray import tune, air
 # from ray.tune import Analysis
@@ -40,7 +40,7 @@ ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 from ray.rllib.algorithms.ppo import PPO #trainer
 from ray.rllib.algorithms.ppo import PPOConfig #config
 
-from shiftenvRLlib_mas import ShiftEnvMas
+# from shiftenvRLlib_mas import ShiftEnvMas
 
 from ray import tune, air, train
 # from ray.tune import Analysis
