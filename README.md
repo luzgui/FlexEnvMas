@@ -1,10 +1,14 @@
-# FlexEnv
-Gym environment for energy management of a battery
+# FlexEnvMas
+Deep MultiAgent Reinforcement Learning for demand management
 
-#### Files
 
-* `flexenv.py`: Contains the gym environment
+* Multiagent RLlib environment
+* Trainning, Testing, Analysis and Visualization
 
-* `flexenv_run.py`: Main script for creation of the environment, creation of the agent/model, training and results visualization
+## modules
+wip
 
-* `auxfunctions.py`: Auxiliary functions
+
+
+Guilherme Luz (University of Lisbon FCUL(IDL) / IST (IdMEC))
+gpluz@fc.ul.pt
