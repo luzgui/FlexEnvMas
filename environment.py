@@ -418,6 +418,53 @@ class FlexEnv(MultiAgentEnv):
             # return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id} #this adds the term of individual reward
             
             return {aid: R+penalty for aid in self.agents_id} #this adds the term of individual reward
+        
+        elif self.com.scenarios_conf['game_setup'] == 'cooperative_colective_boost':
+            # this is the real cost of collective energy consumption. it is centralized information since it sums all the loads and subtracts the excess            
+            AppLoads=[self.action.loc[agent]['action']*self.com.agents[agent].apps[0].base_load*(self.tstep_size/60) for agent in self.agents_id]
+            
+            BaseLoads=[self.state.loc[agent]['load0'] for agent in self.agents_id]
+            
+            Balance=(sum(AppLoads)+sum(BaseLoads))-self.state.loc[self.agents_id[0]]['gen0']
+            #introduce a penalty for violating conditions
+            penalty_table=[]
+            for aid in self.agents_id:
+                if self.minutes == self.min_max-self.agents_params.loc[aid]['T_prof']*self.tstep_size and self.state.loc[aid]['y_s']  != self.agents_params.loc[aid]['T_prof']: #if arrived at the last possible timeslot for connecting app and you havent connceted then there is a penalty
+                    penalty_table.append(True)
+            
+            penalty=-5*any(penalty_table) #a common penalty -5 is imposed if any agent violates the constraints
+                    
+            # this reward is considering that the excess infromation is the same for all agents!        
+            R=-max(0,Balance)*self.state.loc[self.agents_id[0]]['tar_buy']
+            # print('pen:', penalty)
+            # print('R:', R)
+            # return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id} #this adds the term of individual reward
+            
+            return {aid: R+penalty for aid in self.agents_id} #this adds the term of individual reward
+        
+        elif self.com.scenarios_conf['game_setup'] == 'cooperative_colective_sigma':          
+            AgentLoads=[self.action.loc[agent]['action']*self.com.agents[agent].apps[0].base_load*(self.tstep_size/60) for agent in self.agents_id]
+            
+            #introduce a penalty for violating conditions
+            penalty_table=[]
+            for aid in self.agents_id:
+                if self.minutes == self.min_max-self.agents_params.loc[aid]['T_prof']*self.tstep_size and self.state.loc[aid]['y_s']  != self.agents_params.loc[aid]['T_prof']: #if arrived at the last possible timeslot for connecting app and you havent connceted then there is a penalty
+                    penalty_table.append(True)
+            
+            penalty=-5*any(penalty_table) #a common penalty -5 is imposed if any agent violates the constraints
+                    
+            # this reward is considering that the excess infromation is the same for all agents!        
+            actions=sum([self.action.loc[agent]['action'] for agent in self.agents_id])
+            
+            sigma=-np.exp(-1.7*self.state.loc[self.agents_id[0]]['excess0'])+1
+            
+            R=-max(0,(sum(AgentLoads)-self.state.loc[self.agents_id[0]]['excess0']))*self.state.loc[self.agents_id[0]]['tar_buy']+actions*sigma
+            # print('pen:', penalty)
+            # print('R:', R)
+            # return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id} #this adds the term of individual reward
+            
+            return {aid: R+penalty for aid in self.agents_id} #this adds the term of individual reward
+            
             
             
     
