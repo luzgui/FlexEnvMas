@@ -370,6 +370,20 @@ class FlexEnv(MultiAgentEnv):
                                 
             return agent_reward
         
+    def get_agent_reward_alpha(self, agent,alpha):
+        "Computes the reward for each agent considering sharing coeff as a float"
+        
+        if self.com.scenarios_conf['reward_type'] == 'excess_cost_max':
+            # The reward should be function of the action
+            if self.minutes == self.min_max-self.agents_params.loc[agent]['T_prof']*self.tstep_size and self.state.loc[agent]['y_s']  !=self.agents_params.loc[agent]['T_prof']:
+                agent_reward=-5.0
+
+    
+            else:
+                    agent_reward=-max(0,((self.action.loc[agent]['action']*self.com.agents[agent].apps[0].base_load*(self.tstep_size/60))-alpha*self.state.loc[agent]['excess0']))*self.state.loc[agent]['tar_buy']
+                                
+            return agent_reward
+        
     
     # def reward_shapping(self,agent):
     #     return self.action.loc[agent]['action']*10*self.state.loc[agent]['excess0']
@@ -464,6 +478,31 @@ class FlexEnv(MultiAgentEnv):
             # return {aid: R+self.get_agent_reward(aid) for aid in self.agents_id} #this adds the term of individual reward
             
             return {aid: R+penalty for aid in self.agents_id} #this adds the term of individual reward
+        
+        elif self.com.scenarios_conf['game_setup'] == 'cooperative_colective_scaled_sigma':          
+            df=self.action.copy()
+            excess=self.state.loc[self.agents_id[0]]['excess0']
+            AgentTotalLoads=sum([self.action.loc[agent]['action']*self.com.agents[agent].apps[0].base_load*(self.tstep_size/60) for agent in self.agents_id])
+            
+            
+            
+            for ag in self.agents_id:
+                
+                if AgentTotalLoads != 0:
+                    df.loc[ag, 'alpha'] = (self.action.loc[ag, 'action'] * 
+                                           self.com.agents[ag].apps[0].base_load * 
+                                           (self.tstep_size / 60) / AgentTotalLoads)
+                else:
+                    df.loc[ag, 'alpha'] = 0  # or handle it in another appropriate way
+
+                df.loc[ag,'cost']=self.get_agent_reward_alpha(ag, df.loc[ag,'alpha'])
+                
+                df.loc[ag,'sigma_1']=self.action.loc[ag,'action']*(-np.exp(-1.7*df.loc[ag,'alpha']*excess)+1)
+                
+            
+            R=df['cost'].sum()+df['sigma_1'].sum()
+            
+            return {aid: R for aid in self.agents_id} #this adds the term of individual reward
             
             
             
