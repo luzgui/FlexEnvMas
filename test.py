@@ -56,6 +56,7 @@ from auxfunctions_CC import *
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
+ModelCatalog.register_custom_model("lstm_model", LSTMActionMaskModel)
 
 from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
 from ray.tune.registry import register_env
@@ -171,8 +172,8 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 
 
 #%%Simple test for experimentation
-#if we want to test a specific day
-# tstep_init=17664
+# if we want to test a specific day
+# tstep_init=1056
 # tenvi.allowed_inits=[tstep_init]
 
 # from experiment_test import SimpleTests
@@ -180,7 +181,7 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 # dummy_tester=DummyTester(tenvi)
 # simpletest=SimpleTestEnv(tenvi, dummy_tester)
 
-# full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+# full_state, env_state_conc, episode_metrics, filename = simpletest.test(2,[],plot=True)
 
 
 #%% Random action agent test
@@ -193,8 +194,8 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 # print(k)
 # folder=cwd / 'Results' /'testing_baseline_3ag' / f'iter_{k}'
 # baselinetest.folder_name=folder
-# full_state, env_state_conc, episode_metrics, filename = baselinetest.test(364,folder,plot=False)
-    # full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+# full_state, env_state_conc, episode_metrics, filename = baselinetest.test(1,folder,plot=False)
+#     full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
 
 # simpletest.test_full_state(full_state)
 #%% Optimal Solution
