@@ -404,6 +404,9 @@ class FlexEnv(MultiAgentEnv):
         - Cooperative_colective: all agents get the same reward given by the collective purchase of energy from the grid (all loads are summed and the excess is collective)
         '''
         
+        def rew(self):
+            return 2
+        
         if self.com.scenarios_conf['game_setup'] == 'cooperative':
         #cooperative // common reward
             R=sum([self.get_agent_reward(aid) for aid in self.agents_id])
@@ -480,6 +483,31 @@ class FlexEnv(MultiAgentEnv):
             return {aid: R+penalty for aid in self.agents_id} #this adds the term of individual reward
         
         elif self.com.scenarios_conf['game_setup'] == 'cooperative_colective_scaled_sigma':          
+            df=self.action.copy()
+            excess=self.state.loc[self.agents_id[0]]['excess0']
+            AgentTotalLoads=sum([self.action.loc[agent]['action']*self.com.agents[agent].apps[0].base_load*(self.tstep_size/60) for agent in self.agents_id])
+            
+            
+            
+            for ag in self.agents_id:
+                
+                if AgentTotalLoads != 0:
+                    df.loc[ag, 'alpha'] = (self.action.loc[ag, 'action'] * 
+                                           self.com.agents[ag].apps[0].base_load * 
+                                           (self.tstep_size / 60) / AgentTotalLoads)
+                else:
+                    df.loc[ag, 'alpha'] = 0  # or handle it in another appropriate way
+
+                df.loc[ag,'cost']=self.get_agent_reward_alpha(ag, df.loc[ag,'alpha'])
+                
+                df.loc[ag,'sigma_1']=self.action.loc[ag,'action']*(-np.exp(-1.7*df.loc[ag,'alpha']*excess)+1)
+                
+            
+            R=df['cost'].sum()+df['sigma_1'].sum()
+            
+            return {aid: R for aid in self.agents_id} #this adds the term of individual reward
+        
+        elif self.com.scenarios_conf['game_setup'] == 'cooperative_colective_scaled_sigma2':        
             df=self.action.copy()
             excess=self.state.loc[self.agents_id[0]]['excess0']
             AgentTotalLoads=sum([self.action.loc[agent]['action']*self.com.agents[agent].apps[0].base_load*(self.tstep_size/60) for agent in self.agents_id])
