@@ -44,11 +44,12 @@ class FlexEnv(MultiAgentEnv):
         self.env_config=env_config
         
         self.processor=DataProcessor()
-        self.reward_obj=Reward(self)
+        
         
         self.com=self.env_config['community']
         self.com_vars=self.env_config['com_vars']
               
+        self.reward_obj=Reward(self)
         #COMMUNITY /COMMON parameters
         self.agents_id=list(self.com.agents.keys())
         # self._agent_ids=self.get_agent_ids()

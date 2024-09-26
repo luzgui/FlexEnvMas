@@ -3,6 +3,8 @@ import numpy as np
 class Reward:
     def __init__(self, self_env):
         self.self_env = self_env  # This allows the subcomponent to access attributes and methods of ClassA
+        for key, value in self.self_env.com.scenarios_conf['reward_params'].items():
+            setattr(self, key, value)  # Equivalent to self.key = value
     
 
     def get_penalty(self,agent):
@@ -64,14 +66,11 @@ class Reward:
         return {aid: R for aid in self.self_env.agents_id} #this adds the term of individual reward
     
     
-    def sigma(self,x):
-        c=-3.2
-        d=-3.2
-        a=100
-        f=-0.05
-        y=(c)/(d-np.exp(-a*(x-f)))
-        return y
-        
+    def sigma(self, x):
+            # Use the parameters from the instance (self)
+            y = self.a / (self.b - np.exp(-self.c * (x - self.d)))
+            return y
+            
     
     def coop_sigma_reward_2(self):
         df=self.self_env.action.copy()
