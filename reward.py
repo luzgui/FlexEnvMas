@@ -65,10 +65,10 @@ class Reward:
     
     
     def sigma(self,x):
-        c=-0.4
+        c=-3.2
         d=-3.2
         a=100
-        f=-0.01
+        f=-0.05
         y=(c)/(d-np.exp(-a*(x-f)))
         return y
         
