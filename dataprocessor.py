@@ -483,6 +483,7 @@ class DataPostProcessor:
             utilities().print_info('x_ratio is computed with a single agent excess: only works for common excess')
             metrics.loc[ag,'x_ratio']=full_state.loc['ag1']['excess0'].sum()/self.env.agents_params.loc[ag,'E_prof']
             
+            metrics.loc[ag,'reward_episode']=full_state.loc['ag1']['reward'].sum()
             
         
         #community metrics
@@ -529,15 +530,14 @@ class DataPostProcessor:
         metrics['season']=self.get_season(metrics.loc['com']['day'])
         
         
-        
+        metrics.loc['com','reward_episode']=full_state['reward'].sum()
         #create index for test episode number
         metrics['test_epi']=k
         metrics_out=metrics.set_index('test_epi',drop=True, append=True)
         
         
         #year season
-        
-        
+
         
         return metrics_out
 
