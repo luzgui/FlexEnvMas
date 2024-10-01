@@ -93,9 +93,11 @@ class Reward:
             
             df.loc[ag,'new_r']=self.indicator(action)*df.loc[ag,'alpha_cost']+(1-self.indicator(action))*self.sigma(df.loc[ag,'alpha_cost'])
             
+            
+            
             # df.loc[ag,'sigma_1']=self.self_env.action.loc[ag,'action']*(-np.exp(-1.7*df.loc[ag,'alpha']*excess)+1)
             
-        R=df['new_r'].sum()
+        R=df['new_r'].sum()+df['pen'].sum()
         # R=df['cost'].sum()+df['sigma_1'].sum()
         return {aid: R for aid in self.self_env.agents_id} #this adds the term of individual reward
     
@@ -105,11 +107,23 @@ class Reward:
         # return -np.exp(-0.5251*x)+2
         return -np.exp(-a*x)+2
     
+    def custom_elu(self,x, c):
+        a=0.3
+        b=10
+        # Apply the modified ELU using np.where for vectorized operations
+        if x >=c:
+            r=-(1/c) * x + 1
+        elif x<c:
+            r=0            
+            # r=a*(1/(1+np.exp(-b*(x-c)))-0.5)
+            
+        return r
+    
     def coop_sigma_reward_3(self):
         
         df=self.self_env.action.copy()
-        df.loc['ag1','a']=7.7016
-        df.loc['ag2','a']=6.9314
+        df.loc['ag1','c']=-0.09
+        df.loc['ag2','c']=-0.1
         # excess=self.self_env.state.loc[self.self_env.agents_id[0]]['excess0']
         AgentTotalLoads=sum([self.self_env.action.loc[agent]['action']*self.self_env.com.agents[agent].apps[0].base_load*(self.self_env.tstep_size/60) for agent in self.self_env.agents_id])
         
@@ -125,11 +139,18 @@ class Reward:
 
             df.loc[ag,'alpha_cost']=self.get_agent_cost_alpha(ag, df.loc[ag,'alpha'])
             
-            df.loc[ag,'new_r']=df.loc[ag,'alpha_cost']+self.self_env.action.loc[ag,'action']*self.sigma_2(df.loc[ag,'alpha_cost'],df.loc[ag,'a'])
+            # df.loc[ag,'new_r']=df.loc[ag,'alpha_cost']+self.self_env.action.loc[ag,'action']*self.sigma_2(df.loc[ag,'alpha_cost'],df.loc[ag,'a'])
+            
+            df.loc[ag,'new_r']=df.loc[ag,'alpha_cost']+self.self_env.action.loc[ag,'action']*self.custom_elu(df.loc[ag,'alpha_cost'],df.loc[ag,'c'])
+            
+            df.loc[ag,'pen']=self.get_penalty(ag)
             
             # df.loc[ag,'sigma_1']=self.self_env.action.loc[ag,'action']*(-np.exp(-1.7*df.loc[ag,'alpha']*excess)+1)
-        R=df['new_r'].sum()
+        R=df['new_r'].sum()+df['pen'].sum()
+        # import pdb
+        # pdb.pdb.set_trace()
         # R=df['cost'].sum()+df['sigma_1'].sum()
+        # print(df)
         return {aid: R for aid in self.self_env.agents_id} #this adds the term of individual reward
     
         
