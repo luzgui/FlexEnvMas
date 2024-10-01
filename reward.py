@@ -63,6 +63,8 @@ class Reward:
         
         R=df['cost'].sum()+df['sigma_1'].sum()
         
+        # import pdb
+        # pdb.pdb.set_trace()
         return {aid: R for aid in self.self_env.agents_id} #this adds the term of individual reward
     
     
@@ -95,7 +97,39 @@ class Reward:
             
         R=df['new_r'].sum()
         # R=df['cost'].sum()+df['sigma_1'].sum()
+        return {aid: R for aid in self.self_env.agents_id} #this adds the term of individual reward
+    
+    
+    def sigma_2(self,x,a):
+        # return -np.exp(-3.5*x)+2
+        # return -np.exp(-0.5251*x)+2
+        return -np.exp(-a*x)+2
+    
+    def coop_sigma_reward_3(self):
         
+        df=self.self_env.action.copy()
+        df.loc['ag1','a']=7.7016
+        df.loc['ag2','a']=6.9314
+        # excess=self.self_env.state.loc[self.self_env.agents_id[0]]['excess0']
+        AgentTotalLoads=sum([self.self_env.action.loc[agent]['action']*self.self_env.com.agents[agent].apps[0].base_load*(self.self_env.tstep_size/60) for agent in self.self_env.agents_id])
+        
+        
+        for ag in self.self_env.agents_id:
+            action=self.self_env.action.loc[ag, 'action']
+            base_load=self.self_env.com.agents[ag].apps[0].base_load
+            
+            if AgentTotalLoads != 0:
+                df.loc[ag, 'alpha'] = (action*base_load*(self.self_env.tstep_size / 60) / AgentTotalLoads)
+            else:
+                df.loc[ag, 'alpha'] = 0  # or handle it in another appropriate way
+
+            df.loc[ag,'alpha_cost']=self.get_agent_cost_alpha(ag, df.loc[ag,'alpha'])
+            
+            df.loc[ag,'new_r']=df.loc[ag,'alpha_cost']+self.self_env.action.loc[ag,'action']*self.sigma_2(df.loc[ag,'alpha_cost'],df.loc[ag,'a'])
+            
+            # df.loc[ag,'sigma_1']=self.self_env.action.loc[ag,'action']*(-np.exp(-1.7*df.loc[ag,'alpha']*excess)+1)
+        R=df['new_r'].sum()
+        # R=df['cost'].sum()+df['sigma_1'].sum()
         return {aid: R for aid in self.self_env.agents_id} #this adds the term of individual reward
     
         
