@@ -356,9 +356,7 @@ class FlexEnv(MultiAgentEnv):
     
     
     def get_env_reward(self):
-        # if self.com.scenarios_conf['game_setup'] == 'cooperative_colective_scaled_sigma2':
-        return self.reward_obj.coop_sigma_reward_3()
-        # return self.reward_obj.coop_sigma_reward()
+        return self.reward_obj.coop_sigma_reward()
             
             
             
