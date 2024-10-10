@@ -41,13 +41,12 @@ class Reward:
     def custom_elu(self,x, c):
         # a=0.3
         # b=10
-        
+        g=0.1
         if x >=c:
-            r=-(1/c) * x + 1
+            r=g*(-(1/c) * x + 1)
         elif x<c:
             r=0            
-            # r=a*(1/(1+np.exp(-b*(x-c)))-0.5)
-            
+            # r=a*(1/(1+np.exp(-b*(x-c)))-0.5) 
         return r
     
     def coop_sigma_reward(self):
@@ -60,7 +59,7 @@ class Reward:
         for ag in self.self_env.agents_id:
             action=self.self_env.action.loc[ag, 'action']
             base_load=self.self_env.com.agents[ag].apps[0].base_load
-            df.loc[ag,'tar_max']=max(self.self_env.com.agents[ag].make_tariff())
+            df.loc[ag,'tar_max']=min(self.self_env.com.agents[ag].make_tariff())
             df.loc[ag,'c_max']=-df.loc[ag,'tar_max']*base_load*(self.self_env.tstep_size / 60)
             
             if AgentTotalLoads != 0:
@@ -74,6 +73,7 @@ class Reward:
             df.loc[ag,'new_r']=df.loc[ag,'alpha_cost']+self.indicator(action)*self.custom_elu(df.loc[ag,'alpha_cost'],df.loc[ag,'c_max'])
             
         R=df['new_r'].sum()
+        # print(df)
         return {aid: R for aid in self.self_env.agents_id} 
     
     
