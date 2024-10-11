@@ -48,8 +48,8 @@ from models2 import ActionMaskModel, CCActionMaskModel
 
 start_time = time.time()
 
-#%%
-train=False
+
+
 
 
 
@@ -64,6 +64,10 @@ file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars,file_exp
 gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
 # gecad_processor=GecadDataProcessor(file_prob_conf,file_ag_conf,gecad_dataset)
 # data=gecad_processor.data
+
+#%% Trainning or debugging
+train=YAMLParser().load_yaml(file_experiment)['train']
+
 #%% Make community            
 com=Community(file_ag_conf,
               file_apps_conf,
@@ -98,12 +102,12 @@ def env_creator(env_config):
 
 register_env("flexenv", env_creator)
 
-
+#%% experiment
 if train:
     print('trainning')
 
 
-    #%% experiment
+
     # from experiment import *
     
     
@@ -159,7 +163,6 @@ else:
         m=pd.concat([m, episode_metrics])
     
     
-    
     m_com=m.loc['com']
     x = np.arange(t)
     fig, ax1 = plt.subplots(figsize=(8, 5))
@@ -174,11 +177,8 @@ else:
     plt.title('Cost and Reward Episode Over Time')
     plt.show()
 
-
-
-
     # full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
-# full_state, env_state_conc, episode_metrics, filename = baselinetest.test(1,[],plot=True)
+    # full_state, env_state_conc, episode_metrics, filename = baselinetest.test(1,[],plot=True)
 
 
 
