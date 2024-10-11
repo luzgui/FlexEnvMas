@@ -39,8 +39,9 @@ import datetime
 from datetime import datetime
 
 #Custom functions
-from plotutils import *
+# from plotutils import *
 from models2 import ActionMaskModel, CCActionMaskModel
+from models_rnn import LSTMActionMaskModel
 
 
 
@@ -49,7 +50,7 @@ import random
 from trainable import *
 from obs_wrapper import *
 
-from shiftenvRLlib_mas import ShiftEnvMas
+# from shiftenvRLlib_mas import ShiftEnvMas
 
 from auxfunctions_CC import *
 
@@ -67,7 +68,7 @@ from pstats import SortKey
 from icecream import ic
 
 #pyomo
-from auxfunctions_opti import *
+# from auxfunctions_opti import *
 from pyomo.environ import *
 from pyomo.opt import SolverFactory
 import scipy.io as sio
@@ -166,8 +167,8 @@ from testenv import TestEnv
 env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
 
 full_state, env_state, metrics, results_filename_path=env_tester.test(
-                                                    n_episodes=1,
-                                                    plot=True,
+                                                    n_episodes=364,
+                                                    plot=False,
                                                     results_path=resultsfolder)
 
 
@@ -190,12 +191,12 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 # dummy_tester=DummyTester(tenvi)
 # baselinetest=BaselineTest(tenvi, dummy_tester)
 
-# k=6
+# k=1
 # print(k)
-# folder=cwd / 'Results' /'testing_baseline_3ag' / f'iter_{k}'
+# folder=cwd / 'Results' /'exp-test_baseline' / f'iter_{k}'
 # baselinetest.folder_name=folder
-# full_state, env_state_conc, episode_metrics, filename = baselinetest.test(1,folder,plot=False)
-#     full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
+# full_state, env_state_conc, episode_metrics, filename = baselinetest.test(364,folder,plot=False)
+#     # full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
 
 # simpletest.test_full_state(full_state)
 #%% Optimal Solution
@@ -204,6 +205,9 @@ full_state, env_state, metrics, results_filename_path=env_tester.test(
 # model=CommunityOptiModel(tenvi)
 # objectives, solutions=model.solve_model_yearly()
 # folder=env_tester.folder_name
+# # folder='optimal_fc1-2Ag-test'
+# # folder='optimal_exp-test'
+# folder='optimal_exp21-test'
 # solutions.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_solutions.csv'))
 # objectives.to_csv(os.path.join(resultsfolder,env_tester.folder_name,'optimal_objectives.csv'))
 
