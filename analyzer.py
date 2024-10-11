@@ -35,6 +35,8 @@ class Analyzer():
         """
 
         files=FolderUtils().get_file_in_folder(self.folder,'.csv')
+        # import pdb
+        # pdb.pdb.set_trace()
         for f in files:
             if 'metrics' in f:
                 self.metrics=pd.read_csv(f,index_col=0,decimal=',')
@@ -101,7 +103,8 @@ class Analyzer():
         creates a dataframe that stores cost values between optimal solution 
         and rl agent
         """
-
+        # import pdb
+        # pdb.pdb.set_trace()
         df = pd.merge(self.metrics.loc['com'], self.opti_objective, 
                          on='day', 
                          how='inner')
@@ -112,7 +115,15 @@ class Analyzer():
         df_compare=df_compare.copy()
         df_compare=df_compare.astype(float)
         
-        df_compare.loc[:, 'dif']=((df_compare['cost'].astype(float)-df_compare['objective'])/(df_compare['cost_mean_base']))*100
+        df_compare.loc[:, 'dif']=((df_compare['cost'].astype(float))-df_compare['objective'])
+        
+        
+        a=df_compare['cost'].astype(float)+1
+        b=df_compare['objective']+1
+        c=df_compare['objective']+1
+        df_compare.loc[:, 'dif_simple']=(a-b)/c
+        # df_compare.loc[:, 'dif_simple']=((df_compare['cost'].astype(float)+1)-(df_compare['objective']+1))/(df_compare['objective']+1)
+        
         
 
         utilities().print_info('Random baseline cost is used in indicators')
@@ -120,10 +131,12 @@ class Analyzer():
         df_compare.loc[:, 'save_rate']=((df_compare['cost_mean_base']-df_compare['cost'])/(df_compare['cost_mean_base']-df_compare['objective']))*100
         
         df_compare.loc[:, 'sigma2_0']=abs((df_compare['objective']-df_compare['cost']))/df_compare['cost_mean_base']
+        
         df_compare.loc[:, 'sigma2']=(1-df_compare['sigma2_0'])*100
 
         
-        
+        # Replace values that are smaller than the threshold with 0
+        df_compare = df_compare.mask(df_compare.abs() < 1e-10, 0)
         
         return df_compare
         
@@ -266,6 +279,8 @@ class AnalyzerMulti():
     
     def plot_multi_joint(self,x,y, save=False):        
         data=self.get_multi_cost_compare()
+        utilities().print_info('removing the random baseline from plot_multi_joint')
+        data.pop('Random_baseline')
  
         file_name=None
         if save:
@@ -296,7 +311,8 @@ class AnalyzerMulti():
       
     def plot_year_cost(self,save=False):
         data=self.get_multi_cost_compare()
-        
+
+        utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
         df=pd.DataFrame()
         for obj_id in data:
             df[obj_id]=data[obj_id]['cost']
@@ -306,14 +322,14 @@ class AnalyzerMulti():
         utilities().print_info('possible bug with random baseline costs vs rand')
         df=df.drop(columns=['Random_baseline'])
         data_sorted=df.mean().sort_values()
-        
-        # import pdb
-        # pdb.pdb.set_trace()
+        print(data_sorted)
         
         file_name=None
         if save:
             file_name=str(self.compare_results_folder / 'models_barplot.png')
-        
+            
+        # import pdb
+        # pdb.pdb.set_trace()    
         self.plot.plot_barplot(data_sorted,file_name)
         
         
