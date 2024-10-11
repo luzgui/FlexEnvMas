@@ -252,21 +252,108 @@ class Plots():
             plt.savefig(filename_save, dpi=300)
             print('Saved figure to', filename_save)
 
+
     @staticmethod
-    def makeplot_bar(data,filename_save):
+    def makeplot_bar(data, filename_save):
+        # import pdb
+        # pdb.pdb.set_trace()
+        sns.set_style("whitegrid", {"axes.facecolor": ".9"})
+        sns.set_context(rc={'patch.linewidth': 0.2, 'patch.linecolor': 'k'})
+    
+        time = range(0, len(data))
+    
+        # Main data for bar plot
+        load = pd.DataFrame(data['baseload_T'])
+        gen = pd.DataFrame(data['gen0_ag1'])
+        sol_ag = data[[k for k in data.columns if 'shift_ag' in k and 'coef' not in k]]
+    
+        cost = data['Cost_shift_T'].sum()
+        rewards = data.filter(like='reward').sum().values
+        rewards = [round(r, 2) for r in rewards]
+        
+        
+        tariffs=data.filter(like='tar_buy_ag')
+    
+        width = 1
+        edgecolor = "k"
+        dodge = False
+    
+        # Create a figure with two subplots (1 for the bar plot, 1 for the line plot underneath)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), gridspec_kw={'height_ratios': [4, 1]})
+    
+        ### Bar Plot on Top ###
+        sns.barplot(x=time, y='gen0_ag1', data=gen, label='PV', color='orange', ax=ax1, width=width, dodge=dodge, alpha=1, edgecolor=edgecolor)
+        sns.lineplot(x=time, y='gen0_ag1', data=gen, color='orange', ax=ax1, alpha=0.5)
+        sns.barplot(x=time, y='baseload_T', data=load, label='Base Load', color='brown', ax=ax1, width=width, dodge=dodge, edgecolor=edgecolor, alpha=0.8)
+    
+        # Stack additional bar plots on top of base load
+        bottom = load['baseload_T']
+        for i, colname in enumerate(sol_ag.columns):
+            sns.barplot(x=time, y=colname, data=sol_ag, label=colname, color=sns.color_palette("pastel")[i], ax=ax1, bottom=bottom, width=width, dodge=dodge, edgecolor=edgecolor)
+            bottom += sol_ag[colname]
+    
+        # Title, labels, and grid for the bar plot
+        ax1.set_title(f'Community shiftable cost: {round(cost, 2)} (€) / r: {rewards}')
+        ax1.set_xlabel('')  # No xlabel for the top plot
+        ax1.set_ylabel('kWh')
+        ax1.set_xticks(range(0, len(data)+1, 4))  # Tick every 4 time steps
+        ax1.set_xticklabels(range(0, 25))
+        ax1.grid(visible=True, which='major', alpha=0.3)
+        ax1.minorticks_on()
+    
+        ### Line Plot Underneath ###
+        # x_labels for the 100 points in the line plot
+
+    
+        # Create a custom colormap for the line plot (green -> red)
+        cmap = plt.cm.RdYlGn
+    
+        # Plot multiple lines on the second axis (ax2)
+        # for i in range(tariffs.shape[0]):   
+        for i, colname in enumerate(tariffs.columns):
+
+            sns.lineplot(x=time, y=colname, data=tariffs, color='black', ax=ax2, alpha=0.5,marker='o', markersize=2)
+            
+
+        ax2.set_xticks(range(0, len(data)+1, 4))  # Tick every 4 time steps
+        # ax2.set_xticklabels(range(0, 25))
+        ax2.grid(visible=True, which='major', alpha=0.3)
+        ax2.minorticks_on()    
+        # Set labels and grid for the second plot
+        ax2.set_ylabel('€/kWh')
+        ax2.set_xlabel('Hour of the day')
+        # ax2.grid(True)
+        ax1.set_xlim(left=0, right=len(data) - 1)  # Align x limits for ax1
+        ax2.set_xlim(left=0, right=len(data) - 1)  # Align x limits for ax2
+        # Adjust layout for better readability
+        plt.tight_layout()
+    
+        # Save the figure if filename is provided
+        if filename_save:
+            plt.savefig(filename_save, dpi=300)
+            print('Saved figure to', filename_save)
+    
+        # Show the plots
+        plt.show()
+
+
+
+    @staticmethod
+    def makeplot_bar_old(data,filename_save):
         sns.set_style("whitegrid", {"axes.facecolor": ".9"})
         sns.set_context(rc = {'patch.linewidth': 0.2,'patch.linecolor':'k'})
         
 
         time=range(0,len(data))
         
-        
         # sol = data['shift_T']
         load = pd.DataFrame(data['baseload_T'])
         gen = pd.DataFrame(data['gen0_ag1'])
         sol_ag = data[[k for k in data.columns if 'shift_ag' in k and 'coef' not in k]]
-        tar = data['tar_buy']
+        # tar = data['tar_buy']
         cost = data['Cost_shift_T'].sum()
+        rewards=data.filter(like='reward').sum().values
+        rewards=[round(r,2) for r in rewards]
         var_2 = 0
 
         width=1
@@ -289,7 +376,7 @@ class Plots():
             bottom += sol_ag[colname]
             
             
-            ax.set_title(f'Community shiftable cost: {round(cost,2)} (€)')
+            ax.set_title(f'Community shiftable cost: {round(cost,2)} (€) / r: {rewards}')
             
             ax.set_xlabel('hours of the day')
             ax.set_ylabel('kWh')
@@ -370,11 +457,12 @@ class Plots():
         
         # Set axis labels
         ax.set_xlabel('Daily PV availability compared to appliance energy need (-)')
-        ax.set_ylabel('Daily Savings Rate (-)')
+        ax.set_ylabel('%')
         
         # Set title
-        text = f'Daily Savings Rate (computed from {x_var}) '
-        fig.suptitle(text + '(N = %d' % len(dataframes) + ' / ' + 'days= %d)' % sum(len(df) for df in dataframes))
+        text = 'Increase in RL daily cost compared to optimal ((C{RL}+1-C*+1)/C*+1)  '
+        # fig.suptitle(text + '(N = %d' % len(dataframes) + ' / ' + 'days= %d)' % sum(len(df) for df in dataframes))
+        fig.suptitle(text)
         
         # Add grid lines
         ax.grid(True)
@@ -581,6 +669,43 @@ class Plots():
         
         if filename_save:
             plt.savefig(filename_save, dpi=300)
+    
+    @staticmethod
+    def plot_tarifs_lines(data):
+        df = data.filter(like='tar_buy_ag')
+        
+        # Plot settings
+        title = "Tariffs"
+        xlabel = "Timestep"
+        ylabel = "€/kWh"
+        legend = True
+        
+        # Set Seaborn style
+        sns.set(style="whitegrid")
+        
+        # Create a new figure
+        plt.figure(figsize=(10, 6))
+        
+        # Plot each column in the DataFrame as a separate line
+        for column in df.columns:
+            sns.lineplot(x=df.index, y=df[column], label=column)
+        
+        # Add labels and title
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        
+        # Enable grid
+        plt.grid(True)
+        
+        # Adjust x-axis ticks to be more readable (rotate by 45 degrees)
+        plt.xticks(rotation=45)
+        
+        # Automatically set the number of x-ticks to make them more readable (optional)
+        plt.locator_params(axis='x', nbins=12)  # Reduce the number of ticks to 12
+        
+        # Show the p
+
         
         
         
