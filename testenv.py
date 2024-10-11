@@ -85,6 +85,7 @@ class TestEnv():
                     
             if plot: 
                 self.plot.makeplot_bar(env_state, None)
+                # self.plot.plot_tarifs_lines(env_state_conc)
                 
                 
                 
@@ -172,12 +173,14 @@ class SimpleTestEnv(TestEnv):
     def get_action_plan(self):
         "fixed action plan"
         actions={}
-        # starts=dict(zip(self.env.agents_id, [47,48,49,32,36,45,50][0:len(self.env.agents_id)]))
-        
+        starts=dict(zip(self.env.agents_id, [43,49,49,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [78,78,85,36,45,50][0:len(self.env.agents_id)]))
         #problematic day solution
-        # starts=dict(zip(self.env.agents_id, [48,30,12,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [26,51,0,32,36,45,50][0:len(self.env.agents_id)]))
         
-        starts=dict(zip(self.env.agents_id, [60,60,60,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [45,45,0,32,36,45,50][0:len(self.env.agents_id)]))
+        
+        # starts=dict(zip(self.env.agents_id, [57,48,47,32,36,45,50][0:len(self.env.agents_id)]))
         
         for ag in self.env.agents_id:
             agent=self.env.com.get_agent_obj(ag)
@@ -260,4 +263,35 @@ class DummyTester:
         
 class DummyConfig:
     def __init__(self,env):
-        self.policies={aid: None for aid in env.agents_id}         
+        self.policies={aid: None for aid in env.agents_id}    
+        
+        
+        
+class SimpleTestCycle(SimpleTestEnv):
+    def __init__(self,env, tester, start):
+        self.env=env
+        self.tester=tester
+        self.processor=DataPostProcessor(env)
+        self.plot=Plots()
+        self.counter=0
+        self.start=start
+        self.action_plan=self.get_action_plan()
+        
+        # super().__init__(env, tester)
+        
+        
+        
+    def get_action_plan(self):
+        "fixed action plan"
+        actions={}
+        starts=dict(zip(self.env.agents_id,self.start[0:len(self.env.agents_id)]))
+
+        
+        for ag in self.env.agents_id:
+            agent=self.env.com.get_agent_obj(ag)
+            D=agent.apps[0].duration/self.env.tstep_size
+            actions[ag]=self.create_binary_vector(self.env.Tw,D,starts[ag])
+        
+        return actions
+        
+    
