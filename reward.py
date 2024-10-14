@@ -41,9 +41,9 @@ class Reward:
     def custom_elu(self,x, c):
         # a=0.3
         # b=10
-        g=0.1
+        # g=0.1
         if x >=c:
-            r=g*(-(1/c) * x + 1)
+            r=self.g*(-(1/c) * x + 1)
         elif x<c:
             r=0            
             # r=a*(1/(1+np.exp(-b*(x-c)))-0.5) 
