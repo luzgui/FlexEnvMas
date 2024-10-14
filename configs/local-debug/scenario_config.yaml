@@ -1,0 +1,20 @@
+#Config file for scenarios definitions
+#game_setup: 'cooperative_colective'
+#game_setup: 'cooperative_colective_boost'
+#game_setup: 'cooperative_colective_sigma'
+game_setup: 'cooperative_colective_scaled_sigma'
+#game_setup='cooperative'
+#game_setup='competitive'
+reward_type: 'excess_cost_max'
+
+reward_params:
+  g: 0.1
+  #g: 1
+  # a: -1.65
+  # b: -3.2
+  # c: 100
+  # d: -0.01
+  #a: -0.4
+  #b: -3.2
+  #c: 100
+  #d: -0.01
