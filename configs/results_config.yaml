@@ -2,6 +2,89 @@
 # folder_name: Train_fcul1_Test_testing
 # folder_name: Train_fcul1-3ag-CC-newobs_Test_testing
 
+exp2r:
+  description: trainning on double rate tariffs (exp21) for the wholle year and testing on differente houses
+  experiments:
+    exp1:
+      folder: Train_exp2r_Test_exp-test
+      label: IL
+  baseline_name: exp-test_baseline
+
+
+exp21r:
+  description: trainning on double rate tariffs (exp21) for the wholle year and testing on differente houses
+  experiments:
+    exp1:
+      folder: Train_exp21r_Test_exp21-test
+      label: IL
+  baseline_name: exp21-test_baseline
+
+
+exp21:
+  description: trainning on double rate tariffs (exp21) for the wholle year and testing on differente houses
+  experiments:
+    exp1:
+      folder: Train_exp21_Test_exp21-test
+      label: IL
+  baseline_name: exp21-test_baseline
+
+exp2:
+  description: trainning on flat rates (exp2) for the wholle year and testing on differente houses
+  experiments:
+    exp1:
+      folder: Train_exp2_Test_exp-test
+      label: IL
+  baseline_name: exp-test_baseline
+
+exp_group_0_1:
+  description: trainning and testing on the same day
+  experiments:
+    exp1:
+      folder: Train_exp0_Test_exp0
+      label: IL
+  baseline_name: testing_2Ag_baseline
+
+
+exp_group_0:
+  description: trainning on one day testing on the wholle year
+  experiments:
+    exp1:
+      folder: Train_exp0_Test_testing-2Ag
+      label: IL
+  baseline_name: testing_2Ag_baseline
+
+exp_group_train:
+  description: fc1-2Ag trainnnig and testing on the same dataset
+  experiments:
+    exp1:
+      folder: Train_fc1-2Ag_Test_fc1-2Ag-test
+      label: IL
+  baseline_name: fc1-2Ag-test_baseline
+
+
+exp_group_sub:
+  description: 2 Agent community with full dataset and halfyear IL train
+  experiments:
+    exp1:
+      folder: Train_fc1-2Ag_Test_testing-2Ag
+      label: IL
+    exp2:
+      folder: Train_fc1-2Ag-sub_Test_testing-2Ag
+      label: IL-sub
+  baseline_name: testing_2Ag_baseline
+
+
+exp_group_fc1:
+  description: 2 Agent community with flat rates
+  experiments:
+    exp1:
+      folder: Train_fc1-2Ag_Test_testing-2Ag
+      label: IL
+    exp2:
+      folder: Train_fc1-2Ag-CC_Test_testing-2Ag
+      label: CC
+  baseline_name: testing_2Ag_baseline
+
 
 exp_group1:
   description: Compare IL and CC for 3 agents

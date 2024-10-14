@@ -1,2 +1,20 @@
+# test_name: local-debug
 # test_name: testing
-test_name: fcul1-3ag-IL-1day
+test_name: testing-2Ag
+# test_name: fc1-2Ag-test
+# test_name: exp0
+# test_name: exp-test
+# test_name: exp21-test
+
+
+# Configurations for optimization
+shouldOpti: True
+
+# Configurations for testing script
+shouldTest: False
+test_configs:
+  n_episodes: 1
+  shouldPlot: True
+
+# Configurations for random baseline
+n_baseline_tests: 3
