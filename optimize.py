@@ -15,14 +15,19 @@ import random
 from utilities import utilities
 from dataprocessor import OptiDataPostProcessor
 
+import os
+from os import path
+from termcolor import colored
+
 
 class CommunityOptiModel():
-    def __init__(self,env):
+    def __init__(self,env,folder):
         """
         Environment must be the testing environment 
         """
         self.env=env
         self.processor=OptiDataPostProcessor(env)
+        self.folder=folder
     
     
     def solve_model(self):
@@ -33,7 +38,7 @@ class CommunityOptiModel():
         self.results=opt.solve(self.model,tee=True)
         return self.get_solution()
         
-    def solve_model_yearly(self):
+    def solve_model_yearly(self,save):
         """
         Solve a sequence of daily models and saves the results
         """
@@ -55,6 +60,18 @@ class CommunityOptiModel():
         result_df = pd.concat(solutions, ignore_index=True)
         result_df.insert(0, 'tstep', result_df.index)
         objectives_df=pd.concat(objectives, ignore_index=True)
+        
+        if save:
+            if not os.path.exists(self.folder) and not os.path.isdir(self.folder):
+                os.makedirs(self.folder)
+                print(colored('folder created' ,'red'),self.folder)
+                
+            result_df.to_csv(os.path.join(self.folder,'optimal_solutions.csv'))
+            objectives_df.to_csv(os.path.join(self.folder,'optimal_objectives.csv'))
+            print(colored('Saved optimal Results' ,'red'))
+            
+            
+        
         return objectives_df, result_df
             
     

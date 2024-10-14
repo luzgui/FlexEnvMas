@@ -49,10 +49,6 @@ from models2 import ActionMaskModel, CCActionMaskModel
 start_time = time.time()
 
 
-
-
-
-
 #%% exp_name + get configs
 exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
 configs=ConfigsParser(configs_folder, exp_name)
@@ -90,7 +86,7 @@ df_list=envi.env_processor.get_daily_stats()
 # merged=envi.env_processor.merge_df_list_on_agents(df_list)
 #%%
 menvi=MultiAgentEnvCompatibility(envi)
-menvi._agent_ids=['ag1', 'ag2']
+menvi._agent_ids=envi._agent_ids
 
 def env_creator(env_config):
     # return NormalizeObs(menv_base)  # return an env instance
@@ -105,8 +101,7 @@ register_env("flexenv", env_creator)
 #%% experiment
 if train:
     print('trainning')
-
-
+    time.sleep(3)
 
     # from experiment import *
     
@@ -143,7 +138,8 @@ if train:
 
 else:
     print('Debugging Mode')
-    #%% Simple agent test
+    time.sleep(3)
+    # Simple agent test
     import matplotlib.pyplot as plt
     import numpy as np
     from experiment_test import SimpleTests
@@ -151,9 +147,14 @@ else:
     dummy_tester=DummyTester(envi)
     import pandas as pd
     
-    # simpletest=SimpleTestEnv(envi, dummy_tester)
-    # baselinetest=BaselineTest(envi, dummy_tester)
+    simpletest=SimpleTestEnv(envi, dummy_tester)
+    full_state, env_state_conc, episode_metrics, filename = simpletest.test([])
     
+    baselinetest=BaselineTest(envi, dummy_tester)
+    full_state, env_state_conc, episode_metrics, filename = baselinetest.test([])
+    
+    
+    #%%
     t=2
     m=pd.DataFrame()
     for k in range(0,t):
@@ -177,8 +178,7 @@ else:
     plt.title('Cost and Reward Episode Over Time')
     plt.show()
 
-    # full_state, env_state_conc, episode_metrics, filename = simpletest.test(1,[],plot=True)
-    # full_state, env_state_conc, episode_metrics, filename = baselinetest.test(1,[],plot=True)
+
 
 
 

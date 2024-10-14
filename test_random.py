@@ -87,11 +87,8 @@ from state import StateVars
 from environment import FlexEnv
 from plots import Plots
 
-from experiment_test import ExperimentTest
-from testenv import TestEnv
-
-from optimize import CommunityOptiModel
-
+from experiment_test import SimpleTests
+from testenv import BaselineTest, DummyTester
 
 #paths
 
@@ -112,13 +109,7 @@ _, file_apps_conf, file_scene_conf, _ ,file_vars,file_experiment, ppo_config=con
 
 #%% get configs for testing environment
 test_config_file=configs_folder / 'test_config.yaml'
-
-test_params=YAMLParser().load_yaml(test_config_file)
-test_name=test_params['test_name']
-#control vars
-shouldTest=test_params['shouldTest']
-shouldOpti=test_params['shouldOpti']
-
+test_name=YAMLParser().load_yaml(test_config_file)['test_name']
 test_configs=ConfigsParser(configs_folder, test_name)
 # between training and testing the difference is the agents config and the problem config
 file_ag_conf,_,_,file_prob_conf,_,_,_=test_configs.get_configs()
@@ -137,55 +128,22 @@ test_com=Community(file_ag_conf,
 com_vars=StateVars(file_vars)
 
 
-
-#%%  Make environment   
+#%%  Test environment   
 test_env_config={'community': test_com,
             'com_vars': com_vars,
             'num_agents': test_com.num_agents}
    
-tenvi=FlexEnv(test_env_config)
 
-
-menvi=MultiAgentEnvCompatibility(tenvi)
-# menvi._agent_ids=['ag1', 'ag2', 'ag3']
-
-def env_creator(env_config):
-    # return NormalizeObs(menv_base)  # return an env instance
-    new_env=MultiAgentEnvCompatibility(tenvi)
-    new_env._agents_ids=tenvi._agent_ids
-    return new_env
-    # return MultiAgentEnvCompatibility(envi)
-    # return menv_base
-
-register_env("flexenv", env_creator)
-
-
-#%% Test
-if shouldTest:
-    print('Testing...')
-    time.sleep(3)
-    #Trainable
-    trainable_func=Trainable(file_experiment)._trainable
-    #get checkpoint and create tester
-    test=ExperimentTest(tenvi,
-              exp_name, 
-              raylog,
-              file_experiment,
-              trainable_func)
+n_tests=test_name=YAMLParser().load_yaml(test_config_file)['n_baseline_tests']
+for k in range(0,n_tests):
+    print(k)
+    folder_name='baseline_' + test_name
+    folder=os.path.join(folder_name, f'iter_{k}')
     
-    tester=test.get_tester(trainable_func)
     
-    #Test environment
-    env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
-    full_state, env_state, metrics, results_filename_path=env_tester.test(results_path=resultsfolder)
-
-    #%% Optimal Solution
-if shouldOpti:
-    print('Optimize...')
-    time.sleep(3)
-
-    folder=os.path.join(resultsfolder,'optimal_'+test_name)
-    model=CommunityOptiModel(tenvi,folder)
-    objectives, solutions=model.solve_model_yearly(save=True)
-
+    tenvi=FlexEnv(test_env_config)
+    dummy_tester=DummyTester(tenvi)
+    baselinetest=BaselineTest(tenvi, dummy_tester,folder)
+    
+    full_state, env_state_conc, episode_metrics, filename = baselinetest.test(results_path=resultsfolder)
 

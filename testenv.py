@@ -30,13 +30,18 @@ class TestEnv():
         self.experiment_config=YAMLParser().load_yaml(file_experiment)
         self.test_config=YAMLParser().load_yaml(test_config_file)
         self.exp_name=self.experiment_config['exp_name']
-        self.test_name= self.test_config['test_name']
-        self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.test_name 
+        # self.exp_name=YAMLParser().load_yaml(file_experiment)['exp_name']
+        # self.test_name= self.test_config['test_name']
+        self.test_name= YAMLParser().load_yaml(test_config_file)['test_name']
+        self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.test_name
+        #test configs
+        self.n_episodes=self.test_config['test_configs']['n_episodes']
+        self.shouldPlot=self.test_config['test_configs']['shouldPlot']
         
-        
-    def test(self,n_episodes,results_path, plot=True):
+    def test(self,results_path):
         """save_metrics=True will make Results from testing (plots and metrics) to be saved in the trainable folder (results_path) alongside the checkpoints"""
-
+        
+        
         episode_metrics=pd.DataFrame()
         env_state_conc=pd.DataFrame()
         
@@ -54,7 +59,7 @@ class TestEnv():
             
         k=0
         
-        while k < n_episodes:
+        while k < self.n_episodes:
         
             mask_track=[]
         
@@ -83,7 +88,7 @@ class TestEnv():
                                      axis=0).reset_index(drop=True)
             
                     
-            if plot: 
+            if self.shouldPlot: 
                 self.plot.makeplot_bar(env_state, None)
                 # self.plot.plot_tarifs_lines(env_state_conc)
                 
@@ -153,6 +158,9 @@ class SimpleTestEnv(TestEnv):
         self.counter=0
         self.action_plan=self.get_action_plan()
         # super().__init__(env, tester)
+        #debugging
+        self.n_episodes=1
+        self.shouldPlot=True
      
         
 
@@ -234,13 +242,18 @@ class SimpleTestEnv(TestEnv):
 
 class BaselineTest(SimpleTestEnv):
     "Implements agents that start at random timeslots during the day"
-    def __init__(self,env, tester):
+    def __init__(self,env, tester,folder):
         self.env=env
         self.tester=tester
         self.processor=DataPostProcessor(env)
         self.plot=Plots()
         self.counter=0
         self.action_plan=self.get_action_plan()
+        #
+        self.n_episodes=1
+        self.shouldPlot=False
+        self.folder_name=folder
+     
     
     def get_action_plan(self):
         actions={}
