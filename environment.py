@@ -223,7 +223,7 @@ class FlexEnv(MultiAgentEnv):
         
         #tariffs (for now all agents get the same tariff)
         # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
-        
+        # utilities.print_info('All agents are getting the same tariff for now')
         self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
         # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
         
@@ -250,8 +250,12 @@ class FlexEnv(MultiAgentEnv):
         
         for aid in self.agents_id:
             self.state.loc[aid,'pv_sum']=self.data.loc['ag1'][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
+            # self.state.loc[aid, self.state.columns.str.contains(r'^tar\d+$')]=self.get_future_values(8).loc[aid]['tar_buy'].values
+            
+            # s=self.get_episode_data().loc[aid]['tar_buy']
+            # self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']-min(s.loc[self.tstep:self.tstep_init+self.Tw-1])
         
-        
+        self.update_tariffs()
         #Initial mask: # we concede full freedom for the appliance 
         self.mask.loc[:,:]=np.ones([self.com.num_agents,self.action_space.n])
         
@@ -456,36 +460,44 @@ class FlexEnv(MultiAgentEnv):
                 
                 for k in var_keys:
                     t=re.findall(r"\d+", k)
-                    # print(var)
-                    # print(t)
                     t=int(t[0])
                     
                     # if self.tstep+self.t_ahead*t >= self.tstep_init+self.T: #if forecast values fall outside global horizon T
                     # if self.tstep+self.t_ahead*t >= self.T-1: #if forecast values fall outside global horizon T
                     if self.tstep+self.t_ahead*t >= self.tstep_end-1: #if forecast values fall outside global horizon T
-                        
-                        # setattr(self,k, 0)
-                        # print('if')
-                        # print('step',self.tstep)
-                        # print('step+tahead',self.t_ahead*t)
-                        # import pdb
-                        # pdb.pdb.set_trace()
-                        # print('self.T+init', self.tstep_init+self.T)
                         self.state.loc[agent,k]=0
                         # self.state.loc[agent,k]=0 # maybe this to solve the 'value is trying to be set on a copy of a slice from a DataFrame' warning
                     else:
-                        # setattr(self,k, self.data.iloc[self.tstep+self.t_ahead*t][var] )
-                        # print('else')
-                        # print('step',self.tstep)
-                        # print('t',t)
-                        # print('step+tahead', self.tstep+self.t_ahead*t)
-                        # print('self.T+init', self.tstep_init+self.T)
                         tstep_to_use=self.tstep+self.t_ahead*t
-                        # print(colored('timestep_to_use','red'),tstep_to_use)
                         self.state.loc[agent,k]=self.data.loc[agent,tstep_to_use][var]
                 
 
+    def update_tariffs(self):
+        t_ahead=8
+        for aid in self.agents_id:
+            # import pdb
+            # pdb.pdb.set_trace()
+            
+            df_out=self.get_future_values(t_ahead)
+            
+            if df_out.empty:
+                vals=self.com.agents[aid].tar_max*np.ones(t_ahead)
+            else: 
+                vals=df_out.loc[aid]['tar_buy'].values
 
+            vals=list(vals)
+            while len(vals) < t_ahead:
+                vals.append(self.com.agents[aid].tar_max)  # Append 1 to the end of the list
+
+            self.state.loc[aid, self.state.columns.str.contains(r'^tar\d+$')]=vals
+            
+            s=self.get_episode_data().loc[aid]['tar_buy']
+            ss=s.loc[self.tstep:self.tstep_init+self.Tw-1]
+            if ss.empty:
+                self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']
+            else:
+                self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']-min(s.loc[self.tstep:self.tstep_init+self.Tw-1])
+            
 
     def state_update(self):
         
@@ -507,14 +519,12 @@ class FlexEnv(MultiAgentEnv):
     
         #update forecasts
         self.update_forecast()
-        
-        #Minutes
-        # print('this self.step', self.tstep)
-        # print('this is data', self.data)
+        # update tariffs
+        self.update_tariffs()
+
         
         # self.minutes=self.data.iloc[self.tstep]['minutes']
-        # print(colored('tstep','red'),self.tstep)
-        # ic(self.tstep)
+
         self.minutes=self.data.loc['ag1', self.tstep]['minutes'] #this solves the bug that do not allow for initialziation at t different from zero
         # All agents share the same time referencial // 'ag1' is just the reference
         
@@ -672,11 +682,12 @@ class FlexEnv(MultiAgentEnv):
                 if key == 'pv_sum':
                     # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum()
                     self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.daily_stats.loc[aid,'mean']['excess'])/(self.daily_stats.loc[aid,'max']['excess']-self.daily_stats.loc[aid,'min']['excess'])
-                    # print('state_sum',self.state.loc[aid,key])
-                    # print('norm', self.state_norm.loc[aid,key])
-                    # print('data_sum',self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum())
-                
-                
+
+
+                # Normalize all tariffs by the maximum tariff
+                self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=self.state.loc[aid, self.state.columns.str.contains('tar')]/self.com.agents[aid].tar_max
+
+
                 for var in self.var_class:
                     if var in key:
                         
@@ -802,6 +813,36 @@ class FlexEnv(MultiAgentEnv):
         
         
         return result_df
+    
+    def get_episode_tstep_indexes(self):
+        "returns a list of the tsteps in the present episode"
+        return list(range(self.tstep_init, self.tstep_init+self.Tw))
+    
+    def get_episode_data(self):
+        n=1
+        "this function returns the data for this episode and the next n-1 episode"
+        
+        df=self.data.loc[(slice(None), slice(self.tstep_init, self.tstep_init+n*self.Tw-1)), :]
+        df=df.copy()
+        for aid in self.agents_id:
+            df.loc[aid,'tar_buy']=list(self.com.agents[aid].tariff)
+            
+        return df
+    
+    
+    def get_future_values(self, tstep_ahead):
+        """Return the values in df for future tsteps starting in tstep and spaced tstep_ahead."""
+        # Create a list of future indices
+        df=self.get_episode_data()
+        future_indices = [self.tstep + 4 * i for i in range(1, tstep_ahead + 1)]  # Start from t+4
+        vals=list(df.index.get_level_values(1).unique())
+        indices=list(set(future_indices) & set(vals))
+        indices=sorted(indices) 
+
+        idx = pd.IndexSlice
+        df_out=df.loc[idx[:,indices,:]]
+        
+        return df_out
                 
     # def check_obs_within_lims(self):
     #     result_df = pd.DataFrame(index=self.agents_id)
@@ -829,3 +870,9 @@ class FlexEnv(MultiAgentEnv):
     #     return result_df
                 
                     
+
+    
+    
+    
+    
+    

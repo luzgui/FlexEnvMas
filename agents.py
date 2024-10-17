@@ -28,6 +28,7 @@ class Agent():
         
         self.agent_params=self.get_params()
         self.tariff=self.make_tariff()
+        self.tar_max=max(self.tariff)
         
     
         
@@ -61,6 +62,13 @@ class Agent():
             print('No tariffs defined')
             
         return tariff_series
+    
+
+        
+    
+    def get_tariff_24(self):
+        "returns the tariff for the day hourly"
+        return self.tariff[0::int(60/self.processor.step_size)]
     
     def get_tar_by_timeslot(self,timeslot):
         return self.tariff[timeslot]

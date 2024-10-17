@@ -38,3 +38,39 @@ pv_sum:
   max: 1000
   min: -1.0
   use: true
+tar1:
+  max: 100
+  min: -1.0
+  use: true
+tar2:
+  max: 100
+  min: -1.0
+  use: true
+tar3:
+  max: 100
+  min: -1.0
+  use: true
+tar4:
+  max: 100
+  min: -1.0
+  use: true
+tar5:
+  max: 100
+  min: -1.0
+  use: true
+tar6:
+  max: 100
+  min: -1.0
+  use: true
+tar7:
+  max: 100
+  min: -1.0
+  use: true
+tar8:
+  max: 100
+  min: -1.0
+  use: true
+tar_d:
+  max: 100
+  min: -1.0
+  use: True
