@@ -70,8 +70,6 @@ class FlexEnv(MultiAgentEnv):
         # Time horizon of the dataset
         self.T=self.com.problem_conf['t_end']-self.com.problem_conf['t_init']
         
-        
-        
         self.tstep_per_day=self.com.problem_conf['tstep_per_day']
         # self.dh=self.tstep_size*(1/60.0) # Conversion factor power-energy
         self.dh=self.com.problem_conf['step_size']*(1/60.0)
@@ -502,9 +500,6 @@ class FlexEnv(MultiAgentEnv):
     def state_update(self):
         
         #Variables update
-        # self.state_shadow['tstep']=float(self.tstep)
-        # import pdb
-        # pdb.pdb.set_trace()
         self.state_shadow=pd.DataFrame({'tstep': [self.tstep]*(len(self.agents_id)+1)},index=self.state.index)
         # self.state_shadow=pd.concat([self.state_shadow,new_df])
         
@@ -516,12 +511,12 @@ class FlexEnv(MultiAgentEnv):
         
         self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
         # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
-    
+        
         #update forecasts
         self.update_forecast()
         # update tariffs
         self.update_tariffs()
-
+        
         
         # self.minutes=self.data.iloc[self.tstep]['minutes']
 
@@ -599,30 +594,6 @@ class FlexEnv(MultiAgentEnv):
         
         
 
-    # def get_tariffs(self, tsteps_ahead):
-    #     "get tarrifs in €/kWh for argument tstep_ahead (integer number of timesteps) ahead of self.minutes" 
-        
-        
-    #     if  self.tar_type=='bi':
-            
-    #         hour_start=8
-    #         hour_end=22
-            
-    #         if self.minutes + tsteps_ahead*self.tstep_size >= self.tstep_size*(60/self.tstep_size)*hour_start and self.minutes <=self.tstep_size*(60/self.tstep_size)*hour_end:
-    #             tar_buy=0.1393
-    #         else:
-    #             tar_buy=0.0615
-    #         # self.tar_buy=0.17*(1-(self.gen/1.764)) #PV indexed tariff 
-                
-    #         tar_sell=0.0 # remuneration for excess production
-        
-    #     elif self.tar_type=='flat':
-    #         tar_buy=0.10
-    #         tar_sell=0.0
-        
-    #     return tar_buy, tar_sell
-        
-        
     def check_term(self):
         if self.tstep>=self.get_term_cond():
             
@@ -650,8 +621,6 @@ class FlexEnv(MultiAgentEnv):
         elif self.done_cond == 'mode_horizon': #episode ends in the end of the data length
             return self.T
         
-    # def get_state(self):
-    #     return self.state
          
     
     def make_state_norm(self):
@@ -700,37 +669,7 @@ class FlexEnv(MultiAgentEnv):
                         # maxnormalization
                         # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.stats[aid].loc['max'][var]
                 
-                    
-        # def get_state_norm(self):
-        #     m.state_norm=m.state.copy()
-        #     for aid in m.agents_id:
-        #         for key in m.state.columns:
-        #             # print(key)
-        #             if key=='tstep': #convert timestep to sin
-        #                 m.state_norm.loc[aid,key]=np.sin(2*np.pi*(m.state.loc[aid,key]/m.T))
-                    
-        #             if key=='minutes': #convert minutes to cos with a phase
-        #                 m.state_norm.loc[aid,key]=np.cos(2*np.pi*(m.state.loc[aid,key]/m.T)+np.pi)
-                    
-        #             if key=='y_s': #normalize by the app profile timeslots
-        #                 m.state_norm.loc[aid,key]=m.state.loc[aid,key]/m.T_prof.loc[aid]['T_prof']
-                    
-        #             if key=='E_prof_rem':
-        #                 m.state_norm.loc[aid,key]=m.state.loc[aid,key]/m.E_prof.loc[aid]['E_prof']
-                        
-                    
-        #             for var in m.var_class:
-        #                 if var in key:
-                            
-        #                     #mean normalization
-        #                     m.state_norm.loc[aid,key]=(m.state.loc[aid,key]-m.stats[aid].loc['mean'][var])/(m.stats[aid].loc['max'][var]-m.stats[aid].loc['min'][var])
-                            
-        #                     #standartization
-        #                     # m.state_norm.loc[aid,key]=(m.state.loc[aid,key]-m.stats[aid].loc['mean'][var])/m.stats[aid].loc['mean'][var]
-                            
-        #                     # maxnormalization
-        #                     # m.state_norm.loc[aid,key]=m.state.loc[aid,key]/m.stats[aid].loc['max'][var]
-                    
+
                 
                     
                 
