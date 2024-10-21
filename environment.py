@@ -26,6 +26,9 @@ from dataprocessor import DataProcessor, EnvDataProcessor
 from utilities import *
 
 from reward import Reward
+from state_update import StateUpdate 
+
+
 
 class FlexEnv(MultiAgentEnv):
     """
@@ -132,6 +135,10 @@ class FlexEnv(MultiAgentEnv):
         #Number of variables to be used
         self.var_dim=len(self.state_vars.keys())
         
+        #creategh statte update object
+        self.state_upd=StateUpdate(self)
+        
+        
         #extract the names of variables in env.data and take out the minutes that we dont need    
         # self.ag_var_class=[k for k in self.data.keys() if 'ag' in k]
 
@@ -198,6 +205,9 @@ class FlexEnv(MultiAgentEnv):
         :return:
         """
         
+        
+
+        
         #COMMUNITY /COMMON variables (intialization equal for all agents)
         self.done=pd.DataFrame([False]*self.com.num_agents, index=self.agents_id,columns=['done'])
         # self.done.loc['__all__']=all(self.done.values) #does RLLIB need this in the environment or only at the output dictionary??
@@ -214,20 +224,24 @@ class FlexEnv(MultiAgentEnv):
         self.state_shadow['tstep']=self.tstep
         #minutes
         
-        self.state['minutes']=self.minutes
+        #update the state
+        self.state_upd.update_features()
+        
+        
+        # self.state['minutes']=self.minutes
         #sine/cosine
-        self.state['sin']=np.sin(2*np.pi*(self.minutes/self.min_max))
-        self.state['cos']=np.cos(2*np.pi*(self.minutes/self.min_max))
+        # self.state['sin']=np.sin(2*np.pi*(self.minutes/self.min_max))
+        # self.state['cos']=np.cos(2*np.pi*(self.minutes/self.min_max))
         
         #tariffs (for now all agents get the same tariff)
         # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
         # utilities.print_info('All agents are getting the same tariff for now')
-        self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
+        # self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
         # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
         
         #inititialize binary variables
         # self.state[['y','y_1','y_s']]=0
-        self.state[['y_s']]=0
+        # self.state[['y_s']]=0
         
         
         # Initialize history of actions
@@ -240,20 +254,20 @@ class FlexEnv(MultiAgentEnv):
         
         #Initial energy to consume
         # self.state['E_prof_rem'].update(self.agents_params['E_prof'])
-        self.state.update({'E_prof_rem': self.agents_params['E_prof']})
+        # self.state.update({'E_prof_rem': self.agents_params['E_prof']})
 
         
         #update forecasts
-        self.update_forecast()
+        # self.update_forecast()
         
-        for aid in self.agents_id:
-            self.state.loc[aid,'pv_sum']=self.data.loc['ag1'][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
+        # for aid in self.agents_id:
+        #     self.state.loc[aid,'pv_sum']=self.data.loc['ag1'][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
             # self.state.loc[aid, self.state.columns.str.contains(r'^tar\d+$')]=self.get_future_values(8).loc[aid]['tar_buy'].values
             
             # s=self.get_episode_data().loc[aid]['tar_buy']
             # self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']-min(s.loc[self.tstep:self.tstep_init+self.Tw-1])
         
-        self.update_tariffs()
+        # self.update_tariffs()
         #Initial mask: # we concede full freedom for the appliance 
         self.mask.loc[:,:]=np.ones([self.com.num_agents,self.action_space.n])
         
@@ -326,7 +340,6 @@ class FlexEnv(MultiAgentEnv):
         self.tstep+=1 # update timestep
         #check weather to end or not the episode
         Done=self.check_term() 
-        # ic(self.step)
         #saving history state in state_hist
         # self.state_hist.update(self.state.set_index([self.state.index,'tstep']))
         # self.state_hist=pd.concat([self.state_hist,self.state])
@@ -336,7 +349,7 @@ class FlexEnv(MultiAgentEnv):
         self.state_update()
         
         #uncomment to check variables limits in each timestep
-        # self.check_obs_within_lims()
+        self.check_obs_within_lims()
         
         #update all masks
         self.update_all_masks() 
@@ -494,7 +507,7 @@ class FlexEnv(MultiAgentEnv):
             if ss.empty:
                 self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']
             else:
-                self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']-min(s.loc[self.tstep:self.tstep_init+self.Tw-1])
+                self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']-min(s.loc[self.tstep:self.tstep_init+self.Tw-1])    
             
 
     def state_update(self):
@@ -503,72 +516,12 @@ class FlexEnv(MultiAgentEnv):
         self.state_shadow=pd.DataFrame({'tstep': [self.tstep]*(len(self.agents_id)+1)},index=self.state.index)
         # self.state_shadow=pd.concat([self.state_shadow,new_df])
         
+        self.minutes=self.data.loc['ag1', self.tstep]['minutes']
 
-        #Tariffs
-        # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
-        # self.state['tar_buy']=self.tar_buy
-        # self.state['tar_buy0'], _ =self.get_tariffs(1)
+        #update the state
+        self.state_upd.update_features()
         
-        self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
-        # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
-        
-        #update forecasts
-        self.update_forecast()
-        # update tariffs
-        self.update_tariffs()
-        
-        
-        # self.minutes=self.data.iloc[self.tstep]['minutes']
 
-        self.minutes=self.data.loc['ag1', self.tstep]['minutes'] #this solves the bug that do not allow for initialziation at t different from zero
-        # All agents share the same time referencial // 'ag1' is just the reference
-        
-        self.state['minutes']=self.minutes
-        #sine/cosine
-        self.state['sin']=np.sin(2*np.pi*(self.minutes/self.min_max))
-        self.state['cos']=np.cos(2*np.pi*(self.minutes/self.min_max))
-        
-        # Binary variables
-        
-        #y update
-        # self.state['y'].update(self.action['action']) #matches by index
-        # self.state.update({'y': self.action['action']})
-        
-        #y_1 and y_s update
-        for aid in self.agents_id:
-            self.state.loc[aid,'y_s']+=self.action.loc[aid]['action'] #update y_s
-            
-        #     if self.tstep > self.tstep_init+1:
-        #         # self.y_1=self.hist[-2] #penultiumate element to get the previous action
-        #         # self.state.loc[aid,'y_1']=self.state_hist.loc[aid,self.tstep-1]['y']
-        #         # self.state.copy().loc[aid]['y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
-        #         self.state_hist=self.state_hist.astype('object')
-        #         # self.state.at[aid,'y_1']=self.state_hist.loc[aid][self.state_hist.tstep[aid]==self.tstep-1]['y']
-        #         a=self.state_hist.loc[aid][self.state_hist.loc[aid,'tstep']==self.tstep-1]['y']
-        #         self.state.at[aid,'y_1']=a.loc[aid]
-        #     else:
-        #         self.state.loc[aid,'y_1']=0
-
-
-        # E_pro_rem and y_s
-        if self.minutes==0: #It restarts in the beggining of the day 
-            # print('estou aqui')
-            self.state['E_prof_rem'].update(self.agents_params['E_prof'])
-            # self.state.update({'E_prof_rem': self.agents_params['E_prof']}, inplace=True)
-            self.state['y_s'].update(0)
-            
-
-        #update remaining energy that needs to be consumed
-        for aid in self.agents_id:
-            
-            new_e_val=round(self.action.loc[aid]['action']*self.com.agents[aid].apps[0].base_load*self.tstep_size/60, 2)
-            self.state.loc[aid,'E_prof_rem']-=new_e_val
-            self.state.loc[aid,'E_prof_rem']=round(self.state.loc[aid,'E_prof_rem'],2)
-            
-            # for var in ['gen','load','excess']:
-            #     self.state.loc[aid,var]=self.data.loc[agent,self.tstep][var]
-            
-            self.state.loc[aid,'pv_sum']=self.data.loc[aid][self.tstep:self.tstep_init+self.Tw]['excess'].sum()
 
         
 
@@ -654,6 +607,12 @@ class FlexEnv(MultiAgentEnv):
 
 
                 # Normalize all tariffs by the maximum tariff
+                # import pdb
+                # pdb.pdb.set_trace()
+                tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
+                
+                # self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=(self.state.loc[aid, self.state.columns.str.contains('tar')]-tar_stats['mean'])/(tar_stats['max']-tar_stats['min'])
+                
                 self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=self.state.loc[aid, self.state.columns.str.contains('tar')]/self.com.agents[aid].tar_max
 
 
@@ -668,8 +627,8 @@ class FlexEnv(MultiAgentEnv):
                         
                         # maxnormalization
                         # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.stats[aid].loc['max'][var]
-                
-
+        # print('time_step',self.tstep)        
+        # print(self.state_norm)
                 
                     
                 

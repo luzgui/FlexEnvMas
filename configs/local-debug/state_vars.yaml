@@ -63,14 +63,14 @@ tar6:
   min: -1.0
   use: true
 tar7:
-  max: 100
+  max: 1.0
   min: -1.0
   use: true
 tar8:
-  max: 100
+  max: 1.0
   min: -1.0
   use: true
 tar_d:
-  max: 100
+  max: 1.0
   min: -1.0
   use: True

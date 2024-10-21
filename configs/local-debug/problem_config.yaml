@@ -13,10 +13,10 @@ dataset_unit: kwh #kw or kwh
 #   data_proc_cls: GecadDataProcessor
 
 #Data Range
-#t_init: 0
-#t_end: 35136 # length of gecad data
-t_init: 1056
-t_end: 1153
+t_init: 0
+t_end: 35136 # length of gecad data
+# t_init: 1056
+# t_end: 1153
 
 
 #environment configs
