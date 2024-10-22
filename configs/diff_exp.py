@@ -22,7 +22,7 @@ configs_folder = cwd / 'configs'
 algos_config = configs_folder / 'algos_configs'
 
 files = ['agents_config.yaml', 'problem_config.yaml', 'scenario_config.yaml', 
-         'apps_config.yaml', 'experiment_config.yaml', 'algos_configs/ppo_config.yaml']
+         'apps_config.yaml', 'experiment_config.yaml', 'algos_configs/ppo_config.yaml','state_vars.yaml']
 
 # Function to load a YAML file and return a dictionary
 def load_yaml(file_path):
