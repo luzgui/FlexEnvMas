@@ -145,14 +145,14 @@ class ExperimentTest():
         
         restored_tuner = tune.Tuner.restore(experiment_path,trainable=self.trainable)
         # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
-        import pdb
-        pdb.pdb.set_trace()
+
         result_grid = restored_tuner.get_results()
         best_res=result_grid.get_best_result()
         config=best_res.config
         
         utilities.print_info('num_workers changed sue to resource scarcicity')
         config['num_workers']=1
+        config['num_gpus']=0
         checkpoint=best_res.checkpoint
         tester=self.tester(config, env=config["env"])
         tester.restore(checkpoint)
