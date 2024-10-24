@@ -145,6 +145,8 @@ class ExperimentTest():
         
         restored_tuner = tune.Tuner.restore(experiment_path,trainable=self.trainable)
         # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
+        import pdb
+        pdb.pdb.set_trace()
         result_grid = restored_tuner.get_results()
         best_res=result_grid.get_best_result()
         config=best_res.config
