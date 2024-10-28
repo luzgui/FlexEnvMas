@@ -1,75 +1,139 @@
 minutes:
   max: 1440
   min: -1.0
-  use: true
+  use: True
 sin:
   max: 1.0
   min: -1.0
-  use: true
+  use: True
 cos:
   max: 1.0
   min: -1.0
-  use: true
+  use: True
 load0:
   max: 100
   min: -1.0
-  use: true
+  use: True
 gen0:
   max: 100
   min: -1.0
-  use: true
+  use: True
 excess0:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar_buy:
   max: 1.0
   min: -1.0
-  use: true
+  use: True
 E_prof_rem:
   max: 100.0
   min: -1.0
-  use: true
+  use: True
 y_s:
   max: 20
   min: -1.0
-  use: true
+  use: True
 pv_sum:
   max: 1000
   min: -1.0
-  use: true
+  use: True
 tar1:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar2:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar3:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar4:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar5:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar6:
   max: 100
   min: -1.0
-  use: true
+  use: True
 tar7:
   max: 1.0
   min: -1.0
-  use: true
+  use: True
 tar8:
   max: 1.0
   min: -1.0
-  use: true
+  use: True
+tar9:
+  max: 100
+  min: -1.0
+  use: True
+tar10:
+  max: 100
+  min: -1.0
+  use: True
+tar11:
+  max: 100
+  min: -1.0
+  use: True
+tar12:
+  max: 100
+  min: -1.0
+  use: True
+tar13:
+  max: 100
+  min: -1.0
+  use: True
+tar14:
+  max: 100
+  min: -1.0
+  use: True
+tar15:
+  max: 1.0
+  min: -1.0
+  use: True
+tar16:
+  max: 1.0
+  min: -1.0
+  use: True
+tar17:
+  max: 100
+  min: -1.0
+  use: True
+tar18:
+  max: 100
+  min: -1.0
+  use: True
+tar19:
+  max: 100
+  min: -1.0
+  use: True
+tar20:
+  max: 100
+  min: -1.0
+  use: True
+tar21:
+  max: 100
+  min: -1.0
+  use: True
+tar22:
+  max: 100
+  min: -1.0
+  use: True
+tar23:
+  max: 1.0
+  min: -1.0
+  use: True
+tar24:
+  max: 1.0
+  min: -1.0
+  use: True
 tar_d:
   max: 1.0
   min: -1.0

@@ -35,6 +35,22 @@ class StateUpdate():
               'tar6': self.update_tar6,
               'tar7': self.update_tar7,
               'tar8': self.update_tar8,
+              'tar9': self.update_tar9,
+              'tar10': self.update_tar10,
+              'tar11': self.update_tar11,
+              'tar12': self.update_tar12,
+              'tar13': self.update_tar13,
+              'tar14': self.update_tar14,
+              'tar15': self.update_tar15,
+              'tar16': self.update_tar16,
+              'tar17': self.update_tar17,
+              'tar18': self.update_tar18,
+              'tar19': self.update_tar19,
+              'tar20': self.update_tar20,
+              'tar21': self.update_tar21,
+              'tar22': self.update_tar22,
+              'tar23': self.update_tar23,
+              'tar24': self.update_tar24,
               'tar_d':self.update_tard
         }
         
@@ -131,7 +147,39 @@ class StateUpdate():
     def update_tar7(self):
         return self.update_tar(7,'tar7')
     def update_tar8(self):
-        return self.update_tar(8,'tar8')    
+        return self.update_tar(8,'tar8')
+    def update_tar9(self):
+        return self.update_tar(9,'tar9')
+    def update_tar10(self):
+        return self.update_tar(10,'tar10')
+    def update_tar11(self):
+        return self.update_tar(11,'tar11')
+    def update_tar12(self):
+        return self.update_tar(12,'tar12')
+    def update_tar13(self):
+        return self.update_tar(13,'tar13')        
+    def update_tar14(self):
+        return self.update_tar(14,'tar14')
+    def update_tar15(self):
+        return self.update_tar(15,'tar15')
+    def update_tar16(self):
+        return self.update_tar(16,'tar16')
+    def update_tar17(self):
+        return self.update_tar(17,'tar17')
+    def update_tar18(self):
+        return self.update_tar(18,'tar18')
+    def update_tar19(self):
+        return self.update_tar(19,'tar19')
+    def update_tar20(self):
+        return self.update_tar(20,'tar20')
+    def update_tar21(self):
+        return self.update_tar(21,'tar21')        
+    def update_tar22(self):
+        return self.update_tar(22,'tar22')
+    def update_tar23(self):
+        return self.update_tar(23,'tar23')
+    def update_tar24(self):
+        return self.update_tar(24,'tar24')        
         
         
                 
