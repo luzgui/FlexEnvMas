@@ -7,6 +7,8 @@ Created on Fri Oct 18 17:57:46 2024
 """
 
 import numpy as np
+import time
+import math
 
 class StateUpdate():
     "This class contains the method to update the state dataframe in the environment object of FlexEnv class"
@@ -51,7 +53,10 @@ class StateUpdate():
               'tar22': self.update_tar22,
               'tar23': self.update_tar23,
               'tar24': self.update_tar24,
-              'tar_d':self.update_tard
+              'tar_d':self.update_tard,
+              'tar_mean':self.update_tar_mean,
+              'tar_stdev': self.update_tar_stdev,
+              'tar_var': self.update_tar_var
         }
         
     def update_features(self):
@@ -131,7 +136,42 @@ class StateUpdate():
             else:
                 self.env.state.loc[ag,var]=tars.loc[tstep_to_use]
 
-  
+    def update_tar_mean(self):
+        for ag in self.env.agents_id:
+            tars=self.env.get_episode_data().loc[ag]['tar_buy']
+            future_vals=tars.loc[self.env.tstep:self.env.tstep_init+self.env.Tw-1]
+            
+            if future_vals.empty:
+                self.env.state.loc[ag,'tar_mean']=0
+            else:
+                self.env.state.loc[ag,'tar_mean']=future_vals.mean()
+    
+    def update_tar_stdev(self):
+        for ag in self.env.agents_id:
+            tars=self.env.get_episode_data().loc[ag]['tar_buy']
+            future_vals=tars.loc[self.env.tstep:self.env.tstep_init+self.env.Tw-1]
+            if future_vals.empty:
+                self.env.state.loc[ag,'tar_stdev']=0
+                
+            if math.isnan(future_vals.std()):
+                self.env.state.loc[ag,'tar_stdev']=0    
+            else:
+                self.env.state.loc[ag,'tar_stdev']=future_vals.std()
+    
+    def update_tar_var(self):
+        for ag in self.env.agents_id:
+            tars=self.env.get_episode_data().loc[ag]['tar_buy']
+            future_vals=tars.loc[self.env.tstep:self.env.tstep_init+self.env.Tw-1]
+            
+            if future_vals.empty:
+                self.env.state.loc[ag,'tar_var']=0
+            if math.isnan(future_vals.var()):
+                self.env.state.loc[ag,'tar_var']=0  
+            else:
+                self.env.state.loc[ag,'tar_var']=future_vals.var()
+         
+         
+
     def update_tar1(self):
         return self.update_tar(1,'tar1')
     def update_tar2(self):

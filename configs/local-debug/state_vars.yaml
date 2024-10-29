@@ -49,92 +49,104 @@ tar2:
 tar3:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar4:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar5:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar6:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar7:
   max: 1.0
   min: -1.0
-  use: True
+  use: False
 tar8:
   max: 1.0
   min: -1.0
-  use: True
+  use: False
 tar9:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar10:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar11:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar12:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar13:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar14:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar15:
   max: 1.0
   min: -1.0
-  use: True
+  use: False
 tar16:
   max: 1.0
   min: -1.0
-  use: True
+  use: False
 tar17:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar18:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar19:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar20:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar21:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar22:
   max: 100
   min: -1.0
-  use: True
+  use: False
 tar23:
   max: 1.0
   min: -1.0
-  use: True
+  use: False
 tar24:
   max: 1.0
   min: -1.0
-  use: True
+  use: False
 tar_d:
+  max: 1.0
+  min: -1.0
+  use: True
+tar_mean:
+  max: 1.0
+  min: -1.0
+  use: True
+tar_stdev:
+  max: 1.0
+  min: -1.0
+  use: True
+tar_var:
   max: 1.0
   min: -1.0
   use: True

@@ -614,6 +614,16 @@ class FlexEnv(MultiAgentEnv):
                 # self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=(self.state.loc[aid, self.state.columns.str.contains('tar')]-tar_stats['mean'])/(tar_stats['max']-tar_stats['min'])
                 
                 self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=self.state.loc[aid, self.state.columns.str.contains('tar')]/self.com.agents[aid].tar_max
+                
+                if key == 'tar_mean':
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                    
+                if key == 'tar_stdev':
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                        
+                if key == 'tar_var':
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+            
 
 
                 for var in self.var_class:
