@@ -250,7 +250,7 @@ class BaselineTest(SimpleTestEnv):
         self.counter=0
         self.action_plan=self.get_action_plan()
         #
-        self.n_episodes=1
+        self.n_episodes=364
         self.shouldPlot=False
         self.folder_name=folder
      

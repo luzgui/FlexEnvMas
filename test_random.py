@@ -134,7 +134,7 @@ test_env_config={'community': test_com,
             'num_agents': test_com.num_agents}
    
 
-n_tests=test_name=YAMLParser().load_yaml(test_config_file)['n_baseline_tests']
+n_tests=YAMLParser().load_yaml(test_config_file)['n_baseline_tests']
 for k in range(0,n_tests):
     print(k)
     folder_name='baseline_' + test_name
