@@ -72,21 +72,28 @@ class Analyzer():
         # return self.state.iloc[day_num*w:(day_num+1)*w]
        
     def get_baseline_costs(self):
-        baseline_files=FolderUtils().get_file_in_folder(self.baseline_folder,'.csv')
+
+        # baseline_files=FolderUtils().get_file_in_folder(self.baseline_folder,'.csv')
+        folders=FolderUtils().get_subfolders(self.baseline_folder)
+        # baseline_files=FolderUtils().get_csv_files_in_subfolders(self.baseline_folder,'.csv')
+        
         baseline_costs=[]
         n=0
-        for f in baseline_files:
-            if 'metrics' in f:
-                n+=1
-                self.baseline_metrics=pd.read_csv(f,index_col=0,decimal=',')
-                self.baseline_metrics=self.baseline_metrics.drop(columns='season')
-                self.baseline_metrics=self.baseline_metrics.astype(float)
-                self.baseline_metrics['day'] = self.baseline_metrics['day'].astype(float).astype(int)
-                baseline_costs.append(self.baseline_metrics.loc['com'][['day','cost']])
-                # df=self.baseline_metrics.join(self.baseline_metrics)
         
+        for fol in folders:
+            baseline_files=FolderUtils().get_file_in_folder(fol, 'csv')
+            for f in baseline_files:
+                if 'metrics' in f:
+                    n+=1
+                    self.baseline_metrics=pd.read_csv(f,index_col=0,decimal=',')
+                    self.baseline_metrics=self.baseline_metrics.drop(columns='season')
+                    self.baseline_metrics=self.baseline_metrics.astype(float)
+                    self.baseline_metrics['day'] = self.baseline_metrics['day'].astype(float).astype(int)
+                    baseline_costs.append(self.baseline_metrics.loc['com'][['day','cost']])
+                    # df=self.baseline_metrics.join(self.baseline_metrics)
+            
         print(f'Baseline mean computed from {n} runs')
-        
+                
         day=self.baseline_metrics.loc['com']['day']
 
         df=pd.concat(baseline_costs, axis=1)

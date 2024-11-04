@@ -117,25 +117,28 @@ file_ag_conf,_,_,file_prob_conf,_,_,_=test_configs.get_configs()
 #%%Make test env
 #dataset
 gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
-         
-test_com=Community(file_ag_conf,
-              file_apps_conf,
-              file_scene_conf,
-              file_prob_conf,
-              gecad_dataset)
-
-
-com_vars=StateVars(file_vars)
-
-
+        
 #%%  Test environment   
-test_env_config={'community': test_com,
-            'com_vars': com_vars,
-            'num_agents': test_com.num_agents}
-   
-
 n_tests=YAMLParser().load_yaml(test_config_file)['n_baseline_tests']
-for k in range(0,n_tests):
+for k in range(0,n_tests):    
+
+    test_com=Community(file_ag_conf,
+                  file_apps_conf,
+                  file_scene_conf,
+                  file_prob_conf,
+                  gecad_dataset)
+    
+    
+    com_vars=StateVars(file_vars)
+    
+    
+
+    test_env_config={'community': test_com,
+                'com_vars': com_vars,
+                'num_agents': test_com.num_agents}
+       
+
+
     print(k)
     folder_name='baseline_' + test_name
     folder=os.path.join(folder_name, f'iter_{k}')

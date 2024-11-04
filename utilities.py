@@ -108,7 +108,57 @@ class FolderUtils():
         if not os.path.exists(folder) and not os.path.isdir(folder):
             os.makedirs(folder)
             print(colored('folder created' ,'red'),folder)
-
+    
+    @staticmethod
+    def get_csv_files_in_subfolders(folder_path, file_type='.csv'):
+        """Scan a folder and its subfolders, returning a dictionary of CSV files found,
+        using folder names as part of the unique keys.
+        
+        Args:
+        - folder_path (str): The path to the folder to scan.
+        - file_type (str): The file extension to look for (default is '.csv').
+        
+        Returns:
+        - csv_files_dict (dict): A dictionary where the key is a unique identifier 
+          based on the folder name, and the value is the full path to the CSV file.
+        """
+        csv_files_dict = {}
+    
+        # Walk through the folder and its subfolders
+        for root, _, files in os.walk(folder_path):
+            # Check if the current directory is not the base folder
+            if root != folder_path:
+                # Extract the folder name from the path
+                folder_name = os.path.basename(root)
+                
+                for file in files:
+                    if file.endswith(file_type):
+                        # Create a unique key using the folder name and file name
+                        unique_key = f'{folder_name}'
+                        csv_files_dict[unique_key] = os.path.join(root, file)
+    
+        return csv_files_dict
+    
+    @staticmethod
+    def get_subfolders(folder_path):
+        """
+        Scan a folder and return a list of all its subfolders.
+        
+        Args:
+        - folder_path (str): The path to the folder to scan.
+        
+        Returns:
+        - subfolders (list): A list of paths to the subfolders found in the folder.
+        """
+        subfolders = []
+        
+        # Iterate through the directory entries
+        for entry in os.listdir(folder_path):
+            full_path = os.path.join(folder_path, entry)
+            if os.path.isdir(full_path):  # Check if it's a directory
+                subfolders.append(full_path)
+    
+        return subfolders
 
 
 # parser=YAMLParser()
