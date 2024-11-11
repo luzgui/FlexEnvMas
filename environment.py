@@ -89,14 +89,22 @@ class FlexEnv(MultiAgentEnv):
         #get the possoble initial timeslots from data        
         #get all o mionutes index
         # self.allowed_inits=self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
-        self.allowed_inits=self.env_processor.get_allowed_inits()
-        self.allowed_inits.pop() #remove last day due to the existence of an extra timestep at the end of the episode that produces and error for T+1
-        
+        # self.allowed_inits=self.env_processor.get_allowed_inits(self.com.problem_conf['allowed_init_config'],
+        #                                                         self.agents_params)
         
         
         #AGENTS INDIVIDUAL parameters
         #Appliance profile    
         self.agents_params=self.com.com_prefs
+        
+        self.allowed_inits=self.env_processor.get_selected_allowed_inits(self.com.problem_conf['allowed_init_config'],
+                                                                self.agents_params)
+        
+        self.allowed_inits.pop() #remove last day due to the existence of an extra timestep at the end of the episode that produces and error for T+1
+        
+        
+        
+        
         
 
         self.R_Total=[] # A way to see the evolution of the rewards as the model is being trained

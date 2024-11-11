@@ -269,7 +269,10 @@ class DataPostProcessor:
             # import pdb
             # pdb.pdb.set_trace()
             df.loc[aid,'coef_shift_base']=df.loc[aid]['shift_base']/df.loc[aid]['shift_base_T'] #sharing/load coefficient considering shiftable and base load
-            df.loc[aid,'coef_shift_base']=df.loc[aid,'coef_shift_base'].fillna(0)
+            # df=df.infer_objects(copy=False)
+            # import pdb
+            # pdb.pdb.set_trace()
+            df.loc[aid,'coef_shift_base']=df.loc[aid,'coef_shift_base'].astype(float).fillna(0)
 
             utilities().print_info('Individual Cost computing: Real individual cost for each agent AFFECTED by the sharing coefficient, i.e, we assume that excess is shared according to the APPLIANCE load level of each agent')
             
@@ -627,10 +630,62 @@ class EnvDataProcessor():
 
     
     def get_allowed_inits(self):
+        return self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
+        
+
+
+    def get_selected_allowed_inits(self,config,agents_params):
         """
         returns the initial timeslot for each day, i.e, time=00:00
+        removes the day for which the PV is the same during the wholle day to clean out conitnuous values PV
         """
-        return self.data[self.data['minutes']==0].index.get_level_values(1).unique().tolist()
+        
+        def detect_anomalies_pv(time_series,k):
+            time_series=pd.DataFrame(time_series)
+            counts=time_series.value_counts()
+            
+            # if counts[0.0]==len(time_series): #PV is zero in the wholle day
+            if counts[counts==len(time_series)].any():
+                return True
+            
+            counts=counts.drop(0.0, level='gen') #remove the number of zero occurence
+            if counts[counts>=k].any():
+                return True
+            else:
+                return False
+        
+        
+        t_inits=self.get_allowed_inits()
+        print('init:', len(t_inits))
+        
+        t_to_remove=[]
+        if config['clean_pv_data']:
+            for t in t_inits:
+                data_day=self.get_one_day(t,t+self.Tw)
+                # if data_day.loc['ag1']['gen'].nunique()==1:
+                pv=data_day.loc['ag1']['gen']
+                if detect_anomalies_pv(pv, 8):
+                    t_to_remove.append(t)
+        
+        t_new = [x for x in t_inits if x not in t_to_remove]
+        t_to_remove2=[]
+        if config['day_select']:
+            for t in t_new:
+                data_day=self.get_one_day(t,t+self.Tw)
+                # just keep the hard days. Increase threashhold to include more days
+                if (data_day.loc['ag1']['gen'].sum()/agents_params['E_prof'].sum()) >= config['pv_threshold']:
+                    t_to_remove2.append(t) 
+        
+        t_inits.sort()
+        t_to_remove.sort()       
+        t_to_remove2.sort()   
+
+        t_final = [x for x in t_new if x not in t_to_remove2]
+        
+        t_final.sort()
+        
+        return t_final
+        
 
     
         
