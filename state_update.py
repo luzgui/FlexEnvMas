@@ -111,7 +111,8 @@ class StateUpdate():
                 
     def update_pv_sum(self):
         for ag in self.env.agents_id:
-            self.env.state.loc[ag,'pv_sum']=self.env.data.loc[ag][self.env.tstep:self.env.tstep_init+self.env.Tw]['excess'].sum()
+            excess_data=self.env.data.loc[ag,'excess']
+            self.env.state.loc[ag,'pv_sum']=excess_data.loc[self.env.tstep:self.env.tstep_init+self.env.Tw].sum()
             
                 
     def update_tard(self):
