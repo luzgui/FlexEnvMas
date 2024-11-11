@@ -379,7 +379,8 @@ class FlexEnv(MultiAgentEnv):
     
     
     def get_env_reward(self):
-        return self.reward_obj.coop_sigma_reward()
+        # return self.reward_obj.coop_sigma_reward()
+        return self.reward_obj.tar_sigma_reward()
             
             
             
