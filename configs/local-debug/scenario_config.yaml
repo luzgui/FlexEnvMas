@@ -5,10 +5,10 @@
 game_setup: 'cooperative_colective_scaled_sigma'
 #game_setup='cooperative'
 #game_setup='competitive'
-reward_type: 'excess_cost_max'
+reward_func: 'tar_sigma_reward'
 
 reward_params:
-  g: 0.1
+  g: 0.2
   #g: 1
   # a: -1.65
   # b: -3.2

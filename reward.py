@@ -6,7 +6,12 @@ class Reward:
         
         for key, value in self.self_env.com.scenarios_conf['reward_params'].items():
             setattr(self, key, value)  
+            
+        self.reward_func_list = {
+              'sigma_reward': self.coop_sigma_reward,
+              'tar_sigma_reward':self.tar_sigma_reward}
     
+        self.reward_func=self.reward_func_list[self.self_env.com.scenarios_conf['reward_func']]
 
     def get_penalty(self,agent):
             if self.self_env.minutes == self.self_env.min_max-self.self_env.agents_params.loc[agent]['T_prof']*self.self_env.tstep_size and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:

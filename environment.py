@@ -195,8 +195,8 @@ class FlexEnv(MultiAgentEnv):
         
         print(f'Created an multiagent environment with {self.com.num_agents} agents')
         print(colored('Envrironment configurations:','green'))
-        print('Type of reward:', colored(self.com.scenarios_conf['reward_type'],'red'))
-        print('Multiagent setup for reward:', colored(self.com.scenarios_conf['game_setup'],'red'))
+        print('Reward Function:', colored(self.com.scenarios_conf['reward_func'],'red'))
+        # print('Multiagent setup for reward:', colored(self.com.scenarios_conf['game_setup'],'red'))
         print('Environment purpose:', colored(self.com.problem_conf['env_info'],'red'))
         
     
@@ -379,8 +379,7 @@ class FlexEnv(MultiAgentEnv):
     
     
     def get_env_reward(self):
-        # return self.reward_obj.coop_sigma_reward()
-        return self.reward_obj.tar_sigma_reward()
+        return self.reward_obj.reward_func()
             
             
             
