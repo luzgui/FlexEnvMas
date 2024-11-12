@@ -172,7 +172,7 @@ class Reward:
             
             
             
-            df.loc[ag,'new_r']=(df.loc[ag,'alpha_cost']+0.1)*self.indicator(action)
+            df.loc[ag,'new_r']=(df.loc[ag,'alpha_cost']+0.01)*self.indicator(action)
             
         R=df['new_r'].sum()
         # print(df)
