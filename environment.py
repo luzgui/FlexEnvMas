@@ -559,7 +559,11 @@ class FlexEnv(MultiAgentEnv):
         if self.tstep>=self.get_term_cond():
             
             self.R_Total.append(self.R)
-            print(self.R)
+            # print('ts_init:',self.tstep_init)
+            print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
+            print('rewards:',self.R)
+            ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
+            print('actions:',ts_start)
             self.n_episodes+=1
             self.done.loc[self.agents_id] = True #update done for all agents
             self.env_done=self.get_env_done()
@@ -759,6 +763,15 @@ class FlexEnv(MultiAgentEnv):
         df_out=df.loc[idx[:,indices,:]]
         
         return df_out
+    
+    
+    def get_start_ts(self, action_list):
+        
+        if sum(action_list)==0:
+            return 'no action'
+        else:
+            return np.argmax(action_list!=0)
+        
                 
     # def check_obs_within_lims(self):
     #     result_df = pd.DataFrame(index=self.agents_id)
