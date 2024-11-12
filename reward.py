@@ -15,7 +15,10 @@ class Reward:
         self.reward_func=self.reward_func_list[self.self_env.com.scenarios_conf['reward_func']]
 
     def get_penalty(self,agent):
-            if self.self_env.minutes == self.self_env.min_max-self.self_env.agents_params.loc[agent]['T_prof']*self.self_env.tstep_size and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:
+            # if self.self_env.minutes == self.self_env.min_max-self.self_env.agents_params.loc[agent]['T_prof']*self.self_env.tstep_size and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:
+                
+                
+            if self.self_env.tstep >= (self.self_env.tstep_init+18*4) and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:
                 penalty=-5.0
                 
             else: penalty=0
