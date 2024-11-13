@@ -17,12 +17,18 @@ class Reward:
     def get_penalty(self,agent):
             # if self.self_env.minutes == self.self_env.min_max-self.self_env.agents_params.loc[agent]['T_prof']*self.self_env.tstep_size and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:
                 
-                
-            if self.self_env.tstep >= (self.self_env.tstep_init+18*4) and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:
-                penalty=-5.0
+            minutes_deliver , tstep_deliver=self.self_env.processor.hours_to_minutes(self.self_env.agents_params.loc[agent]['t_deliver'],
+                                                               self.self_env.tstep_size)
+            
+            y_s=self.self_env.state.loc[agent]['y_s']
+            
+            num_y_s=self.self_env.agents_params.loc[agent]['T_prof']
+            
+            
+            if (self.self_env.tstep >= (self.self_env.tstep_init+tstep_deliver) and  y_s != num_y_s) or (self.self_env.tstep >= (self.self_env.tstep_init+self.self_env.Tw-1) and  y_s != num_y_s):
+                penalty=-0.5
                 
             else: penalty=0
-                
             return penalty
         
     def indicator(self,action):
@@ -42,7 +48,8 @@ class Reward:
     def get_agent_cost_alpha(self, agent,alpha):
         
         agent_reward=-max(0,((self.self_env.action.loc[agent]['action']*self.self_env.com.agents[agent].apps[0].base_load*(self.self_env.tstep_size/60))-alpha*self.self_env.state.loc[agent]['excess0']))*self.self_env.state.loc[agent]['tar_buy']
-                                                     
+        
+        
         return agent_reward+self.get_penalty(agent)
     
 
@@ -172,10 +179,10 @@ class Reward:
             
             
             
-            df.loc[ag,'new_r']=(df.loc[ag,'alpha_cost']+0.01)*self.indicator(action)
+            df.loc[ag,'new_r']=(df.loc[ag,'alpha_cost']+0.01*self.indicator(action))
             
         R=df['new_r'].sum()
-        # print(df)
+        print(df)
         return {aid: R for aid in self.self_env.agents_id} 
     
     

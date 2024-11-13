@@ -63,9 +63,9 @@ class DataProcessor():
         total_minutes = hours * 60 + minutes
         
         # Calculate timeslot index
-        # timeslot_index = total_minutes // resolution_minutes
+        timeslot_index = total_minutes // resolution_minutes
         
-        return total_minutes
+        return total_minutes, timeslot_index
     
     
     
