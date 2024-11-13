@@ -563,7 +563,7 @@ class FlexEnv(MultiAgentEnv):
             print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
             print('rewards:',self.R)
             ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
-            print('actions:',ts_start)
+            print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
             self.n_episodes+=1
             self.done.loc[self.agents_id] = True #update done for all agents
             self.env_done=self.get_env_done()
