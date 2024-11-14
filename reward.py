@@ -55,8 +55,12 @@ class Reward:
     
 
     
-    def exp(self,x,a,b,c):
-        return np.exp((a/b)*x-c)
+    def exp(self,x,a,b,c,d):
+        return np.exp((a/b)*x-c)-d
+
+    
+    # def exp(self,x,a,b,c):
+    #     return np.exp((a/b)*x-c)
     
     def exp2(self,x,a,b,c):
         if x <= b:
@@ -219,12 +223,22 @@ class Reward:
             
             c_min=df.loc[ag,'c_min']
             cost=df.loc[ag,'alpha_cost']
+            
+            
+            df2=self.self_env.state_hist
+            df2=df2.loc[df2['minutes'] == 0.0]['pv_sum']
+            pv_sum=df2.loc[ag]
+            x_rat=pv_sum/self.self_env.agents_params['E_prof'].sum()
+            
+            
 
-            x_rat=self.self_env.state.loc['ag1','pv_sum']/self.self_env.agents_params['E_prof'].sum()
-
+            # Extract the value from the 'tar_mean' column where the condition is met
+            # tar_mean_value = df.loc[condition, 'tar_mean'].iloc[0]
+                        
+            
             
             f_tar=self.exp2(cost, -2.30, c_min,0)
-            f_pv=self.exp(cost, 72,1, 2.3)
+            f_pv=self.exp(cost, -120,-0.9, 2.2,0.01)
             
             
             if x_rat <= 1.0:
@@ -240,7 +254,8 @@ class Reward:
             # print('w1',w1,'|','w2',w2)
             r=self.indicator(action)*(w1*f_tar+w2*f_pv)
             
-            
+            # import pdb
+            # pdb.pdb.set_trace()
             df.loc[ag,'new_r']=r
             
         R=df['new_r'].sum()
