@@ -1,7 +1,7 @@
 # experiment config
 exp_name: local-debug
 
-train: True
+train: False
 
 
 pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
@@ -10,8 +10,8 @@ pol_type: agent_pol #shared_pol shared policy or each agent will have its own po
 
 
 algorithm:
-  name: PPO
-  #name: CentralizedCritic
+  # name: PPO
+  name: CentralizedCritic
   config: 'ppo_config.yaml'
 environment_cls: 'FlexEnv'
 
