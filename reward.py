@@ -11,7 +11,8 @@ class Reward:
               'sigma_reward': self.coop_sigma_reward,
               'tar_sigma_reward':self.tar_sigma_reward,
               'simple_reward':self.simple_reward,
-              'weight_reward':self.weight_reward}
+              'weight_reward':self.weight_reward,
+              'comp_weight_reward':self.comp_weight_reward}
     
         self.reward_func=self.reward_func_list[self.self_env.com.scenarios_conf['reward_func']]
 
@@ -30,6 +31,7 @@ class Reward:
                 penalty=-0.5
                 
             else: penalty=0
+            
             return penalty
         
     def indicator(self,action):
@@ -262,4 +264,64 @@ class Reward:
         # print(df)
         return {aid: R for aid in self.self_env.agents_id} 
     
-    
+    def comp_weight_reward(self):
+        
+        R={}
+        df=self.self_env.action.copy()
+
+        AgentTotalLoads=sum([self.self_env.action.loc[agent]['action']*self.self_env.com.agents[agent].apps[0].base_load*(self.self_env.tstep_size/60) for agent in self.self_env.agents_id])
+        
+        
+        for ag in self.self_env.agents_id:
+            action=self.self_env.action.loc[ag, 'action']
+            base_load=self.self_env.com.agents[ag].apps[0].base_load
+            df.loc[ag,'tar_min']=min(self.self_env.com.agents[ag].make_tariff())
+            df.loc[ag,'c_min']=-df.loc[ag,'tar_min']*base_load*(self.self_env.tstep_size / 60)
+            
+            if AgentTotalLoads != 0:
+                df.loc[ag, 'alpha'] = (action*base_load*(self.self_env.tstep_size / 60) / AgentTotalLoads)
+            else:
+                df.loc[ag, 'alpha'] = 0  # or handle it in another appropriate way
+
+            df.loc[ag,'alpha_cost']=self.get_agent_cost_alpha(ag, df.loc[ag,'alpha'])
+            
+            
+            c_min=df.loc[ag,'c_min']
+            cost=df.loc[ag,'alpha_cost']
+            
+            
+            df2=self.self_env.state_hist
+            df2=df2.loc[df2['minutes'] == 0.0]['pv_sum']
+            pv_sum=df2.loc[ag]
+            x_rat=pv_sum/self.self_env.agents_params['E_prof'].sum()
+            
+            
+
+            # Extract the value from the 'tar_mean' column where the condition is met
+            # tar_mean_value = df.loc[condition, 'tar_mean'].iloc[0]
+                        
+            
+            
+            f_tar=self.exp2(cost, -2.30, c_min,0)
+            f_pv=self.exp(cost, -120,-0.9, 2.2,0.01)
+            
+            
+            if x_rat <= 1.0:
+                w1=1.0
+                w2=0.0
+            elif 1 < x_rat <= 2.0:
+                w1=0.5
+                w2=0.5
+            elif x_rat >= 2.0:
+                w1=0.0
+                w2=1.0
+                
+            # print('w1',w1,'|','w2',w2)
+            r=self.indicator(action)*(w1*f_tar+w2*f_pv)
+            
+            # import pdb
+            # pdb.pdb.set_trace()
+            df.loc[ag,'new_r']=r+self.get_penalty(ag)
+            
+            R[ag]=df.loc[ag,'new_r']
+        return R
