@@ -1,7 +1,8 @@
 # experiment config
 exp_name: local-debug
 
-train: False
+train: True
+resume: True
 
 
 pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy

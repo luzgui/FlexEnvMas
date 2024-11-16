@@ -17,7 +17,10 @@ datafolder=cwd / 'Data'
 raylog=cwd / 'raylog'
 configs_folder=cwd / 'configs'
 algos_config = configs_folder / 'algos_configs'
+resultsfolder=cwd / 'Results'
 
+
+import os
 
 from community import Community
 from environment import FlexEnv
@@ -63,6 +66,7 @@ gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
 
 #%% Trainning or debugging
 train=YAMLParser().load_yaml(file_experiment)['train']
+resume=YAMLParser().load_yaml(file_experiment)['resume']
 
 #%% Make community            
 com=Community(file_ag_conf,
@@ -84,7 +88,9 @@ envi=FlexEnv(env_config)
 
 df_list=envi.env_processor.get_daily_stats()
 # merged=envi.env_processor.merge_df_list_on_agents(df_list)
-#%%
+print(len(envi.allowed_inits))
+
+    #%%
 menvi=MultiAgentEnvCompatibility(envi)
 menvi._agent_ids=envi._agent_ids
 
@@ -98,7 +104,7 @@ def env_creator(env_config):
 
 register_env("flexenv", env_creator)
 
-#%% experiment
+#%% Train experiment
 if train:
     print('trainning')
     time.sleep(3)
@@ -118,24 +124,48 @@ if train:
     
     spill_1=raylog / 'spill1'
     spill_2=raylog / 'spill2'
+    spill_3=raylog / 'spill3'
+    
+    temp_dir= raylog / 'tmp'
+    
+    os.environ['TUNE_MAX_PENDING_TRIALS_PG']='1'
     
     ray.init(_system_config={"local_fs_capacity_threshold": 0.99,
                              "object_spilling_config": json.dumps({"type": "filesystem",
                                                                    "params": {"directory_path":[spill_1.as_posix(),
-                                                                                                spill_2.as_posix()],}},)},)
-    
-    tuner = tune.Tuner(
-          trainable_resources,
-          param_space=config,
-          tune_config=config_tune,
-          run_config=config_run)
+                                                                                                spill_2.as_posix(),
+                                                                                                spill_3.as_posix()],}},)},)
     
     
-    #%% Train
-    results=tuner.fit()
-    print(results.errors)
+    
+    if resume:
+        experiment_dir=raylog / experiment.exp_name
+        print('Will try to resume the experiment', experiment_dir.as_posix())
+        tuner=tune.Tuner.restore(experiment_dir.as_posix(), 
+                                 trainable_resources,
+                                 param_space=config,
+                                 resume_unfinished=True,
+                                 restart_errored=True)
+        print('resumed experiment')
+        results=tuner.fit()
+    
+    
+    else:
+        
+        tuner = tune.Tuner(
+              trainable_resources,
+              param_space=config,
+              tune_config=config_tune,
+              run_config=config_run)
+        
+        
+    
+        results=tuner.fit()
+        print(results.errors)
     # # 
 
+
+#%% Debbug
 else:
     print('Debugging Mode')
     time.sleep(3)
@@ -148,35 +178,39 @@ else:
     import pandas as pd
     
     simpletest=SimpleTestEnv(envi, dummy_tester)
+    
+    folder=resultsfolder / 'BaselineSimple'
+    
     full_state, env_state_conc, episode_metrics, filename = simpletest.test([])
     
-    baselinetest=BaselineTest(envi, dummy_tester)
-    full_state, env_state_conc, episode_metrics, filename = baselinetest.test([])
+    
+    # baselinetest=BaselineTest(envi, dummy_tester,[])
+    # full_state, env_state_conc, episode_metrics, filename = baselinetest.test([])
     
     
-    #%%
-    t=2
-    m=pd.DataFrame()
-    for k in range(0,t):
-        start=[k,0]
-        simpletestcycle=SimpleTestCycle(envi, dummy_tester, start)
-        full_state, env_state_conc, episode_metrics, filename = simpletestcycle.test(1,[],plot=False)
-        m=pd.concat([m, episode_metrics])
+    # # %%
+    # t=96
+    # m=pd.DataFrame()
+    # for k in range(0,t):
+    #     start=[k,0]
+    #     simpletestcycle=SimpleTestCycle(envi, dummy_testenvier, start)
+    #     full_state, env_state_conc, episode_metrics, filename = simpletestcycle.test([])
+    #     m=pd.concat([m, episode_metrics])
     
     
-    m_com=m.loc['com']
-    x = np.arange(t)
-    fig, ax1 = plt.subplots(figsize=(8, 5))
-    ax1.plot(x, m_com['cost'], color='blue', label='Cost')
-    ax1.set_xlabel('Time step')
-    ax1.set_ylabel('Cost', color='blue')
-    ax1.tick_params(axis='y', labelcolor='blue')
-    ax2 = ax1.twinx()
-    ax2.plot(x, m_com['reward_episode'], color='orange', label='Reward')
-    ax2.set_ylabel('Reward Episode', color='orange')
-    ax2.tick_params(axis='y', labelcolor='orange')
-    plt.title('Cost and Reward Episode Over Time')
-    plt.show()
+    # m_com=m.loc['com']
+    # x = np.arange(t)
+    # fig, ax1 = plt.subplots(figsize=(8, 5))
+    # ax1.plot(x, m_com['cost'], color='blue', label='Cost')
+    # ax1.set_xlabel('Time step')
+    # ax1.set_ylabel('Cost', color='blue')
+    # ax1.tick_params(axis='y', labelcolor='blue')
+    # ax2 = ax1.twinx()
+    # ax2.plot(x, m_com['reward_episode'], color='orange', label='Reward')
+    # ax2.set_ylabel('Reward Episode', color='orange')
+    # ax2.tick_params(axis='y', labelcolor='orange')
+    # plt.title('Cost and Reward Episode Over Time')
+    # plt.show()
 
 
 
