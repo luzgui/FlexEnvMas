@@ -159,7 +159,7 @@ def env_creator(env_config):
 
 register_env("flexenv", env_creator)
 
-
+print('number of days for testing:', len(tenvi.allowed_inits))
 #%% Test
 if shouldTest:
     print('Testing...')
@@ -177,6 +177,7 @@ if shouldTest:
     
     #Test environment
     env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
+    env_tester.n_episodes=len(tenvi.allowed_inits)-1
     full_state, env_state, metrics, results_filename_path=env_tester.test(results_path=resultsfolder)
 
     #%% Optimal Solution

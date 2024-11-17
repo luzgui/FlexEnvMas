@@ -88,7 +88,7 @@ envi=FlexEnv(env_config)
 
 df_list=envi.env_processor.get_daily_stats()
 # merged=envi.env_processor.merge_df_list_on_agents(df_list)
-print(len(envi.allowed_inits))
+print('number of days for trainning', len(envi.allowed_inits))
 
     #%%
 menvi=MultiAgentEnvCompatibility(envi)
