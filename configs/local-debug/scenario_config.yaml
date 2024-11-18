@@ -7,8 +7,8 @@ game_setup: 'cooperative_colective_scaled_sigma'
 #game_setup='competitive'
 # reward_func: 'tar_sigma_reward'
 #reward_func: 'simple_reward'
-# reward_func: 'weight_reward'
-reward_func: 'comp_weight_reward'
+reward_func: 'weight_reward'
+# reward_func: 'comp_weight_reward'
 
 reward_params:
   g: 0.2

@@ -182,11 +182,19 @@ class SimpleTestEnv(TestEnv):
         "fixed action plan"
         actions={}
         starts=dict(zip(self.env.agents_id, [43,49,49,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [47,43,49,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [0,0,49,32,36,45,50][0:len(self.env.agents_id)]))
         # starts=dict(zip(self.env.agents_id, [78,78,85,36,45,50][0:len(self.env.agents_id)]))
+        
+        # starts=dict(zip(self.env.agents_id, [40,46,85,36,45,50][0:len(self.env.agents_id)]))
+        
+        # starts=dict(zip(self.env.agents_id, [77,77,85,36,45,50][0:len(self.env.agents_id)]))
         #problematic day solution
         # starts=dict(zip(self.env.agents_id, [26,51,0,32,36,45,50][0:len(self.env.agents_id)]))
         
         # starts=dict(zip(self.env.agents_id, [45,45,0,32,36,45,50][0:len(self.env.agents_id)]))
+        
+        # starts=dict(zip(self.env.agents_id, [88,88,47,32,36,45,50][0:len(self.env.agents_id)]))
         
         # starts=dict(zip(self.env.agents_id, [57,48,47,32,36,45,50][0:len(self.env.agents_id)]))
         
@@ -289,6 +297,8 @@ class SimpleTestCycle(SimpleTestEnv):
         self.counter=0
         self.start=start
         self.action_plan=self.get_action_plan()
+        self.n_episodes=1
+        self.shouldPlot=True
         
         # super().__init__(env, tester)
         

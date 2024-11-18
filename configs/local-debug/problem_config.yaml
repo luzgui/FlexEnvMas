@@ -13,15 +13,17 @@ dataset_unit: kwh #kw or kwh
 #   data_proc_cls: GecadDataProcessor
 
 #Data Range
-t_init: 0
-t_end: 35136 # length of gecad data
+# t_init: 0
+# t_end: 35136 # length of gecad data
+
+t_init: 1056
+t_end: 1248
 
 allowed_init_config:
   clean_pv_data: True
-  day_select: True
-  pv_threshold: 4.0
-# t_init: 1056
-# t_end: 1153
+  day_select: False
+  pv_threshold: 2.0
+
 
 
 #environment configs
