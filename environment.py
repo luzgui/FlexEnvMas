@@ -537,18 +537,28 @@ class FlexEnv(MultiAgentEnv):
     def update_all_masks(self):
         "loops over agents and updates individual masks. Returns all masks"
         
-        for aid in self.agents_id:
+        # for aid in self.agents_id:
 
-            if self.action.loc[aid]['action']==1 and self.state.loc[aid]['y_s'] < self.agents_params.loc[aid]['T_prof']:
-            # if self.action.loc[aid]['action']==1 and self.state.loc[aid]['E_prof_rem'] > 0:
-                self.mask.loc[aid]=[0.0,1.0]
+        #     if self.action.loc[aid]['action']==1 and self.state.loc[aid]['y_s'] < self.agents_params.loc[aid]['T_prof']:
+        #     # if self.action.loc[aid]['action']==1 and self.state.loc[aid]['E_prof_rem'] > 0:
+        #         self.mask.loc[aid]=[0.0,1.0]
     
-            elif self.state.loc[aid]['y_s'] >= self.agents_params.loc[aid]['T_prof']:
-            # if self.state.loc[aid]['E_prof_rem'] <= 0:
-                self.mask.loc[aid]=[1.0,0.0]
+        #     elif self.state.loc[aid]['y_s'] >= self.agents_params.loc[aid]['T_prof']:
+        #     # if self.state.loc[aid]['E_prof_rem'] <= 0:
+        #         self.mask.loc[aid]=[1.0,0.0]
                 
-            else:
+        #     else:
+        #         self.mask.loc[aid] = np.ones(self.action_space.n)
+         
+        
+        for aid in self.agents_id:
+            if  self.state.loc[aid]['y_s'] < self.agents_params.loc[aid]['T_prof']:
                 self.mask.loc[aid] = np.ones(self.action_space.n)
+            else:
+                self.mask.loc[aid] = self.mask.loc[aid]=[1.0,0.0]
+            
+            
+            
             
         
         return self.mask
@@ -562,7 +572,7 @@ class FlexEnv(MultiAgentEnv):
             # print('ts_init:',self.tstep_init)
             print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
             print('rewards:',self.R)
-            ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
+            ts_start = {aid: self.get_active_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
             print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
             self.n_episodes+=1
             self.done.loc[self.agents_id] = True #update done for all agents
@@ -696,13 +706,13 @@ class FlexEnv(MultiAgentEnv):
     
     def check_obs_within_lims(self):
         result_df=pd.DataFrame(columns=self.state.columns, index=self.agents_id)
+
         for ag in self.agents_id:
             for key in self.state_vars_unormal.keys():
                 val=self.state.loc[ag][key]
                 max_val=self.state_vars_unormal[key]['max']
                 min_val=self.state_vars_unormal[key]['min']
                 result_df.loc[ag,key]=bool((val >= min_val) & (val <= max_val))
-                
                 assert result_df.all().all(), f" '{key}' outside limits in agent '{ag}', min_val:'{min_val}' val:'{val}', max_val:'{max_val}'"
                 
     def check_hist_within_lims(self):
@@ -773,6 +783,13 @@ class FlexEnv(MultiAgentEnv):
             return 'no action'
         else:
             return np.argmax(action_list!=0)
+        
+    def get_active_ts(self, action_list):
+        
+        if sum(action_list)==0:
+            return 'no action'
+        else:
+            return [index for index, value in enumerate(action_list) if value == 1]
         
                 
     # def check_obs_within_lims(self):
