@@ -15,6 +15,8 @@ from dataprocessor import YAMLParser
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+import numpy as np
+
 class Analyzer():
     """
     From results_folder produces an object with all the needed data and methods to perform analysis 
@@ -84,18 +86,17 @@ class Analyzer():
             baseline_files=FolderUtils().get_file_in_folder(fol, 'csv')
             for f in baseline_files:
                 if 'metrics' in f:
-                    n+=1
                     self.baseline_metrics=pd.read_csv(f,index_col=0,decimal=',')
                     self.baseline_metrics=self.baseline_metrics.drop(columns='season')
                     self.baseline_metrics=self.baseline_metrics.astype(float)
                     self.baseline_metrics['day'] = self.baseline_metrics['day'].astype(float).astype(int)
                     baseline_costs.append(self.baseline_metrics.loc['com'][['day','cost']])
+                    n+=1
                     # df=self.baseline_metrics.join(self.baseline_metrics)
             
         print(f'Baseline mean computed from {n} runs')
                 
         day=self.baseline_metrics.loc['com']['day']
-
         df=pd.concat(baseline_costs, axis=1)
         df_costs=df.drop(columns='day')
         df['cost_mean_base']=df_costs.mean(axis=1)
@@ -122,28 +123,54 @@ class Analyzer():
         df_compare=df_compare.copy()
         df_compare=df_compare.astype(float)
         
-        df_compare.loc[:, 'dif']=((df_compare['cost'].astype(float))-df_compare['objective'])
+        a=df_compare['cost'].astype(float)
+        b=df_compare['objective']
+        c=df_compare['cost_mean_base']
         
-        
-        a=df_compare['cost'].astype(float)+1
-        b=df_compare['objective']+1
-        c=df_compare['objective']+1
-        df_compare.loc[:, 'dif_simple']=(a-b)/c
-        # df_compare.loc[:, 'dif_simple']=((df_compare['cost'].astype(float)+1)-(df_compare['objective']+1))/(df_compare['objective']+1)
-        
+        # df_compare.loc[:, 'dif']=((df_compare['cost'].astype(float))-df_compare['objective'])
+        df_compare.loc[:, 'dif']=a-b
+        df_compare.loc[:, 'dif_simple']=((a+1)-(b+1))/(b+1)
+        df_compare.loc[:, 'dif_simple_2']=(((a-b)+1)/(b+1))
+        df_compare.loc[:, 'save_rate']=((c-a)/(c-b))*100
+        df_compare.loc[:, 'sigma2_0']=abs((b-a)/c)
+        df_compare.loc[:, 'sigma2']=(1-df_compare['sigma2_0'])*100
         
 
         utilities().print_info('Random baseline cost is used in indicators')
         
-        df_compare.loc[:, 'save_rate']=((df_compare['cost_mean_base']-df_compare['cost'])/(df_compare['cost_mean_base']-df_compare['objective']))*100
+        # df_compare.loc[:, 'gamma'] = np.where(df_compare['objective'] == 0 and df_compare['objective'] != 0, df_compare['objective'])
+        # df_compare.loc[:, 'gamma'] = np.where(b == 0 and a == 0, 0)
+        # df_compare.loc[:, 'gamma'] = np.where(b > 0 and a > 0, (a-b)/b)
+        def compare_values(df):
+            # df = df.mask(df_compare.abs() < 1e-7, 0)
+            a=df['cost'].astype(float)
+            b=df['objective']
+            
+            if a > 0 and b == 0:
+                return a
+            elif b == 0 and a == 0:
+                return 0
+            elif b > 0 and a > 0:
+                return (a-b)/b
         
-        df_compare.loc[:, 'sigma2_0']=abs((df_compare['objective']-df_compare['cost']))/df_compare['cost_mean_base']
+        def gt(df):
+            a=40
+            if df['gamma']>a:
+                return a
+            else:
+                return df['gamma']
+            
         
-        df_compare.loc[:, 'sigma2']=(1-df_compare['sigma2_0'])*100
-
+        
+        df_compare = df_compare.mask(df_compare.abs() < 1e-10, 0)
+        
+        
+        df_compare.loc[:, 'gamma']=df_compare.apply(compare_values,axis=1)
+        df_compare.loc[:, 'gamma']=df_compare.apply(gt,axis=1)
+        # df_compare['gamma'] = df_compare['gamma'].mask(df_compare.abs() > 100, 100)
         
         # Replace values that are smaller than the threshold with 0
-        df_compare = df_compare.mask(df_compare.abs() < 1e-10, 0)
+        
         
         return df_compare
         
@@ -269,15 +296,18 @@ class AnalyzerMulti():
     def get_analyser_objects(self):
         exp_dict=self.get_experiments_folders()
         multi_analyser={}
+        # import pdb
+        # pdb.pdb.set_trace()
         for label in exp_dict:
             exp_dict[label]=Analyzer(self.results_folder / exp_dict[label],self.baseline)
         
-        exp_dict['Random_baseline']=Analyzer(self.baseline, self.baseline)
+        # exp_dict['Random_baseline']=Analyzer(self.baseline, self.baseline)
         return exp_dict
     
     def get_multi_cost_compare(self):
         data={}
         for label in self.analyser_objs:
+            print(label)
             data[label]=self.analyser_objs[label].get_cost_compare()
             
         return data
@@ -287,11 +317,11 @@ class AnalyzerMulti():
     def plot_multi_joint(self,x,y, save=False):        
         data=self.get_multi_cost_compare()
         utilities().print_info('removing the random baseline from plot_multi_joint')
-        data.pop('Random_baseline')
- 
+        # data.pop('Random_baseline')
+
         file_name=None
         if save:
-            file_name=str(self.compare_results_folder / f'Joint_Plot_Indicator_{x}_{len(data)}')
+            file_name=str(self.compare_results_folder / f'Joint_Plot_Indicator_{x}_{len(data)}_{self.name}')
         
         self.plot.make_multi_jointplot(data,x,y,filename_save=file_name)
         
@@ -316,7 +346,7 @@ class AnalyzerMulti():
         self.plot.make_multi_histogram(data, file_name)
         
       
-    def plot_year_cost(self,save=False):
+    def plot_year_mean_cost(self,save=False):
         data=self.get_multi_cost_compare()
 
         utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
@@ -327,7 +357,7 @@ class AnalyzerMulti():
         df['rand']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
         
         utilities().print_info('possible bug with random baseline costs vs rand')
-        df=df.drop(columns=['Random_baseline'])
+        # df=df.drop(columns=['Random_baseline'])
         data_sorted=df.mean().sort_values()
         print(data_sorted)
         
@@ -338,8 +368,34 @@ class AnalyzerMulti():
         # import pdb
         # pdb.pdb.set_trace()    
         self.plot.plot_barplot(data_sorted,file_name)
+      
+    def plot_year_cost(self,save=False):
+        data=self.get_multi_cost_compare()
+    
+        utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
+        df=pd.DataFrame()
+        for obj_id in data:
+            df[obj_id]=data[obj_id]['cost']
+        df['Opti']=data[obj_id]['objective']
+        df['Random']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
         
+        utilities().print_info('possible bug with random baseline costs vs rand')
+        # df=df.drop(columns=['Random_baseline'])
+        data_sorted=df.sum().sort_values()
+        data_to_plot=pd.DataFrame(data_sorted).transpose()
+        data_to_plot.index=['year_cost']
         
+        print(data_to_plot)
+        
+        file_name=None
+        if save:
+            file_name=str(self.compare_results_folder / f'models_barplot_{self.name}.png')
+            
+        # import pdb
+        # pdb.pdb.set_trace()    
+        self.plot.plot_barplot(data_to_plot,file_name)
+  
+    
     def plot_per_agent_year_cost(self,save=False):
         data={}
         for obj_id in self.analyser_objs:
