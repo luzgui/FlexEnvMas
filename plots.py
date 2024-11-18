@@ -649,15 +649,22 @@ class Plots():
         
     @staticmethod   
     def plot_barplot(df,filename_save):
-        palette = sns.color_palette("RdYlGn_r", len(df))
-        sns.barplot(data=df,palette=palette)
-        plt.xlabel('Model')
-        plt.ylabel('€')
-        plt.title('Yearlly mean cost')
+        palette = sns.color_palette("RdYlGn_r", 4)
+
+        
+        # df=pd.DataFrame(df)
+        plt.figure(figsize=(3, 4))  # Adjust as needed
+        sns.barplot(data=df, palette=palette, width=0.5)
+        
+        plt.tight_layout()
+        plt.grid(True, axis='y', linestyle='--', alpha=0.7)
+        # plt.xlabel('Model')
+        plt.ylabel('€/year')
+        # plt.title('Total yearly cost')
         
         # Show the plot
         if filename_save:
-            plt.savefig(filename_save, dpi=300)
+            plt.savefig(filename_save, dpi=300,bbox_inches='tight', pad_inches=0.1)
     @staticmethod        
     def plot_multi_bar(df,filename_save):
         plt.figure(figsize=(8, 6))
