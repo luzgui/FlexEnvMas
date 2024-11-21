@@ -6,10 +6,12 @@ game_setup: 'cooperative_colective_scaled_sigma'
 #game_setup='cooperative'
 #game_setup='competitive'
 # reward_func: 'tar_sigma_reward'
-#reward_func: 'simple_reward'
-reward_func: 'weight_reward'
+# reward_func: 'simple_reward'
+reward_func: 'simple_reward_v2'
+# reward_func: 'weight_reward'
 # reward_func: 'comp_weight_reward'
-
+# reward_func: 'weight_reward_var_w'
+# reward_func: reward_unique
 reward_params:
   g: 0.2
   #g: 1
