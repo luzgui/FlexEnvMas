@@ -618,7 +618,10 @@ class FlexEnv(MultiAgentEnv):
                 
                 if key == 'pv_sum':
                     pv_sum_day=self.state_hist[key][aid].max()
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
+                    if pv_sum_day == 0:
+                        self.state_norm.loc[aid,key]=0
+                    else:
+                        self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
 
                 # Normalize all tariffs by the maximum tariff
                 tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
