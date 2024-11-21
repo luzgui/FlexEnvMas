@@ -585,7 +585,7 @@ class FlexEnv(MultiAgentEnv):
         "A function to get the correct episode termination condition according to weather it is in window or horizon mode defined in the self.done_cond variable"
         
         if self.done_cond == 'mode_window': # episode ends when when Tw timeslots passed
-            return self.tstep_init+self.Tw-1
+            return self.tstep_init+self.Tw
         elif self.done_cond == 'mode_horizon': #episode ends in the end of the data length
             return self.T
         
