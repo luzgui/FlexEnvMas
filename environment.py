@@ -562,6 +562,7 @@ class FlexEnv(MultiAgentEnv):
             # print('ts_init:',self.tstep_init)
             print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
             print('rewards:',self.R)
+            print('w1',np.round(self.reward_obj.w1,2),'|','w2',np.round(self.reward_obj.w2,2))
             ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
             print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
             self.n_episodes+=1
@@ -616,13 +617,10 @@ class FlexEnv(MultiAgentEnv):
                     
                 
                 if key == 'pv_sum':
-                    # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.data.loc[aid][self.tstep_init:self.tstep_init+self.Tw]['gen'].sum()
-                    self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.daily_stats.loc[aid,'mean']['excess'])/(self.daily_stats.loc[aid,'max']['excess']-self.daily_stats.loc[aid,'min']['excess'])
-
+                    pv_sum_day=self.state_hist[key][aid].max()
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
 
                 # Normalize all tariffs by the maximum tariff
-                # import pdb
-                # pdb.pdb.set_trace()
                 tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
                 
                 # self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=(self.state.loc[aid, self.state.columns.str.contains('tar')]-tar_stats['mean'])/(tar_stats['max']-tar_stats['min'])
