@@ -188,7 +188,7 @@ class Reward:
     
     
     
-    def simple_reward(self):
+    def simple_reward_constant(self):
         
         df=self.self_env.action.copy()
 
@@ -218,10 +218,36 @@ class Reward:
             
             df.loc[ag,'new_r']=(df.loc[ag,'alpha_cost']+0.01*self.indicator(action))
             
+            
         R=df['new_r'].sum()
         # print(df)
         return {aid: R for aid in self.self_env.agents_id} 
     
+    
+    def simple_reward(self):
+        
+        df=self.self_env.action.copy()
+
+        AgentTotalLoads=sum([self.self_env.action.loc[agent]['action']*self.self_env.com.agents[agent].apps[0].base_load*(self.self_env.tstep_size/60) for agent in self.self_env.agents_id])
+        
+        
+        for ag in self.self_env.agents_id:
+            action=self.self_env.action.loc[ag, 'action']
+            base_load=self.self_env.com.agents[ag].apps[0].base_load
+            
+            if AgentTotalLoads != 0:
+                df.loc[ag, 'alpha'] = (action*base_load*(self.self_env.tstep_size / 60) / AgentTotalLoads)
+            else:
+                df.loc[ag, 'alpha'] = 0  # or handle it in another appropriate way
+
+            df.loc[ag,'alpha_cost']=self.get_agent_cost_alpha(ag, df.loc[ag,'alpha'])
+            
+            df.loc[ag,'r']=(df.loc[ag,'alpha_cost'])
+            
+        self.w1=0
+        self.w2=0   
+        R=df['r'].sum()
+        return {aid: R for aid in self.self_env.agents_id} 
     
     def simple_reward_v2(self):
         
