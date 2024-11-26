@@ -125,7 +125,8 @@ class FlexEnv(MultiAgentEnv):
         # self.max_load=100.0
         self.max_load=round(self.processor.get_limits(self.data, 'max', 'load'),2)
         self.max_gen=round(self.processor.get_limits(self.data, 'max', 'gen'),2)
-        
+        self.get_max_pv_sum()
+        print(self.pv_sum_max)
         # #update missing variables HERE
         # self.com_vars.update_var_list(['gen','load', 'excess'], 'max', self.max_gen)
         # self.com_vars.update_var_list(['gen','load', 'excess'], 'min', 0)
@@ -395,19 +396,13 @@ class FlexEnv(MultiAgentEnv):
     
     
     def get_env_obs(self):
-        "Returns the current state of the environment (observations, mask) in a    dictionary"
+        "Returns the current state of the environment (observations, mask) in a dictionary"
         # obs={aid:{'action_mask':np.array(self.mask.loc[aid], dtype=np.float32), 
         #           'observation': self.get_agent_obs(aid)} 
         obs={aid:{'action_mask':np.array(self.mask.loc[aid]), 
                   'observations': self.get_agent_obs(aid)} 
               for aid in self.agents_id}
-        
-        
-        #debugging
-        # obs={aid:{'observations': self.get_agent_obs(aid)} for aid in self.agents_id}
-        
-        
-        
+    
         return obs
     
 
@@ -621,7 +616,9 @@ class FlexEnv(MultiAgentEnv):
                     if pv_sum_day == 0:
                         self.state_norm.loc[aid,key]=0
                     else:
-                        self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
+                        # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
+                        self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.pv_sum_max
+                        # print(self.state_norm.loc[aid,key])
 
                 # Normalize all tariffs by the maximum tariff
                 tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
@@ -775,7 +772,30 @@ class FlexEnv(MultiAgentEnv):
         else:
             return np.argmax(action_list!=0)
         
-                
+    def get_max_pv_sum(self):
+        """gets the maximum pv_sum for all days in the dataset.
+        This is used for normalization of the pv_sum state variable
+        
+        creates the attribute self.pv_sum_max
+        
+        Note:
+            The function uses the value of pi from the math module for the calculation.
+        
+        """
+        
+        excess_data=self.data.loc['ag1','excess']
+        pv_sums=pd.DataFrame(columns=['pv_sum'],index=self.allowed_inits)
+
+        for t in self.allowed_inits:
+            pv_sums.loc[t]=excess_data.loc[t:t+self.Tw].sum()
+        
+        self.pv_sum_max=np.round(pv_sums['pv_sum'].max(),3)
+        
+        
+        
+        
+        
+        
     # def check_obs_within_lims(self):
     #     result_df = pd.DataFrame(index=self.agents_id)
         
