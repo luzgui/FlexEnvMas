@@ -31,7 +31,7 @@ class Reward:
             
             
             if (self.self_env.tstep >= (self.self_env.tstep_init+tstep_deliver) and  y_s != num_y_s) or (self.self_env.tstep >= (self.self_env.tstep_init+self.self_env.Tw-1) and  y_s != num_y_s):
-                penalty=-0.5
+                penalty=self.penal
                 
             else: penalty=0
             
