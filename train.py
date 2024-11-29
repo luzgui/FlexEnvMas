@@ -121,20 +121,14 @@ if train:
     trainable_obj=Trainable(file_experiment)
     trainable_func=trainable_obj.trainable
     trainable_resources = tune.with_resources(trainable_func, resources)
-    
-    spill_1=raylog / 'spill1'
-    spill_2=raylog / 'spill2'
-    spill_3=raylog / 'spill3'
-    
+        
     temp_dir= raylog / 'tmp'
     
     os.environ['TUNE_MAX_PENDING_TRIALS_PG']='1'
     
     ray.init(_system_config={"local_fs_capacity_threshold": 0.99,
                              "object_spilling_config": json.dumps({"type": "filesystem",
-                                                                   "params": {"directory_path":[spill_1.as_posix(),
-                                                                                                spill_2.as_posix(),
-                                                                                                spill_3.as_posix()],}},)},)
+                                                                   "params": {"directory_path":[experiment.config['spill_dir']],}},)},)
     
     
     

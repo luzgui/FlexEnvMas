@@ -1,8 +1,8 @@
 # experiment config
 exp_name: local-debug
 
-train: False
-resume: True
+train: True
+resume: False
 
 
 pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
@@ -32,3 +32,5 @@ num_cpu_1: 1.0
 num_cpu_2: 1.0
 num_gpu: 0.0
 cpu_factor: 6
+
+spill_dir: /home/omega/Documents/FCUL/Projects/FlexEnvMas/raylog/spill1
