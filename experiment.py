@@ -118,12 +118,38 @@ class Experiment():
     
     
     
-    def make_algo_config(self, config_file):          
-        #Config
+    def make_algo_config(self, config_file):
+        
+        def find_keys_with_lists(d, exclude_keys=None):
+            if exclude_keys is None:
+                exclude_keys = set()
+
+            keys_with_lists = []
+
+            # Traverse through the dictionary
+            for key, value in d.items():
+                # If the key is in the exclusion list, skip it
+                if key in exclude_keys:
+                    continue
+                
+                # If the value is a list, add the key to the result
+                if isinstance(value, list):
+                    keys_with_lists.append(key)
+                # If the value is a dictionary, recursively check it
+                elif isinstance(value, dict):
+                    keys_with_lists.extend(find_keys_with_lists(value, exclude_keys))
+            
+            return keys_with_lists
+                
+        
         new_configs=self.parser.load_yaml(config_file)
+        keys=find_keys_with_lists(new_configs, exclude_keys=['model'])
+        
         config_algo = PPOConfig().update_from_dict(new_configs)
-        # import pdb
-        # pdb.pdb.set_trace()
+
+        for k in keys:
+            config_algo[k]=tune.grid_search(new_configs[k])
+
         #updates for environemnt 
         config_algo.environment(observation_space=self.env.observation_space,
                            action_space=self.env.action_space,
