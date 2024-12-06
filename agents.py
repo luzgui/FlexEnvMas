@@ -57,6 +57,21 @@ class Agent():
                     
         elif tar_type == 'flat':
             tariff_series = np.full(num_timesteps, tar_conf['flat_val'])
+        
+        elif tar_type=='dynamic':
+            # tar_file=self.conf['dynamic_tar_file']
+            # tariff_series=pd.read_csv(tar_file)
+            tariff_series=[0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 ,
+                   0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 ,
+                   0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.1 , 0.2 , 0.2 ,
+                   0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 ,
+                   0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 ,
+                   0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.05, 0.05, 0.05, 0.05,
+                   0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
+                   0.05, 0.05, 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 ,
+                   0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 ]
+            
+        
         else:
             tariff_series = np.zeros(num_timesteps)
             print('No tariffs defined')
@@ -98,6 +113,10 @@ class Agent():
         elif tar_type == 'flat':
             tar_buy=tar_conf['flat_val']
             # tar_sell=0.0
+        
+        elif tar_type== 'dynamic':
+            pass
+        
         return tar_buy
     
     
