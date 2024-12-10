@@ -18,6 +18,7 @@ from dataprocessor import OptiDataPostProcessor
 import os
 from os import path
 from termcolor import colored
+import math
 
 
 class CommunityOptiModel():
@@ -26,7 +27,6 @@ class CommunityOptiModel():
         Environment must be the testing environment 
         """
         self.env=env
-        self.processor=OptiDataPostProcessor(env)
         self.folder=folder
     
     
@@ -45,20 +45,28 @@ class CommunityOptiModel():
         total_num_days=len(self.env.allowed_inits)
         solutions=[]
         objectives=[]
-        for day in range(total_num_days):
-            self.make_model(day)
-            t_init, times=self.get_one_day_env_data(day)
-            times=times.loc['ag1']['minutes']
+        for t_init in self.env.allowed_inits:
+            self.make_model(t_init)
+            t_init, data=self.get_one_day_env_data(t_init)
+            mins=data.loc['ag1']['minutes']
             objective, sol=self.solve_model()
+            day=self.get_day_number(t_init)
             sol['day']=day
-            sol.insert(0,'minutes',times.values)
-            sol = sol.set_index(times.index)
+            sol.insert(0,'minutes',mins.values)
+            sol = sol.set_index(mins.index)
             solutions.append(sol)
             data = {'tstep': [t_init], 'day': [day], 'objective': [objective]}
             objectives.append(pd.DataFrame(data))
+
+        # result_df = pd.concat(solutions, ignore_index=True)
+        result_df = pd.concat(solutions)
+        # result_df.rename(columns={'Unnamed: 0': 'tstep'}, inplace=True)
+        result_df.index.name='tstep'
+        import pdb
+        pdb.pdb.set_trace()
             
-        result_df = pd.concat(solutions, ignore_index=True)
-        result_df.insert(0, 'tstep', result_df.index)
+        # result_df.insert(0, 'tstep', result_df.index)
+        
         objectives_df=pd.concat(objectives, ignore_index=True)
         
         if save:
@@ -75,7 +83,7 @@ class CommunityOptiModel():
         return objectives_df, result_df
             
     
-    def make_model(self,day_num):
+    def make_model(self,t_init):
         """
         Centralized shiftable loads allocation model
         
@@ -90,7 +98,7 @@ class CommunityOptiModel():
         """
         
         # H=self.env.Tw
-        _, data=self.get_one_day_env_data(day_num)
+        _, data=self.get_one_day_env_data(t_init)
         H=len(data.loc['ag1'])
         nI=self.env.com.num_agents
         
@@ -289,9 +297,27 @@ class CommunityOptiModel():
             # return self.env.data.iloc[day_num*w:(day_num+1)*w]
             return w*day_num
         
-    def get_one_day_env_data(self,day_num):
-         t_init=self.get_one_day_timeslot(day_num)
+    def get_one_day_env_data(self,t_init):
+         # t_init=self.get_one_day_timeslot(day_num)
          t_end=t_init+self.env.Tw
          # t_end=t_init+8
          return t_init, self.env.com.com_data.loc[:, slice(t_init, t_end-1), :]
          
+     
+    def get_day_number(self,timestep):
+        """
+        Given a timestep (0-indexed), return the corresponding day number (0-indexed).
+        
+        Args:
+        - timestep (int): The timestep index (0-indexed).
+        
+        Returns:
+        - day_number (int): The corresponding day number (0-indexed).
+        """
+        # Since each day has 96 time steps (15-minute intervals)
+        time_steps_per_day = self.env.Tw
+        
+        # Calculate the day number (1-indexed)
+        day_number = math.floor(timestep / time_steps_per_day)
+        
+        return day_number

@@ -57,7 +57,7 @@ class Trainable():
         for i in range(self.n_iters):
             print(colored('training...','red'))
             train_results=self.trainer.train()
-    
+            
             #Metrics we are gonna log from full train_results dict
             metrics={'episode_reward_max', 
                      'episode_reward_mean',

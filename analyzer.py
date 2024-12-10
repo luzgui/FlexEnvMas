@@ -22,39 +22,60 @@ class Analyzer():
     From results_folder produces an object with all the needed data and methods to perform analysis 
     """
     
-    def __init__(self,results_folder,baseline_folder):
+    def __init__(self,results_folder,
+                 baseline_folder,
+                 opti_folder,
+                 test_env):
+        
         self.folder=results_folder
         self.baseline_folder=baseline_folder
+        self.opti_folder=opti_folder
         self.plot=Plots()
         self.get_full_test_data() #import data
-        self.baseline=self.get_baseline_costs()
+        self.env=test_env
+        
+        
         print(f'Experiment in analysis: {self.folder}')
         print(f'Baseline in analysis: {self.baseline_folder}')
         
     def get_full_test_data(self):
         """
-        Scans the results folder and gets metrics and solutions for post analysis and visualization
+        - Scans the results folder and gets metrics and solutions for post analysis and visualization
+        
+        - Scans the optimization results folder
+        
         """
-
+        
         files=FolderUtils().get_file_in_folder(self.folder,'.csv')
-        # import pdb
-        # pdb.pdb.set_trace()
+        opti_files=FolderUtils().get_file_in_folder(self.opti_folder,'.csv')
+        #import testing results data
         for f in files:
             if 'metrics' in f:
-                self.metrics=pd.read_csv(f,index_col=0,decimal=',')
-                self.metrics['day'] = self.metrics['day'].astype(float).astype(int)
+                self.metrics=pd.read_csv(f)
+                self.metrics['day']=self.metrics['day'].astype(int)
+                self.metrics.set_index(['Unnamed: 0','day'], inplace=True)
+                # self.metrics=pd.read_csv(f,index_col=['Unnamed: 0'])
+                self.metrics.index.names = ['agent', 'day']
+                # self.metrics['day'] = self.metrics['day'].astype(float).astype(int)
             elif 'env_state' in f:
-                self.state=pd.read_csv(f,index_col=0)
-            elif 'solutions' in f:
-                self.opti_sol=pd.read_csv(f)
-            elif 'objectives' in f:
-                self.opti_objective=pd.read_csv(f)
+                self.state=pd.read_csv(f,index_col='tstep')
             elif 'progress' in f:
                 self.progress=pd.read_csv(f)
-                
+        # import optimization solutions
+        for f in opti_files:
+            if 'solutions' in f:
+                self.opti_sol=pd.read_csv(f, index_col='tstep')
+            elif 'objectives' in f:
+                self.opti_objective=pd.read_csv(f,index_col=['tstep', 'day'])
+        
+        # Import baselines
+        self.baseline=self.get_baseline_costs()
     
     def get_one_day_data(self,day_num,source):
-        """extract one day from env_state"""
+        """extract one day from env_state
+        - day_num must be the day of the year independentelly of the number of days the dataset has
+        
+        """
         utilities.print_info('this is hardcoded for 15 minutes resolution 1 day horizon')
         w=96 #this is hardcoded for 15 minutes resolution 1 day horizon
         
@@ -67,8 +88,7 @@ class Analyzer():
             
         t_init=w*day_num
         t_end=t_init+w
-        # import pdb
-        # pdb.pdb.set_trace()
+
         return data[(data['tstep'] >= t_init) & (data['tstep'] < t_end)]   
         # return data.iloc[day_num*w:(day_num+1)*w]
         # return self.state.iloc[day_num*w:(day_num+1)*w]
@@ -103,23 +123,21 @@ class Analyzer():
         df=df['cost_mean_base']
         # df=pd.merge(df,day,left_index=df.index)
         df_final=pd.concat([df,day],axis=1)
-        
+        df_final.set_index('day', inplace=True)
         return df_final
         
     def get_cost_compare(self):
         """
         creates a dataframe that stores cost values between optimal solution 
-        and rl agent
+        and rl agent alongside metrics from this comparison
+        
         """
-        # import pdb
-        # pdb.pdb.set_trace()
-        df = pd.merge(self.metrics.loc['com'], self.opti_objective, 
-                         on='day', 
-                         how='inner')
         
-        df = pd.merge(df,self.baseline, on='day', how='inner')
+        df=pd.merge(self.metrics.loc['com'], self.opti_objective, left_index=True, right_index=True)
         
-        df_compare=df[['day','cost','objective','cost_mean_base','x_ratio']]
+        df=pd.merge(df, self.baseline, left_index=True, right_index=True)
+        
+        df_compare=df[['cost','objective','cost_mean_base','x_ratio']]
         df_compare=df_compare.copy()
         df_compare=df_compare.astype(float)
         
@@ -169,8 +187,14 @@ class Analyzer():
         df_compare.loc[:, 'gamma']=df_compare.apply(gt,axis=1)
         # df_compare['gamma'] = df_compare['gamma'].mask(df_compare.abs() > 100, 100)
         
-        # Replace values that are smaller than the threshold with 0
         
+        
+        df_compare=df_compare.round(3)
+        
+        if not (df_compare['objective']<=df_compare['cost']).all():
+            print(df_compare[df_compare['objective'] > df_compare['cost']])
+            raise ValueError("Assertion failed: Some values in 'objective' are greater than 'cost'.")
+
         
         return df_compare
         
@@ -200,6 +224,7 @@ class Analyzer():
         
         # import pdb
         # pdb.pdb.set_trace()
+        utilities().print_info('HardCode alert :Need to solve')
         w=pd.DataFrame([3.6,3.0,3.0],index=df_final.columns,columns=['En'])
         
         new_cols=[]
