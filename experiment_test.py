@@ -147,7 +147,8 @@ class ExperimentTest():
         # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
 
         result_grid = restored_tuner.get_results()
-        best_res=result_grid.get_best_result()
+        best_res=result_grid.get_best_result(metric=self.train_experiment_config['metric'],
+                                             mode=self.train_experiment_config['mode'])
         config=best_res.config
         
         utilities.print_info('num_workers changed sue to resource scarcicity')
