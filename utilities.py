@@ -76,6 +76,9 @@ class ConfigsParser():
         
         
     def get_configs(self):
+        """
+        Returns the config files existing in the config folder of the experiment
+        """
         return self.agents_config, self.apps_config, self.scene_config, self.problem_config, self.state_vars, self.experiment_config,self.algo_config_file
     
     def print_experiment_info(self):

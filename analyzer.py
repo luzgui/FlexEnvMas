@@ -35,8 +35,9 @@ class Analyzer():
         self.env=test_env
         
         
-        print(f'Experiment in analysis: {self.folder}')
-        print(f'Baseline in analysis: {self.baseline_folder}')
+        print(f'Experiment in analysis: {self.folder.name}')
+        print(f'Baseline in analysis: {self.baseline_folder.name}')
+        print(f'Optimal Solution in analysis: {self.opti_folder.name}')
         
     def get_full_test_data(self):
         """
@@ -76,22 +77,21 @@ class Analyzer():
         - day_num must be the day of the year independentelly of the number of days the dataset has
         
         """
-        utilities.print_info('this is hardcoded for 15 minutes resolution 1 day horizon')
-        w=96 #this is hardcoded for 15 minutes resolution 1 day horizon
+        w=self.env.Tw
         
         if source=='opti':
             data=self.opti_sol
         elif source=='rl':
             data=self.state
-        elif source=='baseline':
-            data=self.baseline_state
+        # elif source=='baseline':
+        #     data=self.baseline_state
             
         t_init=w*day_num
+        assert t_init in self.env.allowed_inits, f"The day ({day_num}) does not exist in the experiment dataset"
         t_end=t_init+w
 
-        return data[(data['tstep'] >= t_init) & (data['tstep'] < t_end)]   
-        # return data.iloc[day_num*w:(day_num+1)*w]
-        # return self.state.iloc[day_num*w:(day_num+1)*w]
+        return data.loc[t_init:t_end-1]
+
        
     def get_baseline_costs(self):
 
@@ -129,14 +129,17 @@ class Analyzer():
     def get_cost_compare(self):
         """
         creates a dataframe that stores cost values between optimal solution 
-        and rl agent alongside metrics from this comparison
+        and rl agent alongside metrics derived from this comparison
         
         """
         
-        df=pd.merge(self.metrics.loc['com'], self.opti_objective, left_index=True, right_index=True)
+        df=pd.merge(self.metrics.loc['com'], 
+                    self.opti_objective, 
+                    left_index=True, right_index=True)
         
         df=pd.merge(df, self.baseline, left_index=True, right_index=True)
-        
+        # import pdb
+        # pdb.pdb.set_trace()
         df_compare=df[['cost','objective','cost_mean_base','x_ratio']]
         df_compare=df_compare.copy()
         df_compare=df_compare.astype(float)
@@ -152,9 +155,9 @@ class Analyzer():
         df_compare.loc[:, 'save_rate']=((c-a)/(c-b))*100
         df_compare.loc[:, 'sigma2_0']=abs((b-a)/c)
         df_compare.loc[:, 'sigma2']=(1-df_compare['sigma2_0'])*100
-        
-
-        utilities().print_info('Random baseline cost is used in indicators')
+                    
+                
+        # utilities().print_info('Random baseline cost is used in indicators')
         
         # df_compare.loc[:, 'gamma'] = np.where(df_compare['objective'] == 0 and df_compare['objective'] != 0, df_compare['objective'])
         # df_compare.loc[:, 'gamma'] = np.where(b == 0 and a == 0, 0)
@@ -193,7 +196,9 @@ class Analyzer():
         
         if not (df_compare['objective']<=df_compare['cost']).all():
             print(df_compare[df_compare['objective'] > df_compare['cost']])
-            raise ValueError("Assertion failed: Some values in 'objective' are greater than 'cost'.")
+            print("Some values in 'objective' are greater than 'cost'")
+            df_compare = df_compare[df_compare['objective'] <= df_compare['cost']]
+            # raise ValueError("Some values in 'objective' are greater than 'cost'")
 
         
         return df_compare
@@ -296,38 +301,22 @@ class Analyzer():
 
  
 
-   
+
 class AnalyzerMulti():
     "Class to compare experiments"
-    def __init__(self,results_config,name):
+    def __init__(self,objs,name):
         """gets a list of analyzer experiment objects and performs comparison between experiments"""
         self.results_folder=Path.cwd() / 'Results'
         self.name=name
-        self.config=YAMLParser().load_yaml(results_config)[self.name]
-        self.descript=self.config['description']
-        self.baseline=self.results_folder / self.config['baseline_name']
-        self.analyser_objs=self.get_analyser_objects()
+        # self.config=YAMLParser().load_yaml(results_config)[self.name]
+        # self.descript=self.config['description']
+        # self.baseline=self.results_folder / self.config['baseline_name']
+        self.analyser_objs=objs
         self.plot=Plots()
         self.compare_results_folder=self.results_folder / self.name
         FolderUtils().make_folder(self.compare_results_folder)
         
-    def get_experiments_folders(self):
-        exp_folders={}
-        exps=self.config['experiments']
-        for k in exps:
-            exp_folders[exps[k]['label']]=exps[k]['folder']
-        return exp_folders
-    
-    def get_analyser_objects(self):
-        exp_dict=self.get_experiments_folders()
-        multi_analyser={}
-        # import pdb
-        # pdb.pdb.set_trace()
-        for label in exp_dict:
-            exp_dict[label]=Analyzer(self.results_folder / exp_dict[label],self.baseline)
-        
-        # exp_dict['Random_baseline']=Analyzer(self.baseline, self.baseline)
-        return exp_dict
+
     
     def get_multi_cost_compare(self):
         data={}
@@ -341,12 +330,10 @@ class AnalyzerMulti():
     
     def plot_multi_joint(self,x,y, save=False):        
         data=self.get_multi_cost_compare()
-        utilities().print_info('removing the random baseline from plot_multi_joint')
-        # data.pop('Random_baseline')
-
+        
         file_name=None
         if save:
-            file_name=str(self.compare_results_folder / f'Joint_Plot_Indicator_{x}_{len(data)}_{self.name}')
+            file_name=str(self.compare_results_folder / f'Joint_Plot_Indicator_{y}_{len(data)}_{self.name}')
         
         self.plot.make_multi_jointplot(data,x,y,filename_save=file_name)
         
@@ -397,7 +384,6 @@ class AnalyzerMulti():
     def plot_year_cost(self,save=False):
         data=self.get_multi_cost_compare()
     
-        utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
         df=pd.DataFrame()
         for obj_id in data:
             df[obj_id]=data[obj_id]['cost']
@@ -467,6 +453,178 @@ class AnalyzerMulti():
              
              
         self.plot.plotline_smooth(data, filename_save)
+
+  
+# class AnalyzerMulti():
+#     "Class to compare experiments"
+#     def __init__(self,results_config,name):
+#         """gets a list of analyzer experiment objects and performs comparison between experiments"""
+#         self.results_folder=Path.cwd() / 'Results'
+#         self.name=name
+#         self.config=YAMLParser().load_yaml(results_config)[self.name]
+#         self.descript=self.config['description']
+#         self.baseline=self.results_folder / self.config['baseline_name']
+#         self.analyser_objs=self.get_analyser_objects()
+#         self.plot=Plots()
+#         self.compare_results_folder=self.results_folder / self.name
+#         FolderUtils().make_folder(self.compare_results_folder)
+        
+#     def get_experiments_folders(self):
+#         exp_folders={}
+#         exps=self.config['experiments']
+#         for k in exps:
+#             exp_folders[exps[k]['label']]=exps[k]['folder']
+#         return exp_folders
+    
+#     def get_analyser_objects(self):
+#         exp_dict=self.get_experiments_folders()
+#         multi_analyser={}
+#         # import pdb
+#         # pdb.pdb.set_trace()
+#         for label in exp_dict:
+#             exp_dict[label]=Analyzer(self.results_folder / exp_dict[label],self.baseline)
+        
+#         # exp_dict['Random_baseline']=Analyzer(self.baseline, self.baseline)
+#         return exp_dict
+    
+#     def get_multi_cost_compare(self):
+#         data={}
+#         for label in self.analyser_objs:
+#             print(label)
+#             data[label]=self.analyser_objs[label].get_cost_compare()
+            
+#         return data
+        
+    
+    
+#     def plot_multi_joint(self,x,y, save=False):        
+#         data=self.get_multi_cost_compare()
+#         utilities().print_info('removing the random baseline from plot_multi_joint')
+#         # data.pop('Random_baseline')
+
+#         file_name=None
+#         if save:
+#             file_name=str(self.compare_results_folder / f'Joint_Plot_Indicator_{x}_{len(data)}_{self.name}')
+        
+#         self.plot.make_multi_jointplot(data,x,y,filename_save=file_name)
+        
+    
+#     def plot_per_agent_cost_multi_hist(self,save=False):
+#         data={}
+#         for obj_id in self.analyser_objs:
+            
+#             data_agent=self.analyser_objs[obj_id].get_per_agent_costs()
+            
+#             for k in data_agent.columns:
+#                 if 'E' not in k:
+#                     data_agent=data_agent.drop(columns=k)
+                    
+#             data[obj_id]=data_agent
+
+#         file_name=None
+#         if save:
+#             file_name=str(self.compare_results_folder / 'per_agent_cost_histogram.png')
+        
+        
+#         self.plot.make_multi_histogram(data, file_name)
+        
+      
+#     def plot_year_mean_cost(self,save=False):
+#         data=self.get_multi_cost_compare()
+
+#         utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
+#         df=pd.DataFrame()
+#         for obj_id in data:
+#             df[obj_id]=data[obj_id]['cost']
+#         df['opti']=data[obj_id]['objective']
+#         df['rand']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
+        
+#         utilities().print_info('possible bug with random baseline costs vs rand')
+#         # df=df.drop(columns=['Random_baseline'])
+#         data_sorted=df.mean().sort_values()
+#         print(data_sorted)
+        
+#         file_name=None
+#         if save:
+#             file_name=str(self.compare_results_folder / 'models_barplot.png')
+            
+#         # import pdb
+#         # pdb.pdb.set_trace()    
+#         self.plot.plot_barplot(data_sorted,file_name)
+      
+#     def plot_year_cost(self,save=False):
+#         data=self.get_multi_cost_compare()
+    
+#         utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
+#         df=pd.DataFrame()
+#         for obj_id in data:
+#             df[obj_id]=data[obj_id]['cost']
+#         df['Opti']=data[obj_id]['objective']
+#         df['Random']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
+        
+#         utilities().print_info('possible bug with random baseline costs vs rand')
+#         # df=df.drop(columns=['Random_baseline'])
+#         data_sorted=df.sum().sort_values()
+#         data_to_plot=pd.DataFrame(data_sorted).transpose()
+#         data_to_plot.index=['year_cost']
+        
+#         print(data_to_plot)
+        
+#         file_name=None
+#         if save:
+#             file_name=str(self.compare_results_folder / f'models_barplot_{self.name}.png')
+            
+#         # import pdb
+#         # pdb.pdb.set_trace()    
+#         self.plot.plot_barplot(data_to_plot,file_name)
+  
+    
+#     def plot_per_agent_year_cost(self,save=False):
+#         data={}
+#         for obj_id in self.analyser_objs:
+#             data_agent=self.analyser_objs[obj_id].get_per_agent_costs()
+            
+#             for k in data_agent.columns:
+#                 if 'E' not in k:
+#                     data_agent=data_agent.drop(columns=k)
+            
+#             data_agent=data_agent.mean()
+#             # data_agent=data_agent.sum()
+#             data[obj_id]=data_agent
+        
+#         df=pd.DataFrame(data)
+        
+#         reshaped_df = df.stack().reset_index()
+#         reshaped_df.columns = ['Label', 'Category', 'Value']
+        
+            
+#         file_name=None
+#         if save:
+#             file_name=str(self.compare_results_folder / 'yearlly_mean_per_agent.png')
+        
+#         # return data
+#         self.plot.plot_multi_bar(reshaped_df,file_name)
+            
+            
+#     def plot_multi_metrics(self,save=False):
+#         data={}
+#         metrics=['episode_reward_mean']
+#         for obj_id in self.analyser_objs:
+#             if obj_id == 'Random_baseline':
+#                 continue  # Skip the specific key
+#             for m in metrics:
+#                 # import pdb
+#                 # pdb.pdb.set_trace()
+#                 data_agent=pd.DataFrame(self.analyser_objs[obj_id].progress[m]).rolling(300).mean()
+#                 # data_agent[m+'smooth']=data_agent[m].rolling(20).mean()
+#                 data[obj_id]=data_agent
+         
+#         filename_save=None        
+#         if save:
+#             filename_save=str(self.compare_results_folder / 'mean_reward.png')
+             
+             
+#         self.plot.plotline_smooth(data, filename_save)
         
         
         

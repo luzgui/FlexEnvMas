@@ -62,8 +62,6 @@ class CommunityOptiModel():
         result_df = pd.concat(solutions)
         # result_df.rename(columns={'Unnamed: 0': 'tstep'}, inplace=True)
         result_df.index.name='tstep'
-        import pdb
-        pdb.pdb.set_trace()
             
         # result_df.insert(0, 'tstep', result_df.index)
         
