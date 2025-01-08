@@ -17,15 +17,26 @@ algorithm:
 environment_cls: 'FlexEnv'
 
 #tune config
-mode: max
+mode: min
 metric: episode_reward_mean
+# metric: /info/learner/pol_ag1/learner_stats/policy_loss
+
+# HPO
+hpo_algo: 'asha' #'pbt'
+asha_params:
+  n_samples: 20
+  time_attribute: 'training_iteration'
+  max_time: 100
+  grace: 20
+  red_factor: 3
+
 
 # Run config
 verbose: 0
 
 #trainable config
-n_iters: 11
-checkpoint_freq: 5
+n_iters: 101
+checkpoint_freq: 10
 
 #resources
 num_cpu_1: 1.0

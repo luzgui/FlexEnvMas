@@ -43,6 +43,8 @@ from ray.rllib.algorithms.ppo import PPOConfig #config
 # from shiftenvRLlib_mas import ShiftEnvMas
 
 from ray import tune, air, train
+from ray.tune.schedulers import ASHAScheduler, PopulationBasedTraining
+from ray.tune.schedulers import AsyncHyperBandScheduler
 # from ray.tune import Analysis
 from ray.tune import analysis
 from ray.tune import ExperimentAnalysis
@@ -148,7 +150,13 @@ class Experiment():
         config_algo = PPOConfig().update_from_dict(new_configs)
 
         for k in keys:
-            config_algo[k]=tune.grid_search(new_configs[k])
+            if self.config['hpo_algo']=='grid_search':
+                config_algo[k]=tune.grid_search(new_configs[k])
+            elif self.config['hpo_algo']=='asha':
+                config_algo[k]=tune.randint(new_configs[k][0], new_configs[k][1])
+
+
+
 
         #updates for environemnt 
         config_algo.environment(observation_space=self.env.observation_space,
@@ -165,8 +173,19 @@ class Experiment():
     
     
     def make_tune_config(self):
+        if self.config['hpo_algo']=='asha':
+            sched = ASHAScheduler(
+                time_attr=self.config['asha_params']['time_attribute'],
+                max_t=self.config['asha_params']['max_time'],
+                grace_period=self.config['asha_params']['grace'],
+                reduction_factor=self.config['asha_params']['red_factor'],)
+        else:
+            sched=[]
+        
         config_tune=TuneConfig(mode=self.config['mode'],
-                               metric=self.config['metric'],)
+                               metric=self.config['metric'],
+                               scheduler=sched,
+                               num_samples=20)
         return config_tune
     
     def make_run_config(self, results_dir):
