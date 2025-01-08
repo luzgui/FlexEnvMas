@@ -179,13 +179,17 @@ class Experiment():
                 max_t=self.config['asha_params']['max_time'],
                 grace_period=self.config['asha_params']['grace'],
                 reduction_factor=self.config['asha_params']['red_factor'],)
+            
+            config_tune=TuneConfig(mode=self.config['mode'],
+                                   metric=self.config['metric'],
+                                   scheduler=sched,
+                                   num_samples=self.config['asha_params']['n_samples'])
         else:
             sched=[]
+            config_tune=TuneConfig(mode=self.config['mode'],
+                                   metric=self.config['metric'],)
         
-        config_tune=TuneConfig(mode=self.config['mode'],
-                               metric=self.config['metric'],
-                               scheduler=sched,
-                               num_samples=20)
+        
         return config_tune
     
     def make_run_config(self, results_dir):
