@@ -37,7 +37,7 @@ class CCActionMaskModel(TFModelV2):
                  model_config, 
                  name, 
                  **kwargs):
-
+        
         orig_space = getattr(obs_space, "original_space", obs_space)
         
         # print(orig_space)
@@ -86,7 +86,7 @@ class CCActionMaskModel(TFModelV2):
         # pdb.pdb.set_trace()
         
         #%% Need to hardcode n_opp_agents everytime we change the number of agents
-        n_opp_agents=2
+        n_opp_agents=1
         
         
         # h_size=95
