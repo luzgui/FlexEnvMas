@@ -214,15 +214,17 @@ class Experiment():
     
     
     def get_resources(self):
-        num_cpu_1=self.config['num_cpu_1']
-        num_cpu_2=self.config['num_cpu_2']
-        num_gpu=self.config['num_gpu']
-        cpu_factor=self.config['cpu_factor']
+        num_cpu_head=self.config['num_cpu_head']
+        num_gpu_head=self.config['num_gpu_head']
+        
+        num_cpu_node=self.config['num_cpu_node']
+        num_gpu_node=self.config['num_gpu_node']
+        n_factor=self.config['n_factor']
         
         # b={'CPU': num_cpu,'GPU': num_gpu}
         
         # resources=tune.PlacementGroupFactory([{'CPU': 1.0}]+ [b]*cpu_factor)
-        resources=tune.PlacementGroupFactory([{'CPU': num_cpu_1, 'GPU': num_gpu}] + [{'CPU': num_cpu_2}] * cpu_factor)
+        resources=tune.PlacementGroupFactory([{'CPU': num_cpu_head, 'GPU': num_gpu_head}] + [{'CPU': num_cpu_node, 'GPU': num_gpu_node}] * n_factor)
         
         return resources
         
