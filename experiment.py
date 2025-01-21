@@ -154,13 +154,17 @@ class Experiment():
                 config_algo[k]=tune.grid_search(new_configs[k])
                 
             elif self.config['hpo_algo']=='asha':
-                if k in ['lr','entropy_coeff']:
+                if k == 'lr':
                     config_algo[k]=tune.uniform(new_configs[k][0], new_configs[k][1])
-                elif k in ['train_batch_size','vf_clip_param']:
+                if k == 'entropy_coeff':
+                    config_algo[k]=tune.uniform(new_configs[k][0], new_configs[k][1])
+                if k == 'train_batch_size':
                     config_algo[k]=tune.choice(new_configs[k])
-                elif k=='sgd_minibatch_size':
+                if k == 'vf_clip_param':
+                    config_algo[k]=tune.choice(new_configs[k])
+                if k=='sgd_minibatch_size':
                     config_algo[k]=tune.randint(new_configs[k][0], new_configs[k][1])
-                elif k=='seed':
+                if k=='seed':
                     config_algo[k]=tune.grid_search(new_configs[k])
                     
                     
@@ -225,6 +229,8 @@ class Experiment():
         
         # resources=tune.PlacementGroupFactory([{'CPU': 1.0}]+ [b]*cpu_factor)
         resources=tune.PlacementGroupFactory([{'CPU': num_cpu_head, 'GPU': num_gpu_head}] + [{'CPU': num_cpu_node, 'GPU': num_gpu_node}] * n_factor)
+        
+        # resources={'CPU': self.config['num_cpu_head'], 'GPU': self.config['num_gpu_head']}
         
         return resources
         
