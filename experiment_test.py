@@ -28,6 +28,8 @@ from ray.rllib.env.env_context import EnvContext
 #models
 from ray.rllib.models import ModelCatalog
 from ray.rllib.utils.pre_checks import env
+from ray.train import Checkpoint
+from ray.tune import analysis
 
 #math + data
 import pandas as pd
@@ -108,13 +110,15 @@ class ExperimentTest():
                  test_exp_name, 
                  log_dir, 
                  train_experiment_config_file,
-                 trainable):
+                 trainable,
+                 checkpoint_to_use):
         
         self.env=test_env
         self.exp_name=test_exp_name
         self.dir=log_dir
         self.train_experiment_config=YAMLParser().load_yaml(train_experiment_config_file)
         self.trainable=trainable
+        self.cp=checkpoint_to_use
         
         self.algo_name=self.train_experiment_config['algorithm']['name']
         
@@ -142,21 +146,48 @@ class ExperimentTest():
                                  "object_spilling_config": json.dumps({"type": "filesystem",
                                                                        "params": {"directory_path":[spill_1.as_posix(),
                                                                                                     spill_2.as_posix()],}},)},)
-        
-        restored_tuner = tune.Tuner.restore(experiment_path,trainable=self.trainable)
-        # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
-        
-        result_grid = restored_tuner.get_results()
-        best_res=result_grid.get_best_result(metric=self.train_experiment_config['metric'],
-                                             mode=self.train_experiment_config['mode'])
-        config=best_res.config
-        
-        utilities.print_info('num_workers changed sue to resource scarcicity')
-        config['num_workers']=1
-        config['num_gpus']=0
-        checkpoint=best_res.checkpoint
-        tester=self.tester(config, env=config["env"])
-        tester.restore(checkpoint)
+        if self.cp == 'best_from_exp':
+            print('restoring the best checkpoint from experiment')
+            restored_tuner = tune.Tuner.restore(experiment_path,trainable=self.trainable)
+            # restored_tuner = tune.Tuner.restore(experiment_path,trainable=trainable, resume_unfinished=True)
+            
+            result_grid = restored_tuner.get_results()
+            best_res=result_grid.get_best_result(metric=self.train_experiment_config['metric'],
+                                                 mode=self.train_experiment_config['mode'])
+            config=best_res.config
+            
+            utilities.print_info('num_workers changed sue to resource scarcicity')
+            config['num_workers']=1
+            config['num_gpus']=0
+            checkpoint=best_res.checkpoint
+            # import pdb
+            # pdb.pdb.set_trace()
+            tester=self.tester(config, env=config["env"])
+            tester.restore(checkpoint)
+        else:
+            print('restoring the checkpoint defined in test_config.yaml')
+            checkpoint=Checkpoint(os.path.join(self.dir, self.exp_name,self.cp))
+            
+            experiment=ExperimentAnalysis(os.path.join(self.dir, self.exp_name),
+                                          default_metric=self.train_experiment_config['metric'], 
+                                          default_mode=self.train_experiment_config['mode'])
+            
+            all_configs=experiment.get_all_configs()
+            config = next((all_configs[k] for k in all_configs if k in checkpoint.path), None)
+            
+            config['num_workers']=1
+            config['num_gpus']=0
+            config['seed']=666
+            
+            tester=self.tester(config, env=config["env"])
+            tester.restore(checkpoint)
+            
+            # for k in all_configs.keys():
+            #     if k in checkpoint.path:
+            #         config=all_configs[k]
+                    
+                    
+            
         print('restored the following checkpoint',checkpoint)
         
  

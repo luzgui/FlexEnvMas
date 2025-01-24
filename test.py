@@ -171,7 +171,8 @@ if shouldTest:
               exp_name, 
               raylog,
               file_experiment,
-              trainable_func)
+              trainable_func,
+              test_params['checkpoint'])
     
     tester=test.get_tester(trainable_func)
     
