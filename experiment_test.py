@@ -159,9 +159,8 @@ class ExperimentTest():
             utilities.print_info('num_workers changed sue to resource scarcicity')
             config['num_workers']=1
             config['num_gpus']=0
+            config['seed']=666
             checkpoint=best_res.checkpoint
-            # import pdb
-            # pdb.pdb.set_trace()
             tester=self.tester(config, env=config["env"])
             tester.restore(checkpoint)
         else:
