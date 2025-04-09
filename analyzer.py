@@ -7,7 +7,7 @@ Created on Thu Apr 18 18:23:50 2024
 """
 
 from plots import Plots
-from utilities import FolderUtils, utilities
+from utilities import FolderUtils, utilities, ConfigsParser
 import pandas as pd
 from os import path
 from pathlib import Path
@@ -16,6 +16,15 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 import numpy as np
+
+
+cwd=Path.cwd()
+datafolder=cwd / 'Data'
+raylog=cwd / 'raylog'
+configs_folder=cwd / 'configs'
+algos_config = configs_folder / 'algos_configs'
+resultsfolder=cwd / 'Results'
+
 
 class Analyzer():
     """
@@ -28,17 +37,46 @@ class Analyzer():
                  test_env):
         
         self.folder=results_folder
+        self.plots_folder=self.folder / 'plots'
+        FolderUtils().make_folder(self.plots_folder)
+        
         self.baseline_folder=baseline_folder
         self.opti_folder=opti_folder
         self.plot=Plots()
         self.get_full_test_data() #import data
         self.env=test_env
+        self.get_exp_info()
+        
+        
         
         
         print(f'Experiment in analysis: {self.folder.name}')
         print(f'Baseline in analysis: {self.baseline_folder.name}')
         print(f'Optimal Solution in analysis: {self.opti_folder.name}')
+    
         
+    def get_exp_info(self):
+        """"
+        creates a analyzer attrubite with info on the experiment of the results 
+        from experiment configs
+        
+        
+        - edit self.exp_info for more info from configs         
+        """
+        
+        
+        self.exp_info=utilities.get_exp_from_results_name(self.folder.name)
+        
+        self.config=ConfigsParser(configs_folder, self.exp_info['train_exp'])
+        
+        _,_,_,_,_,exp_config,algo_config=self.config.get_configs()
+        algo_config=YAMLParser().load_yaml(algo_config)
+        exp_config=YAMLParser().load_yaml(exp_config)
+        
+        self.exp_info['model']= exp_config['algorithm']['name']
+        
+        
+    
     def get_full_test_data(self):
         """
         - Scans the results folder and gets metrics and solutions for post analysis and visualization
@@ -104,6 +142,8 @@ class Analyzer():
         
         for fol in folders:
             baseline_files=FolderUtils().get_file_in_folder(fol, 'csv')
+            # import pdb
+            # pdb.pdb.set_trace()
             for f in baseline_files:
                 if 'metrics' in f:
                     self.baseline_metrics=pd.read_csv(f,index_col=0,decimal=',')
@@ -131,6 +171,12 @@ class Analyzer():
         creates a dataframe that stores cost values between optimal solution 
         and rl agent alongside metrics derived from this comparison
         
+        if there are day in whcih the RL solution is better than optimal 
+        that means that at least one machine did not turn on on that day what happens in 
+        the testing of policies
+        
+        The result filters out those days and returns only the good days
+        
         """
         
         df=pd.merge(self.metrics.loc['com'], 
@@ -155,8 +201,11 @@ class Analyzer():
         df_compare.loc[:, 'save_rate']=((c-a)/(c-b))*100
         df_compare.loc[:, 'sigma2_0']=abs((b-a)/c)
         df_compare.loc[:, 'sigma2']=(1-df_compare['sigma2_0'])*100
-                    
-                
+        
+        
+        utilities().print_info('only works if agenst have the same tariff')
+        max_cost=max(self.env.com.agents['ag1'].tariff)*self.env.agents_params['E_prof'].sum()      
+        df_compare.loc[:, 'cost_norm']=a/max_cost        
         # utilities().print_info('Random baseline cost is used in indicators')
         
         # df_compare.loc[:, 'gamma'] = np.where(df_compare['objective'] == 0 and df_compare['objective'] != 0, df_compare['objective'])
@@ -256,14 +305,31 @@ class Analyzer():
         
     
     
-    def plot_one_day(self,day_num,source,save=False):
+    def plot_one_day(self,day_num,source,plot_type,exp,save=False):
         data=self.get_one_day_data(day_num, source)
         
+        # import pdb
+        # pdb.pdb.set_trace()
+        
+        model = 'opti' if source == 'opti' else self.exp_info['model']
+        
+        
+        # model=self.exp_info['model']
+        infos={'source':source,
+               'day_num':day_num,
+               'model':model,
+               'experiment':exp}
         
         file_name=None
         if save:
-            file_name=str(self.folder / ('profile_' + f'day_{day_num}_'+f'source_{source}'))
-        self.plot.makeplot_bar(data, file_name)
+            file_name=str(self.plots_folder / ('profile_' + f'day_{day_num}_'+f'source_{source}'+f'_{model}'+f'_exp_{exp}'))
+            
+
+        
+        if plot_type=='full':
+            self.plot.makeplot_bar_full(data,infos, file_name)
+        elif plot_type=='simple':
+            self.plot.makeplot_bar_simple(data,infos, file_name)
         
 
 
@@ -316,26 +382,203 @@ class AnalyzerMulti():
         self.compare_results_folder=self.results_folder / self.name
         FolderUtils().make_folder(self.compare_results_folder)
         
+        if self.name=='double_tars':
+            self.label='Double Rate'
+        elif self.name=='flat_tars':
+            self.label='Simple Rate'
+        else:
+            self.label='other'
+        
 
     
     def get_multi_cost_compare(self):
+        """Aggregates daily data for all experiments in the AnalyzerMulti object
+        
+        - Returns a dict with a dataframe for every experiment key"""
         data={}
+        opti_source=[]
+        base_source=[]
         for label in self.analyser_objs:
             print(label)
             data[label]=self.analyser_objs[label].get_cost_compare()
+            opti_source.append(self.analyser_objs[label].opti_folder.name)
+            base_source.append(self.analyser_objs[label].baseline_folder.name)
             
-        return data
+        if len(set(opti_source))==1:
+            self.opti_unique=True
+        else: 
+            self.opti_unique=False
+        if len(set(base_source))==1:
+            self.base_unique=True
+        else:
+            self.base_unique=False
+
         
+        return data
+      
+        
+    def get_multi_year_data_eq(self):
+        """
+        To when optimal solution is the same for all experiments under the 
+        the same experiment group
+        
+        returns data for the wholle year for every experiment in the AnalyzerMulti 
+        object when optimal values and base\line values are differente for each experiment 
+        
+        """
+        # data=self.get_multi_cost_compare()
+        data=self.get_multi_all_compare()
+        exp_indexes=data.index.get_level_values('experiment').unique()
+        df=pd.DataFrame(index=exp_indexes,columns=['cost_mean','cost_total'])
+        
+        for key in exp_indexes:
+            df.loc[key,'cost_mean']=data.loc[key]['cost'].mean()
+            df.loc[key,'cost_total']=data.loc[key]['cost'].sum()
+        
+        return df
+            
+        
+    def get_multi_year_data_diff(self):
+        """
+        To use when optimal solution is differente between experiments under
+        the same experiment group
+        
+        returns data for the wholle year for every experiment in the AnalyzerMulti 
+        object when optimal values and baseline values are differente for each experiment 
+        
+        """
+        # data=self.get_multi_cost_compare()
+        data=self.get_multi_all_compare()
+        exp_indexes=data.index.get_level_values('experiment').unique()
+        df=pd.DataFrame(index=exp_indexes,columns=['cost_mean',
+                                                    'objective_mean',
+                                                    'cost_mean_base_mean',
+                                                    'cost_total',
+                                                    'objective_total',
+                                                    'cost_mean_base_total',
+                                                    'opti_dif'])
+        
+        
+        for key in exp_indexes:
+            df.loc[key,'cost_mean']=data.loc[key]['cost'].mean()
+            df.loc[key,'objective_mean']=data.loc[key]['objective'].mean()
+            df.loc[key,'cost_mean_base_mean']=data.loc[key]['cost_mean_base'].mean()
+            df.loc[key,'cost_total']=data.loc[key]['cost'].sum()
+            df.loc[key,'objective_total']=data.loc[key]['objective'].sum()
+            df.loc[key,'cost_mean_base_total']=data.loc[key]['cost_mean_base'].sum()
+            df.loc[key,'opti_dif']=(df.loc[key]['cost_mean']-df.loc[key]['objective_mean'])/df.loc[key]['objective_mean']
+        
+        return df
     
+    
+    def get_multi_all_compare(self):
+        """
+        - returns a dataframe (derived from get_multi_cost_compare()) with 
+        indexes experiment, day, tstep_init
+        
+        - If experiments were sucessfull in a differente number of days 
+        (outputs from get_multi_cost_compare() with different number of rows) 
+        it will show only the common days
+        
+        - If opti values and base values are the same ir creates new indexes 
+        opti and base and treats them as experiments
+        
+        """
+        
+        dfs = []
+        data_raw=self.get_multi_cost_compare()
+
+        data=data_raw.copy()
+        label=list(data.keys())[0] #just the random first label
+        if self.opti_unique:
+            data['opti']=data[label].copy()
+            data['opti']['cost']=data['opti']['objective']
+        
+        if self.base_unique:
+            data['base']=data[label].copy()
+            data['base']['cost']=data['base']['cost_mean_base']
+        
+
+        # Iterate through the dictionary
+        for key, df in data.items():
+            # Add the dictionary key as a new level in the index
+            df = df.assign(experiment=key)
+            df = df.set_index('experiment', append=True)
+            
+            # Reorder the index levels to have 'source' as the first level
+            df = df.reorder_levels(['experiment', 'tstep', 'day'])
+            
+            # Append the processed DataFrame to the list
+            dfs.append(df)
+        
+        # Concatenate all processed DataFrames
+        # Step 2: Find common 'day' values across all DataFrames
+        common_days = set(dfs[0].index.get_level_values('day'))  # Initialize with the first DataFrame's 'day' values
+        for df in dfs:
+            common_days.intersection_update(set(df.index.get_level_values('day')))  # Update to keep only common 'day' values
+        
+        #Filter each DataFrame to include only rows with common 'day' values
+        dfs_filtered = [df[df.index.get_level_values('day').isin(common_days)] for df in dfs]
+        
+        #Concatenate the filtered DataFrames
+        result = pd.concat(dfs_filtered)
+        
+        return result
+
+    
+
+    def get_exp_stats(self):
+        data=self.get_multi_all_compare()
+        
+        data=data[data['x_ratio']<=4] #critical days
+        
+        stats=data.groupby('experiment').describe()
+        
+        stats=stats[['cost', 'dif_simple']]
+        
+        file_name='stats' + self.name + '.csv'
+        
+        stats.to_csv(self.compare_results_folder / file_name )
+        
+        return stats
+        
+
+    def check_equals(self):
+        """
+        Check the several dataframes in the experiment and checks if they have the same optimal solution and 
+        baseline
+        """
+        data=self.get_multi_cost_compare()
+        
+        
+        data=self.get_multi_cost_compare()
+        columns=['objective','cost_mean_base']
+        for key, df in data.items():
+            dfs = []
+            for col in columns:
+                dfs.append(df[col])
+                final_data=pd.concat(dfs,axis=1)
+            print(final_data)
+        
+        
+
     
     def plot_multi_joint(self,x,y, save=False):        
         data=self.get_multi_cost_compare()
         
+        
         file_name=None
         if save:
-            file_name=str(self.compare_results_folder / f'Joint_Plot_Indicator_{y}_{len(data)}_{self.name}')
+            file_name=str(self.compare_results_folder / f'Joint_Plot_{y}_{self.name}')
         
-        self.plot.make_multi_jointplot(data,x,y,filename_save=file_name)
+        infos={'experiment':self.name,
+              'title': f"RL vs optimal solution ({self.label})",
+              'x_label': 'Daily excess PV availability normalized by appliance energy need (-)',
+              'y_label':'€/day',
+              'hue':'experiment'}
+        
+        
+        self.plot.make_multi_jointplot(data,x,y,infos,filename_save=file_name)
         
     
     def plot_per_agent_cost_multi_hist(self,save=False):
@@ -358,53 +601,100 @@ class AnalyzerMulti():
         self.plot.make_multi_histogram(data, file_name)
         
       
-    def plot_year_mean_cost(self,save=False):
-        data=self.get_multi_cost_compare()
-
-        utilities.print_info('The optimization solutions and objectives must be inside the random folder results')
-        df=pd.DataFrame()
-        for obj_id in data:
-            df[obj_id]=data[obj_id]['cost']
-        df['opti']=data[obj_id]['objective']
-        df['rand']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
+    def plot_year_mean_cost_per_model(self,save=False):
+        df=self.get_multi_year_data_eq()
+        df=df['cost_mean']
         
-        utilities().print_info('possible bug with random baseline costs vs rand')
-        # df=df.drop(columns=['Random_baseline'])
-        data_sorted=df.mean().sort_values()
-        print(data_sorted)
         
         file_name=None
         if save:
-            file_name=str(self.compare_results_folder / 'models_barplot.png')
-            
+            file_name=str(self.compare_results_folder / 'daily_mean_costs.png')
+   
+        infos={}
+        infos['title']='Daily Mean Cost for running collective appliances'
+        infos['x_label']='model'
+        infos['y_label']='€/day' 
+        infos['hue']='experiment'
+        self.plot.plot_barplot(df,file_name,infos)
+    
+    def plot_year_mean_cost_group(self,save=False):
+        """
+        Barplot that compares models vs optimal vs baseline in group
+        The Optimal values must be the same
+        """
+        df=self.get_multi_year_data_eq()
         # import pdb
-        # pdb.pdb.set_trace()    
-        self.plot.plot_barplot(data_sorted,file_name)
+        # pdb.pdb.set_trace()
+        # df=df[['cost_mean','objective_mean','cost_mean_base_mean']]
+        
+        
+        # keys=['objective_mean','cost_mean_base_mean']
+        # for k in keys:
+        #     assert np.all(df[k] == df[k].iloc[0])
+        
+        # for k in keys:
+        #     df.loc[k]=df[k].iloc[0]
+        #     df=df.drop(k,axis=1)
+            
+        file_name=None
+        if save:
+            file_name=str(self.compare_results_folder / 'daily_mean_costs.png')
+        
+        
+        infos={}
+        infos['title']=f'Daily Mean Cost for all year ({self.name})'
+        infos['x_label']='model'
+        infos['y_label']='€/day' 
+        infos['hue']='experiment'
+        # infos['legend']=False
+   
+        self.plot.plot_barplot(df,file_name,infos)
+        
+    def plot_boxplot_year_mean_cost_group(self,save=False):
+        """
+        Boxplot that compares models vs optimal vs baseline in group
+        The Optimal values must be the same
+        """
+        
+        
+        df=self.get_multi_all_compare()
+        
+        # df=df[df['x_ratio']<=4]
+        # label2='_hard days'
+        
+        df=df['cost']
+        num_days=len(df.index.get_level_values('day').unique())
+        
+        infos={}
+        infos['title']='Distribution of daily costs'
+        infos['x_label']='model'
+        infos['y_label']='€/day' 
+        infos['hue']='experiment'
+        
+        file_name=None
+        if save:
+            file_name=str(self.compare_results_folder / f'box_plot_{self.name}_days_{num_days}_exp_{self.name}.png')
+        
+        
+        # infos['legend']=False
+   
+        self.plot.plot_boxplot(df,file_name,infos)
+    
       
     def plot_year_cost(self,save=False):
-        data=self.get_multi_cost_compare()
-    
-        df=pd.DataFrame()
-        for obj_id in data:
-            df[obj_id]=data[obj_id]['cost']
-        df['Opti']=data[obj_id]['objective']
-        df['Random']=self.analyser_objs[obj_id].get_baseline_costs()['cost_mean_base'].values
-        
-        utilities().print_info('possible bug with random baseline costs vs rand')
-        # df=df.drop(columns=['Random_baseline'])
-        data_sorted=df.sum().sort_values()
-        data_to_plot=pd.DataFrame(data_sorted).transpose()
-        data_to_plot.index=['year_cost']
-        
-        print(data_to_plot)
-        
+        df=self.get_multi_year_data()
+        df=df[['cost_total','objective_total','cost_mean_base_total']]
         file_name=None
         if save:
-            file_name=str(self.compare_results_folder / f'models_barplot_{self.name}.png')
-            
-        # import pdb
-        # pdb.pdb.set_trace()    
-        self.plot.plot_barplot(data_to_plot,file_name)
+            file_name=str(self.compare_results_folder / 'year_total_costs.png')
+        
+        infos={}
+        infos['title']='Year Total Cost'
+        infos['x_label']='model'
+        infos['y_label']='€/year'
+        infos['hue']='experiment'
+        
+        self.plot.plot_barplot(df,file_name,infos)
   
     
     def plot_per_agent_year_cost(self,save=False):
