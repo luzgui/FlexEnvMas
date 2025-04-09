@@ -13,16 +13,29 @@ dataset_unit: kwh #kw or kwh
 #   data_proc_cls: GecadDataProcessor
 
 #Data Range
-# t_init: 0
-# t_end: 35136 # length of gecad data
+t_init: 0
+t_end: 35136 # length of gecad data
 
-t_init: 1056
-t_end: 1248
+# t_init: 0
+# t_end: 192 # length of gecad data
+
+# t_init: 1056
+# t_end: 1248
+
+# t_init: 34656
+# t_end: 34848
+
+# t_init: 32448
+# t_end: 32640
+
+# t_init: 15648
+# t_end: 15840
+
 
 allowed_init_config:
   clean_pv_data: True
   day_select: False
-  pv_threshold: 2.0
+  pv_threshold: 4.0
 
 
 
@@ -31,7 +44,7 @@ env_info: 'training environment'
 done_condition: 'mode_window'
 init_condition: 'mode_window'
 
-seed: 1024
+# seed: 1024
 normalization: True
 
 #PV

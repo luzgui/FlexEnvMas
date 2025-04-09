@@ -87,9 +87,10 @@ save_file=exp_group_defs['save_file']
 analysis_objs=dict.fromkeys(experiment_name)
 
 
-
+stats={}
 for exp in experiment_name:
     print(exp)
+    
     analysis_objs[exp]={}
     for k in exp_group_defs[exp]['experiments']:
         env_name=exp_group_defs[exp]['experiments'][k]['test_env']
@@ -117,23 +118,46 @@ for exp in experiment_name:
         analysis_objs[exp][k]=Analyzer(folder, folder_bl, folder_opti,tenv)
         
         # plot some days
-        for day in days_to_plot:
-            analysis_objs[exp][k].plot_one_day(day, 'rl', save=save_file)
-            analysis_objs[exp][k].plot_one_day(day, 'opti', save=save_file)
+        # for day in days_to_plot:
+            
+        #     analysis_objs[exp][k].plot_one_day(day, 'rl','simple',exp, save=save_file)
+        #     # data_day=analysis_objs[exp][k].get_one_day_data(day, 'rl')
+        #     # analysis_objs[exp][k].plot_one_day(day, 'rl','full',exp, save=False)
+        #     # analysis_objs[exp][k].plot_one_day(day, 'opti','full',exp, save=save_file)
+        #     analysis_objs[exp][k].plot_one_day(day, 'opti','simple',exp, save=save_file)
             
     
     analyse_multi=AnalyzerMulti(analysis_objs[exp],exp)
-    analyse_multi.plot_multi_joint(x='x_ratio',y='dif',save=save_file)
+    # analyse_multi.plot_multi_joint(x='x_ratio',y='dif',save=save_file)
+    
+    #plots for paper
     # analyse_multi.plot_multi_joint(x='x_ratio',y='dif_simple',save=save_file)
+    # analyse_multi.plot_boxplot_year_mean_cost_group(save=save_file)
+    
+    
     # analyse_multi.plot_multi_joint(x='x_ratio',y='gamma',save=save_file)
-    data=analyse_multi.get_multi_cost_compare()
+    # analyse_multi.plot_year_mean_cost_per_model(save=save_file)
+    # analyse_multi.plot_year_mean_cost_group(save=False)
+    
+    # analyse_multi.plot_year_cost(save=False)
+    
+    data_raw=analyse_multi.get_multi_cost_compare()
+    data_year=analyse_multi.get_multi_year_data_eq()
+    data_year_diff=analyse_multi.get_multi_year_data_diff()
+    data_ag=analyse_multi.get_multi_all_compare()
+    stats[exp]=analyse_multi.get_exp_stats()
 
-
+    #data for paper
+    data_paper=data_ag.loc[data_ag.index.get_level_values(2).isin([15,11,31,34,1,2])]
+    
+    
 #%%
-obj=analysis_objs['expdouble']['exp0001']
-s=obj.state
-t=2880
-s1=s.loc[t:t+96]
-d=345
-obj.plot_one_day(d,'rl')
-obj.plot_one_day(d,'opti')
+obj=analysis_objs[exp][k]
+# s=obj.state
+# t=2880
+# s1=s.loc[t:t+96]
+# d=359
+# obj.plot_one_day(d,'rl')
+# obj.plot_one_day(d,'opti')
+env_data=tenv.data
+env_data[env_data.index.get_level_values(1)==34]

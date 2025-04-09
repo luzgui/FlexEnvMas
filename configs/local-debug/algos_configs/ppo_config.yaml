@@ -1,10 +1,10 @@
 #training
-lr: [0.00001,0.001] #uniform sample
+# lr: [0.00001,0.001] #uniform sample
 num_sgd_iter: 30
-train_batch_size: [4800,9600] #choice
-sgd_minibatch_size: [128,256] #integer sample
+train_batch_size: 128 #choice
+# sgd_minibatch_size: [128,256] #integer sample
 
-entropy_coeff: [0.01,0.3] #uniform sample
+# entropy_coeff: [0.01,0.3] #uniform sample
 lambda_: 1.0
 
 kl_coeff: 0.2
@@ -12,14 +12,14 @@ kl_target: 0.01
 
 vf_loss_coeff: 1.0
 
-vf_clip_param: [10.0,20.0] #choice
+# vf_clip_param: [10.0,20.0] #choice
 clip_param: 0.3
 
 
 _enable_learner_api: False
 model:
-  custom_model: cc_shift_mask
-  # custom_model: shift_mask
+  #custom_model: cc_shift_mask
+  custom_model: shift_mask
   #custom_model: lstm_model
   fcnet_hiddens: [256,256,256]
   fcnet_activation: relu
@@ -32,7 +32,8 @@ env: flexenv
 disable_env_checking: True
 
 #debugging
-seed: [42, 123, 256, 789, 1024] #grid search
+# seed: [42, 123, 256, 789, 1024] #grid search
+seed: [1, 2]
 log_level: DEBUG
 
 #rollouts
@@ -50,12 +51,10 @@ enable_rl_module_and_learner: False
 #num_gpus_per_worker: 1
 
 
-vf_clip_param: 20.0
-
-
-# num_cpus_per_worker: 1
-# num_cpus_per_trainer_worker: 1
-# num_trainer_workers: 1
+# vf_clip_param: 20.0
+num_cpus_per_worker: 2
+num_cpus_per_trainer_worker: 1
+num_trainer_workers: 1
 
 #Evaluation
 # evaluation_interval: 1
@@ -64,8 +63,8 @@ vf_clip_param: 20.0
 
 
 
-
-# num_workers: 4
+# num_rollout_workers: 1
+num_workers: 2
 # num_envs_per_worker: 2
 # env_config:
 #   reward_shaping: true

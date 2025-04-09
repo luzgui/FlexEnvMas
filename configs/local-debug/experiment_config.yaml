@@ -11,8 +11,8 @@ pol_type: agent_pol #shared_pol shared policy or each agent will have its own po
 
 
 algorithm:
-  # name: PPO
-  name: CentralizedCritic
+  name: PPO
+  # name: CentralizedCritic
   config: 'ppo_config.yaml'
 environment_cls: 'FlexEnv'
 
@@ -22,12 +22,13 @@ metric: episode_reward_mean
 # metric: /info/learner/pol_ag1/learner_stats/policy_loss
 
 # HPO
-hpo_algo: 'asha' #'pbt'
+# hpo_algo: 'asha' #'pbt'
+hpo_algo: 'grid_search'
 asha_params:
-  n_samples: 1
+  n_samples: 2
   time_attribute: 'training_iteration'
-  max_time: 100
-  grace: 20
+  max_time: 5
+  grace: 2
   red_factor: 3
 
 
@@ -35,16 +36,16 @@ asha_params:
 verbose: 0
 
 #trainable config
-n_iters: 101
-checkpoint_freq: 10
+n_iters: 3
+checkpoint_freq: 1
 
 #resources
-num_cpu_head: 1.0
+num_cpu_head: 2.0
 num_gpu_head: 0.0
 
-num_cpu_node: 1.0
+num_cpu_node: 2.0
 num_gpu_node: 0.0
 
-n_factor: 4
+n_factor: 3
 
 spill_dir: /home/omega/Documents/FCUL/Projects/FlexEnvMas/raylog/spill1
