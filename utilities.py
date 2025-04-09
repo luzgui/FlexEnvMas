@@ -22,6 +22,16 @@ class utilities:
         print(colored(message,'red'))
         print(colored(f"@ '{function_name}' at line {line_number}",'green'))
         
+    @staticmethod    
+    def get_exp_from_results_name(folder_name: str) -> dict:
+        parts = folder_name.split('_')
+        result={'train_exp': parts[1],
+                'test_exp':parts[3]}
+        
+        return result
+        
+        
+        
 
 class ConfigsParser():
     def __init__(self,configs_folder, exp_name):
