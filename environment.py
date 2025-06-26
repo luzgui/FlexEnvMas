@@ -236,64 +236,11 @@ class FlexEnv(MultiAgentEnv):
         #update the state
         self.state_upd.update_features()
         
-        
-        # self.state['minutes']=self.minutes
-        #sine/cosine
-        # self.state['sin']=np.sin(2*np.pi*(self.minutes/self.min_max))
-        # self.state['cos']=np.cos(2*np.pi*(self.minutes/self.min_max))
-        
-        #tariffs (for now all agents get the same tariff)
-        # self.tar_buy,self.tar_sell=self.get_tariffs(0) #tariff for the present timestep
-        # utilities.print_info('All agents are getting the same tariff for now')
-        # self.state['tar_buy']=self.com.get_tariffs_by_mins(self.tstep)
-        # self.state['tar_buy0']=self.com.get_tariffs_by_mins(self.tstep+1)
-        
-        #inititialize binary variables
-        # self.state[['y','y_1','y_s']]=0
-        # self.state[['y_s']]=0
-        
-        
-        # Initialize history of actions
-        # self.hist=pd.DataFrame(index = range(self.Tw),columns=self.agents_id)
-        # self.hist=pd.DataFrame(index=tuple([(a,t) for a in self.agents_id for t in range(self.tstep,self.tstep+self.Tw)]), columns=['hist'])
-        
-        
-        
-        # self.hist.append(self.y) # CHECK IF NEEDED
-        
-        #Initial energy to consume
-        # self.state['E_prof_rem'].update(self.agents_params['E_prof'])
-        # self.state.update({'E_prof_rem': self.agents_params['E_prof']})
-
-        
-        #update forecasts
-        # self.update_forecast()
-        
-        # for aid in self.agents_id:
-        #     self.state.loc[aid,'pv_sum']=self.data.loc['ag1'][self.tstep:self.tstep_init+self.Tw]['gen'].sum()
-            # self.state.loc[aid, self.state.columns.str.contains(r'^tar\d+$')]=self.get_future_values(8).loc[aid]['tar_buy'].values
-            
-            # s=self.get_episode_data().loc[aid]['tar_buy']
-            # self.state.loc[aid,'tar_d']=self.state.loc[aid,'tar_buy']-min(s.loc[self.tstep:self.tstep_init+self.Tw-1])
-        
         # self.update_tariffs()
         #Initial mask: # we concede full freedom for the appliance 
         self.mask.loc[:,:]=np.ones([self.com.num_agents,self.action_space.n])
         
-        
-        
-        ### Conditions for random timsetep @ start
-        
-        # if the random initial time step is after the delivery time it must not turn on
-        # if self.minutes >= self.t_deliver-self.T_prof*self.tstep_size:
-        #     self.E_prof=0 #means that there is no more energy to consume 
-        #     self.y_s=self.T_prof #means taht it connected allready the machine T_prof times
-        # else:
-        #     self.E_prof=self.profile.sum()*self.dh #energy needed for the appliance
-        #     self.y_s=0 # means that it has never connected the machine
-        
-        
-        
+    
         #Create histories
         # self.state_hist=pd.DataFrame(index=tuple([(a,t) for a in self.agents_id+['global'] for t in range(self.tstep,self.tstep+self.Tw)]), columns=list(self.state_vars.keys())+['action','reward'])
         
@@ -305,7 +252,6 @@ class FlexEnv(MultiAgentEnv):
         self.make_state_norm() #make the self.state_norm attribute for the normalized state
         
         return self.get_env_obs()
-        
         
 
         

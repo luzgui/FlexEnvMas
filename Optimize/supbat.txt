@@ -1,0 +1,6 @@
+  - battery_id: batt2
+    capacity: 8.0
+    charging_power_limit: 3.0
+    discharging_power_limit: -3.0
+    charging_efficiency: 0.9
+    discharging_efficiency: 0.9
