@@ -40,19 +40,19 @@ from datetime import datetime
 
 #Custom functions
 # from plotutils import *
-from models2 import ActionMaskModel, CCActionMaskModel
-from models_rnn import LSTMActionMaskModel
+from rl.models.models2 import ActionMaskModel, CCActionMaskModel
+from rl.models.models_rnn import LSTMActionMaskModel
 
 
 
 import random
 
-from trainable import *
-from obs_wrapper import *
+from trains.trainable import *
+# from obs_wrapper import *
 
 # from shiftenvRLlib_mas import ShiftEnvMas
 
-from auxfunctions_CC import *
+from rl.algos.auxfunctions_CC import *
 
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
@@ -78,31 +78,31 @@ from rich import print
 from rich.console import Console
 from rich.syntax import Syntax
 
-from experiment_test import ExperimentTest
-from testenv import TestEnv
-from trainable import Trainable
-from utilities import ConfigsParser
-from community import Community
-from state import StateVars
-from environment import FlexEnv
-from plots import Plots
+from tests.experiment_test import ExperimentTest
+from tests.testenv import TestEnv
+from trains.trainable import Trainable
+from utils.utilities import ConfigsParser
+from env.community import Community
+from env.state import StateVars
+from env.environment import FlexEnv
+from analyze.plots import Plots
 
-from experiment_test import ExperimentTest
-from testenv import TestEnv
+from tests.experiment_test import ExperimentTest
+from tests.testenv import TestEnv
 
-from optimize import CommunityOptiModel
+from opti.optimize import CommunityOptiModel
 
 
 #paths
 
 cwd=Path.cwd()
-datafolder=cwd / 'Data'
-raylog=cwd / 'raylog'
+datafolder=cwd.parent  / 'Data'
+raylog=cwd.parent  / 'raylog'
 prof_folder=raylog / 'profiles'
-resultsfolder=cwd / 'Results'
+resultsfolder=cwd.parent  / 'Results'
 storage_path='/home/omega/Downloads/ShareIST'
 
-configs_folder=cwd / 'configs'
+configs_folder=cwd.parent  / 'configs'
 
 #%% exp_name + get configs for experiment
 exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']

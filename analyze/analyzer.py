@@ -6,12 +6,12 @@ Created on Thu Apr 18 18:23:50 2024
 @author: omega
 """
 
-from plots import Plots
-from utilities import FolderUtils, utilities, ConfigsParser
+from analyze.plots import Plots
+from utils.utilities import FolderUtils, utilities, ConfigsParser
 import pandas as pd
 from os import path
 from pathlib import Path
-from dataprocessor import YAMLParser
+from utils.dataprocessor import YAMLParser
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -19,11 +19,11 @@ import numpy as np
 
 
 cwd=Path.cwd()
-datafolder=cwd / 'Data'
-raylog=cwd / 'raylog'
-configs_folder=cwd / 'configs'
+datafolder=cwd.parent / 'Data'
+raylog=cwd.parent / 'raylog'
+configs_folder=cwd.parent / 'configs'
 algos_config = configs_folder / 'algos_configs'
-resultsfolder=cwd / 'Results'
+resultsfolder=cwd.parent / 'Results'
 
 
 class Analyzer():
@@ -47,6 +47,9 @@ class Analyzer():
         self.env=test_env
         self.get_exp_info()
         
+        import pdb
+        pdb.pdb.set_trace()
+        
         
         
         
@@ -63,8 +66,7 @@ class Analyzer():
         
         - edit self.exp_info for more info from configs         
         """
-        
-        
+    
         self.exp_info=utilities.get_exp_from_results_name(self.folder.name)
         
         self.config=ConfigsParser(configs_folder, self.exp_info['train_exp'])

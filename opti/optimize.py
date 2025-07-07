@@ -12,8 +12,8 @@ import pandas as pd
 import numpy as np
 import random
 
-from utilities import utilities
-from dataprocessor import OptiDataPostProcessor
+from utils.utilities import utilities
+from utils.dataprocessor import OptiDataPostProcessor
 
 import os
 from os import path

@@ -69,8 +69,9 @@ class ConfigsParser():
         
         exp_name must be a folder name or wwill return an error
         """
-        from dataprocessor import YAMLParser #import here due to circular error
-
+        from utils.dataprocessor import YAMLParser #import here due to circular error
+        # import pdb
+        # pdb.pdb.set_trace()
         files=self.traverse_folder()
         files=files[self.exp_name]
         self.exp_folder=Path(self.folder) / self.exp_name

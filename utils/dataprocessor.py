@@ -9,7 +9,7 @@ Created on Fri Mar  8 11:31:38 2024
 import pandas as pd
 import numpy as np
 import yaml
-from utilities import utilities
+from utils.utilities import utilities
 # from metrics import Metrics
 
 

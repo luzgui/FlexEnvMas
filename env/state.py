@@ -6,8 +6,8 @@ Created on Tue Mar 19 21:40:53 2024
 @author: omega
 """
 
-from dataprocessor import YAMLParser
-from utilities import *
+from utils.dataprocessor import YAMLParser
+from utils.utilities import *
 
 class StateVars():
     """

@@ -14,12 +14,12 @@ import datetime
 from datetime import datetime
 from termcolor import colored
 
-from dataprocessor import DataPostProcessor, YAMLParser
+from utils.dataprocessor import DataPostProcessor, YAMLParser
 
 import pandas as pd
 import numpy as np
 
-from plots import Plots
+from analyze.plots import Plots
 
 class TestEnv():
     def __init__(self,env, tester, file_experiment,test_config_file):

@@ -23,13 +23,13 @@ resultsfolder=cwd.parent / 'Results'
 import os
 
 from env.community import Community
-from environment import FlexEnv
-from state import StateVars
-from experiment import Experiment
-from experiment_test import SimpleTests
-from trainable import Trainable
-from dataprocessor import YAMLParser
-from utilities import ConfigsParser
+from env.environment import FlexEnv
+from env.state import StateVars
+from tests.experiment import Experiment
+from tests.experiment_test import SimpleTests
+from trains.trainable import Trainable
+from utils.dataprocessor import YAMLParser
+from utils.utilities import ConfigsParser
 
 #ray + gym
 import ray #ray2.0 implementation
@@ -40,15 +40,13 @@ from ray import tune
 from ray.rllib.models import ModelCatalog
 
 # Custom Model
-from models2 import ActionMaskModel, CCActionMaskModel
-from models_rnn import LSTMActionMaskModel
+from rl.models.models2 import ActionMaskModel, CCActionMaskModel
+from rl.models.models_rnn import LSTMActionMaskModel
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 ModelCatalog.register_custom_model("lstm_model", LSTMActionMaskModel)
 
 #Custom functions
-from models2 import ActionMaskModel, CCActionMaskModel
-
 start_time = time.time()
 
 

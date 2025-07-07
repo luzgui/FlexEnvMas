@@ -16,7 +16,7 @@ import random as rnd
 import seaborn as sns
 from icecream import ic
 import seaborn as sns
-from utilities import utilities
+from utils.utilities import utilities
 import re
 
 class Plots():

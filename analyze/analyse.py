@@ -53,29 +53,29 @@ from rich import print
 from rich.console import Console
 from rich.syntax import Syntax
 
-from experiment_test import ExperimentTest
-from testenv import TestEnv
-from trainable import Trainable
-from utilities import ConfigsParser, FolderUtils
-from dataprocessor import YAMLParser
-from community import Community
-from state import StateVars
-from environment import FlexEnv
-from analyzer import Analyzer
+from tests.experiment_test import ExperimentTest
+from tests.testenv import TestEnv
+from trains.trainable import Trainable
+from utils.utilities import ConfigsParser, FolderUtils
+from utils.dataprocessor import YAMLParser
+from env.community import Community
+from env.state import StateVars
+from env.environment import FlexEnv
+from analyze.analyzer import Analyzer
 #paths
 
 cwd=Path.cwd()
-datafolder=cwd / 'Data'
-raylog=cwd / 'raylog'
+datafolder=cwd.parent  / 'Data'
+raylog=cwd.parent  / 'raylog'
 prof_folder=raylog / 'profiles'
-resultsfolder=cwd / 'Results'
+resultsfolder=cwd.parent / 'Results'
 storage_path='/home/omega/Downloads/ShareIST'
 
-configs_folder=cwd / 'configs'
+configs_folder=cwd.parent  / 'configs'
 
 #%% 
-from analyzer import Analyzer, AnalyzerMulti
-from plots import Plots
+from analyze.analyzer import Analyzer, AnalyzerMulti
+from analyze.plots import Plots
 exp_group_defs=YAMLParser().load_yaml(configs_folder / 'results_config.yaml')
 
 #%% Create analyzer objects
@@ -118,13 +118,13 @@ for exp in experiment_name:
         analysis_objs[exp][k]=Analyzer(folder, folder_bl, folder_opti,tenv)
         
         # plot some days
-        # for day in days_to_plot:
+        for day in days_to_plot:
             
-        #     analysis_objs[exp][k].plot_one_day(day, 'rl','simple',exp, save=save_file)
-        #     # data_day=analysis_objs[exp][k].get_one_day_data(day, 'rl')
-        #     # analysis_objs[exp][k].plot_one_day(day, 'rl','full',exp, save=False)
-        #     # analysis_objs[exp][k].plot_one_day(day, 'opti','full',exp, save=save_file)
-        #     analysis_objs[exp][k].plot_one_day(day, 'opti','simple',exp, save=save_file)
+            analysis_objs[exp][k].plot_one_day(day, 'rl','simple',exp, save=save_file)
+            # data_day=analysis_objs[exp][k].get_one_day_data(day, 'rl')
+            # analysis_objs[exp][k].plot_one_day(day, 'rl','full',exp, save=False)
+            # analysis_objs[exp][k].plot_one_day(day, 'opti','full',exp, save=save_file)
+            analysis_objs[exp][k].plot_one_day(day, 'opti','simple',exp, save=save_file)
             
     
     analyse_multi=AnalyzerMulti(analysis_objs[exp],exp)

@@ -7,10 +7,10 @@ import pandas as pd
 import numpy as np
 import random
 from ray import tune
-from auxfunctions_CC import CentralizedCritic
+from rl.algos.auxfunctions_CC import CentralizedCritic
 from termcolor import colored
 from ray import train
-from dataprocessor import YAMLParser
+from utils.dataprocessor import YAMLParser
 
 # import cProfile
 
