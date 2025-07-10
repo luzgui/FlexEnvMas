@@ -6,9 +6,9 @@ Created on Thu Mar  7 14:57:51 2024
 @author: omega
 """
 import pandas as pd
-from agents import Agent
-from resources import ShiftApp
-from dataprocessor import YAMLParser, GecadDataProcessor, DataProcessor
+from env.agents import Agent
+from env.resources import ShiftApp
+from utils.dataprocessor import YAMLParser, GecadDataProcessor, DataProcessor
 
 class Community:
     def __init__(self, 

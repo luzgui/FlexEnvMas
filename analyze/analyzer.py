@@ -4,14 +4,21 @@
 Created on Thu Apr 18 18:23:50 2024
 
 @author: omega
+
+--------
+
+    - Holds the classes needed to analysze the test results from a sucessfull experiment
+    
+    - These results are produced by the test/test.py script
+
 """
 
-from plots import Plots
-from utilities import FolderUtils, utilities, ConfigsParser
+from analyze.plots import Plots
+from utils.utilities import FolderUtils, utilities, ConfigsParser
 import pandas as pd
 from os import path
 from pathlib import Path
-from dataprocessor import YAMLParser
+from utils.dataprocessor import YAMLParser
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -19,22 +26,54 @@ import numpy as np
 
 
 cwd=Path.cwd()
-datafolder=cwd / 'Data'
-raylog=cwd / 'raylog'
-configs_folder=cwd / 'configs'
+datafolder=cwd.parent / 'Data'
+raylog=cwd.parent / 'raylog'
+configs_folder=cwd.parent / 'configs'
 algos_config = configs_folder / 'algos_configs'
-resultsfolder=cwd / 'Results'
+resultsfolder=cwd.parent / 'Results'
 
 
 class Analyzer():
     """
     From results_folder produces an object with all the needed data and methods to perform analysis 
+    
+    
+    Attributes
+    ----------
+    folder: path
+        An object of pathlib.Path containing the absolute path of the folder with the test results.
+    plots_folder: path
+        An object of pathlib.Path containing the absolute path of the sub-folder to store plots
+    baseline_folder : path
+        An object of pathlib.Path containing the absolute path of the folder with the results of the baseline
+    opti_folder : path
+        An object of pathlib.Path containing the absolute path of the folder with the results of the optimal model 
+    env: FlexEnv
+        A FlexEnv object
+    plot: Plots
+        A Plots object
+    
     """
     
     def __init__(self,results_folder,
                  baseline_folder,
                  opti_folder,
                  test_env):
+        
+        
+        """        
+        Parameters
+        ----------
+        results_folder: path
+            An object of pathlib.Path containing the absolute path of the folder with the test results.
+        baseline_folder : path
+            An object of pathlib.Path containing the absolute path of the folder with the results of the baseline
+        opti_folder : path
+            An object of pathlib.Path containing the absolute path of the folder with the results of the optimal model
+        test_env: FlexEnv
+            A FlexEnv object
+        
+        """
         
         self.folder=results_folder
         self.plots_folder=self.folder / 'plots'
@@ -47,9 +86,7 @@ class Analyzer():
         self.env=test_env
         self.get_exp_info()
         
-        
-        
-        
+
         print(f'Experiment in analysis: {self.folder.name}')
         print(f'Baseline in analysis: {self.baseline_folder.name}')
         print(f'Optimal Solution in analysis: {self.opti_folder.name}')
@@ -63,8 +100,7 @@ class Analyzer():
         
         - edit self.exp_info for more info from configs         
         """
-        
-        
+    
         self.exp_info=utilities.get_exp_from_results_name(self.folder.name)
         
         self.config=ConfigsParser(configs_folder, self.exp_info['train_exp'])

@@ -36,7 +36,7 @@ asha_params:
 verbose: 0
 
 #trainable config
-n_iters: 3
+n_iters: 2
 checkpoint_freq: 1
 
 #resources

@@ -22,11 +22,11 @@ from ray.rllib.env.multi_agent_env import MultiAgentEnv, make_multi_agent
 # from state_vars import *
 from termcolor import colored
 
-from dataprocessor import DataProcessor, EnvDataProcessor
-from utilities import *
+from utils.dataprocessor import DataProcessor, EnvDataProcessor
+from utils.utilities import *
 
-from reward import Reward
-from state_update import StateUpdate 
+from env.reward import Reward
+from env.state_update import StateUpdate 
 
 
 

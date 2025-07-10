@@ -6,7 +6,9 @@ Created on Fri Mar 22 09:59:37 2024
 @author: omega
 """
 
-from models2 import ActionMaskModel, CCActionMaskModel
+from rl.models.models2 import ActionMaskModel, CCActionMaskModel
+from utils.dataprocessor import YAMLParser
+
 from ray.rllib.models import ModelCatalog
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
@@ -24,14 +26,14 @@ from ray.tune import ExperimentAnalysis
 from ray.tune import TuneConfig
 # from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
 from ray.tune.experiment import trial
-from obs_wrapper import *
+
 
 # from auxfunctions_shiftenv import *
 from termcolor import colored
 
-from dataprocessor import YAMLParser
 
-from models2 import ActionMaskModel, CCActionMaskModel
+
+
 from ray.rllib.models import ModelCatalog
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
@@ -51,7 +53,7 @@ from ray.tune import ExperimentAnalysis
 from ray.tune import TuneConfig
 # from ray.tune.execution.trial_runner import _load_trial_from_checkpoint
 from ray.tune.experiment import trial
-from obs_wrapper import *
+
 
 # from auxfunctions_shiftenv import *
 from termcolor import colored

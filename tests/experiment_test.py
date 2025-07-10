@@ -22,7 +22,7 @@ from ray.tune import analysis, ExperimentAnalysis, TuneConfig
 from ray.tune.experiment import trial
 
 #PPO algorithm
-from auxfunctions_CC import CentralizedCritic
+from rl.algos.auxfunctions_CC import CentralizedCritic
 from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
 from ray.rllib.env.env_context import EnvContext
 #models
@@ -53,18 +53,18 @@ from datetime import datetime
 # from shiftenvRLlib import ShiftEnv
 # from auxfunctions_shiftenv import *
 # from plotutils import *
-from models2 import ActionMaskModel, CCActionMaskModel
+from rl.models.models2 import ActionMaskModel, CCActionMaskModel
 
 
 
 import random
 
-from trainable import *
-from obs_wrapper import *
+# from train.trainable import *
+
 
 # from shiftenvRLlib_mas import ShiftEnvMas
 
-from auxfunctions_CC import *
+from rl.algos.auxfunctions_CC import *
 
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
@@ -101,8 +101,8 @@ resultsfolder=cwd / 'Results'
 storage_path='/home/omega/Downloads/ShareIST'
 
 
-from dataprocessor import DataPostProcessor, YAMLParser
-from utilities import utilities
+from utils.dataprocessor import DataPostProcessor, YAMLParser
+from utils.utilities import utilities
 
 #%% Test Class
 class ExperimentTest():
