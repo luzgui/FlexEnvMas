@@ -27,7 +27,7 @@ sns.set_style({'axes.linewidth': 1, 'axes.edgecolor': 'black',
 
 #%% Parameters
 ti = 0
-H = 5 * 48 * 2
+H = 5 * 24 * 2 * 2
 dt = 15
 
 #%% Load Batteries from YAML
@@ -41,29 +41,42 @@ for batt_spec in battery_data["batteries"]:
     batt_spec["current_charge"] = percent * capacity  
     batteries.append(Battery(**batt_spec))
 
-# Define alpha (PV share per battery)
-alpha = [1.0 / len(batteries) for _ in batteries]  # Equal share for now
-
 #%% Load Data
 g_df = pd.read_csv(os.path.join(DataFolder, 'pv_gen.csv'), header=None)
 num_batteries = len(batteries)
 PV_total = 4 * g_df.iloc[:, :num_batteries].clip(lower=0).sum(axis=1).values[ti:H]
 
 loads = pd.read_csv(os.path.join(DataFolder, 'load_cons.csv'), header=None)
-assert loads.shape[1] >= num_batteries, "Faltam colunas de carga para todas as baterias!"
 
 fixed_buy = 0.10 
+
 fixed_sell = 0.01
+
 tar = pd.Series(fixed_buy, index=range(H), name='tar')
 sell = pd.Series(fixed_sell, index=range(H), name='tar_sell')
 priceDict1 = dict(enumerate(sell))
 priceDict2 = dict(enumerate(tar))
 
+#%% Dynamic Alpha
+
+loads_matrix = loads.iloc[ti:H, :num_batteries].astype(float).values  # shape: (H, n_batteries)
+load_sums = loads_matrix.sum(axis=1).reshape(-1, 1)  # soma total de carga por timestep (shape: Hx1)
+
+alpha_matrix = np.divide(loads_matrix, load_sums, where=load_sums!=0)  # shape: H x n_batteries
+
+#To set all alphas as 0.5
+#alpha_matrix = np.full_like(loads_matrix, 1.0 / loads_matrix.shape[1])
+
+PV_matrix = alpha_matrix * PV_total[:, np.newaxis]
+
+
 #%% Run model per battery
 all_results = []
 for i, batt in enumerate(batteries):
-    PV = PV_total * alpha[i]
-    load = loads.iloc[ti:H, i].astype(float).values  # Cada bateria com seu perfil de carga
+      
+    load = loads_matrix[:, i]
+    PV = PV_matrix[:, i]
+    
     model = battmodel(H, batt, load, PV, priceDict1, priceDict2, dt, batt.capacity, batt.current_charge)
     opt = SolverFactory("glpk")
     print(f"Solving for battery {i+1}...")
