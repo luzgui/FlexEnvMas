@@ -78,17 +78,14 @@ from rich import print
 from rich.console import Console
 from rich.syntax import Syntax
 
-from tests.experiment_test import ExperimentTest
-from tests.testenv import TestEnv
+from testings.experiment_test import ExperimentTest
+from testings.testenv import TestEnv
 from trains.trainable import Trainable
 from utils.utilities import ConfigsParser
 from env.community import Community
 from env.state import StateVars
 from env.environment import FlexEnv
 from analyze.plots import Plots
-
-from tests.experiment_test import ExperimentTest
-from tests.testenv import TestEnv
 
 from opti.optimize import CommunityOptiModel
 

@@ -5,6 +5,7 @@ Created on Thu Mar  7 15:01:52 2024
 
 @author: omega
 """
+import sys
 
 
 from pathlib import Path
@@ -20,13 +21,14 @@ algos_config = configs_folder / 'algos_configs'
 resultsfolder=cwd.parent / 'Results'
 
 
+
 import os
 
 from env.community import Community
 from env.environment import FlexEnv
 from env.state import StateVars
-from tests.experiment import Experiment
-from tests.experiment_test import SimpleTests
+from testings.experiment import Experiment
+from testings.experiment_test import SimpleTests
 from trains.trainable import Trainable
 from utils.dataprocessor import YAMLParser
 from utils.utilities import ConfigsParser
@@ -88,7 +90,7 @@ df_list=envi.env_processor.get_daily_stats()
 # merged=envi.env_processor.merge_df_list_on_agents(df_list)
 print('number of days for trainning', len(envi.allowed_inits))
 
-    #%%
+#%%
 menvi=MultiAgentEnvCompatibility(envi)
 menvi._agent_ids=envi._agent_ids
 
