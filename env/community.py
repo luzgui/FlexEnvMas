@@ -130,16 +130,16 @@ class Community:
             
         return df
     
-    def get_tariffs_indexed(self,indexes):
-        # df=pd.DataFrame()
-        for aid in self.agents.keys():
-            tar=self.agents[aid].tariff
-            df = pd.DataFrame(tars, columns=['tar_buy'], index=time)
-            df.loc[aid]=tar
+    # def get_tariffs_indexed(self,indexes):
+    #     # df=pd.DataFrame()
+    #     for aid in self.agents.keys():
+    #         tar=self.agents[aid].tariff
+    #         df = pd.DataFrame(tars, columns=['tar_buy'], index=time)
+    #         df.loc[aid]=tar
         
-        tars=self.make_tariff()
-        df = pd.DataFrame(tars, columns=['tar_buy'], index=time)
-        return df
+    #     tars=self.make_tariff()
+    #     df = pd.DataFrame(tars, columns=['tar_buy'], index=time)
+    #     return df
     
         
     

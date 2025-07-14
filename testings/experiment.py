@@ -123,6 +123,23 @@ class Experiment():
     
     
     def make_algo_config(self, config_file):
+        """
+        
+        
+        HPO Algorithms:
+            
+            
+        - Grid Search
+            The number of trials of an experiment using HPO algo Grid Search 
+            will be determined by the way hiperparameters are defined in the
+            algorithm config (including seeds). 
+            
+                - if [val1, val2] then 2 trials will be created
+                
+        
+        
+        
+        """
         
         def find_keys_with_lists(d, exclude_keys=None):
             if exclude_keys is None:

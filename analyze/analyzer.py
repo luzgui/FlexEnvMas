@@ -94,7 +94,7 @@ class Analyzer():
         
     def get_exp_info(self):
         """"
-        creates a analyzer attrubite with info on the experiment of the results 
+        creates a analyzer attribute with info on the experiment of the results 
         from experiment configs
         
         
@@ -207,7 +207,7 @@ class Analyzer():
         creates a dataframe that stores cost values between optimal solution 
         and rl agent alongside metrics derived from this comparison
         
-        if there are day in whcih the RL solution is better than optimal 
+        if there are day in which the RL solution is better than optimal 
         that means that at least one machine did not turn on on that day what happens in 
         the testing of policies
         
@@ -292,6 +292,8 @@ class Analyzer():
     def get_per_agent_costs(self):
         data = []
         indexes=self.metrics.index.unique()
+        import pdb
+        pdb.pdb.set_trace()
         
         for i in indexes:
             # Extract data for each unique index value
@@ -312,8 +314,7 @@ class Analyzer():
         
         utilities().print_info('hardcoded for the 3 agents and the specific testing community// Need to get community info in analyse phase')
         
-        # import pdb
-        # pdb.pdb.set_trace()
+        
         utilities().print_info('HardCode alert :Need to solve')
         w=pd.DataFrame([3.6,3.0,3.0],index=df_final.columns,columns=['En'])
         
