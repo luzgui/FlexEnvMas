@@ -21,7 +21,6 @@ class Agent():
         self.load_id=agent_conf['params']['load_id']
         self.pv_id=agent_conf['params']['pv_id']
         self.apps=app_list
-        self.del_time=agent_conf['params']['delivery_time']
         self.processor=processor
         
         self.data=self.processor.get_agent_data(['minutes',self.load_id,self.pv_id])
@@ -44,7 +43,7 @@ class Agent():
         
         
         if tar_type == 'double_rate':
-            dr_conf=tar_conf['double__rate_params']
+            dr_conf=tar_conf['double_rate_params']
             
             hour_start = dr_conf['empty_start']
             hour_end = dr_conf['empty_end']
@@ -55,8 +54,16 @@ class Agent():
                 else:
                     tariff_series[i] = dr_conf['empty_val']
                     
+            # Repeat daily tariff to fill full horizon
+            repeats = int(np.ceil(len(self.data) / len(tariff_series)))
+            tariff_series = np.tile(tariff_series, repeats)[:len(self.data)]
+                    
         elif tar_type == 'flat':
             tariff_series = np.full(num_timesteps, tar_conf['flat_val'])
+            
+            # Repeat daily tariff to fill full horizon
+            repeats = int(np.ceil(len(self.data) / len(tariff_series)))
+            tariff_series = np.tile(tariff_series, repeats)[:len(self.data)]
         
         elif tar_type=='dynamic':
             # tar_file=self.conf['dynamic_tar_file']
@@ -70,8 +77,11 @@ class Agent():
                    0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05, 0.05,
                    0.05, 0.05, 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 ,
                    0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 , 0.2 ]
-            
-        
+          
+            # Repeat daily tariff to fill full horizon
+            repeats = int(np.ceil(len(self.data) / len(tariff_series)))
+            tariff_series = np.tile(tariff_series, repeats)[:len(self.data)]
+                
         else:
             tariff_series = np.zeros(num_timesteps)
             print('No tariffs defined')
@@ -132,16 +142,20 @@ class Agent():
         return appliance_profile
     
     def get_params(self):
-        df=pd.DataFrame()
-        app=self.apps[0] # this is hardcoded tio get 1 single app. Adapt if more than 1 app per agent is needed
-        # import pdb
-        # pdb.pdb.set_trace()
-        df={'T_prof': len(app.get_profile('kwh',15)),
-            'E_prof': app.get_total_energy(),
-            't_deliver': self.del_time,
-            'tar_type': self.conf['tariffs']['tar_type']}
-        
-        return df
+        if self.apps:
+            app = self.apps[0]
+            duration = len(app.get_profile('kwh', 15))
+            energy = app.get_total_energy()
+        else:
+            duration = 0
+            energy = 0
+    
+        return {
+            'T_prof': duration,
+            'E_prof': energy,
+            'tar_type': self.conf['tariffs']['tar_type']
+        }
+
     
     
     # def rename_data_cols(self):
