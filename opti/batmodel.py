@@ -25,28 +25,36 @@ def battmodel_(com, H):
     pv_df = pd.DataFrame({aid: agent.data['gen'] for aid, agent in com.agents.items()})
     
     total_pv = pv_df.sum(axis=1)
-    
-    
+       
     buy_prices = {(b, t): com.agents[b].tariff[t] for b in battery_dict for t in range(H)}
     sell_prices = {t: 0.0 for t in range(H)}
 
     m.BATTS = en.Set(initialize=list(battery_dict.keys()))
     m.Time = en.RangeSet(0, H - 1)
+
+    net = {(b, t): load_df[b].iloc[t] - pv_df[b].iloc[t] for b in com.agents for t in range(H)    }
+    posload = {(b, t): max(net[b, t], 0) for b in com.agents for t in range(H)}
+    negload = {(b, t): max(-net[b, t], 0) for b in com.agents for t in range(H)}
     
-    posload = load_df.copy()
-    negload = pd.DataFrame(0, index=load_df.index, columns=load_df.columns)
+
+    m.posLoad = en.Param(m.BATTS, m.Time, initialize=posload)
+    m.negLoad = en.Param(m.BATTS, m.Time, initialize=negload)
 
     m.load_demand = en.Param(m.BATTS, m.Time, initialize={(b, t): load_df[b].iloc[t] for b in battery_dict for t in range(H)})
     total_pv_dict = {t: total_pv.iloc[t] for t in range(H)}
     m.total_pv = en.Param(m.Time, initialize=total_pv_dict)
+    
+    pv_dict = {(b, t): pv_df[b].iloc[t] 
+           for b in com.agents for t in range(H)}
+    m.PV = en.Param(m.BATTS, m.Time, initialize=pv_dict)
+    
 
-    m.unusedPV = en.Var(m.Time, within=en.NonNegativeReals, initialize=0)
+    #m.unusedPV = en.Var(m.Time, within=en.NonNegativeReals, initialize=0)
+    m.unusedPV = en.Var(m.BATTS, m.Time, within=en.NonNegativeReals, initialize=0)
+    
     m.pv = en.Var(m.BATTS, m.Time, within=en.NonNegativeReals, initialize=0)
-    m.posLoad = en.Param(m.BATTS, m.Time, initialize={(b, t): posload[b].iloc[t] for b in battery_dict for t in range(H)})
-    m.negLoad = en.Param(m.BATTS, m.Time, initialize={(b, t): negload[b].iloc[t] for b in battery_dict for t in range(H)})
     m.priceSell = en.Param(m.Time, initialize=sell_prices)
     m.priceBuy = en.Param(m.BATTS, m.Time, initialize=buy_prices)
-
 
     m.SOC = en.Var(m.BATTS, m.Time, bounds=lambda m, b, t: (0, battery_dict[b].capacity))
     m.posDeltaSOC = en.Var(m.BATTS, m.Time, bounds=lambda m, b, t: (0, battery_dict[b].charging_power_limit * dt / 60.0), initialize=0)
@@ -62,14 +70,14 @@ def battmodel_(com, H):
     
     m.Bool_char = en.Var(m.BATTS, m.Time, within=en.Boolean)
     m.Bool_dis = en.Var(m.BATTS, m.Time, within=en.Boolean, initialize=0)
+    
+    def pv_balance_agent(m, b, t):
+        return m.posEInPV[b, t] + m.unusedPV[b, t] == m.PV[b, t]
+    m.PV_balance_agent = en.Constraint(m.BATTS, m.Time, rule=pv_balance_agent)
 
     def pv_usage_limit(m, b, t):
         return m.posEInPV[b, t] <= m.pv[b, t]
     m.PV_usage_limit = en.Constraint(m.BATTS, m.Time, rule=pv_usage_limit)
-
-    def pv_balance(m, t):
-        return sum(m.posEInPV[b, t] for b in m.BATTS) + m.unusedPV[t] == m.total_pv[t]    
-    m.PV_balance = en.Constraint(m.Time, rule=pv_balance)
 
     def soc_rule(m, b, t):
         if t == 0:
@@ -86,7 +94,12 @@ def battmodel_(com, H):
     
     def Obj_fn(m):
         return sum(m.priceBuy[b, t] * m.posNetLoad[b, t] + m.priceSell[t] * m.negNetLoad[b, t]
-                   for b in m.BATTS for t in m.Time ) + penalty_weight * sum(m.unusedPV[t] for t in m.Time)
+                   for b in m.BATTS for t in m.Time ) + penalty_weight * sum(m.unusedPV[b, t] for b in m.BATTS for t in m.Time)
+
+   
+    # def Obj_fn(m):
+    #     return sum(m.priceBuy[b, t] * m.posNetLoad[b, t] + m.priceSell[t] * m.negNetLoad[b, t]
+    #                for b in m.BATTS for t in m.Time ) + penalty_weight * sum(m.unusedPV[t] for t in m.Time)
     
     m.total_cost = en.Objective(rule=Obj_fn, sense=en.minimize)
 
@@ -157,6 +170,5 @@ def battmodel_(com, H):
     def E_neg_net_rule(m, b, t):
         return m.negNetLoad[b, t] == m.negLoad[b, t] + m.posEInPV[b, t] + m.negEOutExport[b, t]
     m.E_negNet_cons = en.Constraint(m.BATTS, m.Time, rule=E_neg_net_rule)
-
 
     return m

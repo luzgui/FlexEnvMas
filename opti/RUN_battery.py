@@ -80,7 +80,7 @@ for b in com.agents:
     data[(b, 'allocatedPV')] = [model.pv[b, t].value for t in range(H)]
 
 # Add community unused PV
-data[('community', 'unusedPV')] = [model.unusedPV[t].value for t in range(H)]
+data[('community', 'unusedPV')] = [model.unusedPV[(b,t)].value for t in range(H)]
 
 # === Combine Results ===
 df_results = pd.DataFrame(data)
