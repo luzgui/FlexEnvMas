@@ -57,15 +57,9 @@ load_df = pd.DataFrame({aid: agent.data['load'] for aid, agent in com.agents.ite
 pv_df =  pd.DataFrame({aid: agent.data['gen'] for aid, agent in com.agents.items()})
 tar = next(iter(com.agents.values())).tariff[:H]
 
-# Compute normalized alpha values
-alpha_values = {}
-for t in model.Time:
-    total_allocated = sum(model.pv[b, t].value for b in model.BATTS)
-    for b in model.BATTS:
-        alpha_values[(b, t)] = model.pv[b, t].value / total_allocated if total_allocated > 0 else 0.0
 
 for b in com.agents:
-    for var in ['load', 'PV', 'SOC', 'posEInGrid', 'posEInPV', 'posNetLoad', 'negNetLoad', 'negEOutLocal', 'negEOutExport']:
+    for var in ['load','PV' ,'SOC', 'posEInGrid', 'posEInPV', 'posNetLoad','posLoad','posEInGrid','negEOutLocal','negNetLoad', 'negEOutLocal', 'negLoad','posEInPV']:
 
         if var == 'load':
             data[(b, var)] = load_df[b].values[:H]
@@ -73,14 +67,15 @@ for b in com.agents:
             data[(b, var)] = pv_df[b].values[:H]
         else:
             var_obj = getattr(model, var)
-            data[(b, var)] = [var_obj[b, t].value for t in range(H)]
+            data[(b, var)] = [var_obj[b, t] 
+                              if not hasattr(var_obj[b, t], 'value') 
+                              else var_obj[b, t].value
+                for t in range(H)]
+
 
     data[(b, 'tar')] = tar[:H]
-    data[(b, 'alpha')] = [alpha_values[(b, t)] for t in range(H)]
-    data[(b, 'allocatedPV')] = [model.pv[b, t].value for t in range(H)]
 
-# Add community unused PV
-data[('community', 'unusedPV')] = [model.unusedPV[(b,t)].value for t in range(H)]
+data[(b, 'PV')] = [model.PV[b, t] for t in range(H)]
 
 # === Combine Results ===
 df_results = pd.DataFrame(data)
@@ -88,27 +83,4 @@ df_results = pd.DataFrame(data)
 # === Plot ===
 for b in com.agents:
     make_plot(df_results, 0, H, battery_id=b)
-
-def plot_alpha_distribution(alpha_values, agents, time_steps):
-    df_alpha = pd.DataFrame(0.0, index=range(time_steps), columns=agents)
-
-    for (b, t), alpha in alpha_values.items():
-        df_alpha.loc[t, b] = alpha
-
-    # Plot de linhas
-    ax = df_alpha.plot(
-        kind='line',
-        figsize=(14, 5),
-        linewidth=2
-    )
-    ax.set_title("Alpha Distribution per Agent Over Time")
-    ax.set_xlabel("Time Step")
-    ax.set_ylabel("Alpha Value")
-    ax.set_ylim(0, 1.05)
-    ax.legend(title="Agent")
-    plt.tight_layout()
-    plt.show()
-
-# Chamada
-plot_alpha_distribution(alpha_values, list(model.BATTS), len(model.Time))
 

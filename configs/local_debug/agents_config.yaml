@@ -14,15 +14,15 @@ ag1:
     double_rate_params:
       empty_start: 9
       empty_end: 20
-      empty_val: 0.0978
-      no_empty_val: 0.1603
+      empty_val: 0.1
+      no_empty_val: 0.1
   battery:
-    capacity: 5.5  
-    charging_power_limit: 1.0
-    discharging_power_limit: -1.0
+    capacity: 20  
+    charging_power_limit: 5.0
+    discharging_power_limit: -5.0
     charging_efficiency: 0.9
     discharging_efficiency: 0.9
-    initial_soc_percent: 0.5
+    initial_soc_percent: 0.75
 
 ag2:
   agent_cls: Agent
@@ -37,12 +37,12 @@ ag2:
     double_rate_params:
       empty_start: 9
       empty_end: 20
-      empty_val: 0.0978
-      no_empty_val: 0.1603
+      empty_val: 0.1
+      no_empty_val: 0.1
   battery:
-    capacity: 5.5  
-    charging_power_limit: 1.0
-    discharging_power_limit: -1.0
+    capacity: 20  
+    charging_power_limit: 5.0
+    discharging_power_limit: -5.0
     charging_efficiency: 0.9
     discharging_efficiency: 0.9
-    initial_soc_percent: 0.5
+    initial_soc_percent: 0.75
