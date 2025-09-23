@@ -106,6 +106,12 @@ from utils.utilities import utilities
 
 #%% Test Class
 class ExperimentTest():
+    """
+    This class groups all the components of a trained experiment (test environment,
+    name of the test experiment, folder with the trained policies and checkpoints, 
+    the trainable function and mode of checkpoint serach) and has a function 
+    that returns the agents with the trained policies for inference 
+    """
     def __init__(self,test_env, 
                  test_exp_name, 
                  log_dir, 
@@ -135,6 +141,9 @@ class ExperimentTest():
     
     
     def get_tester(self, trainable):
+        """"
+        Loads the checkpoint from folder traininig results
+        """
         experiment_path=os.path.join(self.dir, self.exp_name)
         # import pdb
         # pdb.pdb.set_trace()
@@ -181,16 +190,8 @@ class ExperimentTest():
             tester=self.tester(config, env=config["env"])
             tester.restore(checkpoint)
             
-            # for k in all_configs.keys():
-            #     if k in checkpoint.path:
-            #         config=all_configs[k]
-                    
-                    
-            
+
         print('restored the following checkpoint',checkpoint)
-        
- 
-        # print(self.config['mode'],checkpoint)
         
         return tester
 

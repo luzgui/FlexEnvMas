@@ -104,7 +104,7 @@ class CommunityOptiModel():
         l={}
         for index, agent_id in enumerate(self.env.com.agents):
             agent=self.env.com.agents[agent_id]
-            utilities.print_info('convertion from power to energy is hardcoded: solve this')
+            utilities.print_info('convertion from power to energy of shiftable appliance is hardcoded: solve this')
             l[index]=agent.apps[0].base_load*0.25
             d[index]=int(agent.apps[0].duration/self.env.tstep_size)
             # import pdb

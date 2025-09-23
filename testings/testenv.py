@@ -22,6 +22,10 @@ import numpy as np
 from analyze.plots import Plots
 
 class TestEnv():
+    """
+    
+    
+    """
     def __init__(self,env, tester, file_experiment,test_config_file):
         self.env=env
         self.tester=tester
@@ -66,6 +70,7 @@ class TestEnv():
             T=self.env.Tw*1
 
             print('testing....')
+            #The actual tetsing loop
             for i in range(T):
                 if i==0:
                     obs = self.env.reset()

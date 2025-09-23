@@ -268,7 +268,17 @@ class DataPostProcessor:
         # self.metrics=Metrics(env)
     
     def get_post_data(self):
-        """This function produces dataframes for analysing results from the environment itself, i.e, the environment stores all the state-action history and from there we can recover and post-process data"""
+        """This function produces dataframes for analysing results from the 
+        environment itself:
+            
+            
+        - the environment stores all the state-action history 
+        - From there we can recover and post-process data
+        
+        - This function is used while testing the environment in the TestEnv class
+        
+        
+        """
         
         
         df=pd.DataFrame()
@@ -292,8 +302,7 @@ class DataPostProcessor:
             df.loc[aid,'shift_base']=df.loc[aid]['action']*self.env.com.agents[aid].apps[0].get_profile(self.ds_unit,self.env.tstep_size)[0]+df.loc[aid]['load0'] #for each agent the sum of its shiftable load with its base load
             
         df['shift'].name='shiftable load for each agent'
-        # import pdb
-        # pdb.pdb.set_trace()
+
         #Sum all variables over the agents for each timestep
         df_group=df.groupby('tstep').sum() # In this dataframe al variables are summed
         
@@ -308,12 +317,10 @@ class DataPostProcessor:
             df.loc[aid,'coef_shift']=df.loc[aid]['shift']/df.loc[aid]['shift_T'] #sharing/load coeficient considering only the shiftable loads
             df.loc[aid,'coef_shift']=df.loc[aid,'coef_shift'].fillna(0)
             
-            # import pdb
-            # pdb.pdb.set_trace()
+
             df.loc[aid,'coef_shift_base']=df.loc[aid]['shift_base']/df.loc[aid]['shift_base_T'] #sharing/load coefficient considering shiftable and base load
             # df=df.infer_objects(copy=False)
-            # import pdb
-            # pdb.pdb.set_trace()
+
             df.loc[aid,'coef_shift_base']=df.loc[aid,'coef_shift_base'].astype(float).fillna(0)
 
             utilities().print_info('Individual Cost computing: Real individual cost for each agent AFFECTED by the sharing coefficient, i.e, we assume that excess is shared according to the APPLIANCE load level of each agent')
@@ -356,8 +363,6 @@ class DataPostProcessor:
                     cols_names.append(k)
                     
         
-        
-        #
         df_post=df_select[cols_names] #select the variables that are relevant
         df_post=df_post.drop(columns=[k for k in df_post.columns if 'tar_buy0' in k]) #we dont need tar_buy0
         
