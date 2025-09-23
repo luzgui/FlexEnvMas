@@ -122,7 +122,8 @@ file_ag_conf,_,_,file_prob_conf,_,_,_=test_configs.get_configs()
 
 #%%Make test env
 #dataset
-gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
+file=YAMLParser().load_yaml(file_prob_conf)['dataset_file']
+gecad_dataset=datafolder / file
          
 test_com=Community(file_ag_conf,
               file_apps_conf,

@@ -58,11 +58,9 @@ configs=ConfigsParser(configs_folder, exp_name)
 
 file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars,file_experiment, ppo_config=configs.get_configs()
 
-#%% import datafiles and agent dataprocessor
-# gecad_dataset=datafolder / 'Dataset_gecad_changed.xlsx'
-gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
-# gecad_processor=GecadDataProcessor(file_prob_conf,file_ag_conf,gecad_dataset)
-# data=gecad_processor.data
+#%% import dataset file
+file=YAMLParser().load_yaml(file_prob_conf)['dataset_file']
+gecad_dataset=datafolder / file
 
 #%% Trainning or debugging
 train=YAMLParser().load_yaml(file_experiment)['train']
