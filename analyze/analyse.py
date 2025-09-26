@@ -98,7 +98,10 @@ for exp in experiment_name:
         
         file_agents_conf,file_apps_conf,file_scene_conf,file_prob_conf,file_vars,file_experiment,ppo_config=configs.get_configs()
         
-        gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
+        # gecad_dataset=datafolder / 'dataset_gecad_clean.csv'
+        file=YAMLParser().load_yaml(file_prob_conf)['dataset_file']
+        gecad_dataset=datafolder / file
+        
         test_com=Community(file_agents_conf,
                       file_apps_conf,
                       file_scene_conf,
@@ -128,15 +131,15 @@ for exp in experiment_name:
             
     
     analyse_multi=AnalyzerMulti(analysis_objs[exp],exp)
-    # analyse_multi.plot_multi_joint(x='x_ratio',y='dif',save=save_file)
+    analyse_multi.plot_multi_joint(x='x_ratio',y='dif',save=save_file)
     
     #plots for paper
-    # analyse_multi.plot_multi_joint(x='x_ratio',y='dif_simple',save=save_file)
-    # analyse_multi.plot_boxplot_year_mean_cost_group(save=save_file)
+    analyse_multi.plot_multi_joint(x='x_ratio',y='dif_simple',save=save_file)
+    analyse_multi.plot_boxplot_year_mean_cost_group(save=save_file)
     
     
     # analyse_multi.plot_multi_joint(x='x_ratio',y='gamma',save=save_file)
-    # analyse_multi.plot_year_mean_cost_per_model(save=save_file)
+    analyse_multi.plot_year_mean_cost_per_model(save=save_file)
     # analyse_multi.plot_year_mean_cost_group(save=False)
     
     # analyse_multi.plot_year_cost(save=False)
