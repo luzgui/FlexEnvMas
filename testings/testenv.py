@@ -4,6 +4,16 @@
 Created on Wed Mar 27 10:42:29 2024
 
 @author: omega
+
+This script contains the classes that iplement the test loop with different agents
+and policy types:
+    
+    - RL agents
+    - fixed
+    - random
+    - optimal
+
+
 """
 import os
 from os import path
@@ -15,6 +25,7 @@ from datetime import datetime
 from termcolor import colored
 
 from utils.dataprocessor import DataPostProcessor, YAMLParser
+from utils.utilities import FolderUtils
 
 import pandas as pd
 import numpy as np
@@ -23,9 +34,9 @@ from analyze.plots import Plots
 
 class TestEnv():
     """
-    
-    
+    Implements the testing RL loop
     """
+    
     def __init__(self,env, tester, file_experiment,test_config_file):
         self.env=env
         self.tester=tester
@@ -141,7 +152,14 @@ class TestEnv():
         return 'shared_pol' # p
     
     def get_actions(self, obs, map_func):
-        'resturns the actions of the agents'
+        """
+        - resturns the actions of the agents
+        
+        - Actions must be a dictionary in the form {agent_id: action}
+        
+        """
+        
+        
         if type(obs)==dict:
             actions = {aid:self.tester.compute_single_action(obs[aid],
                                                          policy_id=map_func(aid)) for aid in self.env.agents_id}
@@ -155,6 +173,9 @@ class TestEnv():
          
          
 class SimpleTestEnv(TestEnv):
+    """
+    Implements simple tests to perform debugging
+    """
     def __init__(self,env, tester):
         self.env=env
         self.tester=tester
@@ -254,7 +275,10 @@ class SimpleTestEnv(TestEnv):
 
 
 class BaselineTest(SimpleTestEnv):
-    "Implements agents that start at random timeslots during the day"
+    """
+    - Implements agents that start at random timeslots during the day
+    - Used to create a baseline solution
+    """
     def __init__(self,env, tester,folder):
         self.env=env
         self.tester=tester
@@ -284,7 +308,11 @@ class BaselineTest(SimpleTestEnv):
 
 
 class BaselineFixedTest(TestEnv):
-    "Implements agents that start at a fixed timeslots during the day"
+    """
+    - Implements agents that start at random timeslots during the day
+    - Used to create a baseline solution
+    """
+    
     def __init__(self,env, tester, file_experiment,test_config_file):
         super().__init__(env, tester, file_experiment,test_config_file)
         self.counter=0
@@ -364,5 +392,62 @@ class SimpleTestCycle(SimpleTestEnv):
             actions[ag]=self.create_binary_vector(self.env.Tw,D,starts[ag])
         
         return actions
+    
+class TestEnvOpti(TestEnv):
+    """
+    Implements a test agent whose actions are taken from the optimal solution
+    
+    features:
+        - Actions are extracted from an optimal solution file ( opti_actions_folder) outputed from the MILP model
+        
+        - Actions are taken on the test environment (self.env) define in the tes_config.yaml
+    
+    
+    opti_actions_folder: the original env where the actions were performed
+    
+    
+    
+    """
+    
+    def __init__(self,env, tester, file_experiment,test_config_file, opti_actions_folder):
+        super().__init__(env, tester, file_experiment,test_config_file)
+        self.counter=0
+        # self.action_plan=self.get_action_plan()
+        self.actions_folder=opti_actions_folder
+        
+        self.folder_name=self.get_folder_name()
+        self.action_plan=self.get_optimal_actions()
+    
+    
+    def get_folder_name(self):
+        actions_env=self.actions_folder.name.split('_', 1)[1]
+        print('Actions are taken from -->', self.actions_folder.name)
+        return 'Train_'+actions_env + '_' + 'Test_'+self.test_name + '_' + 'actions'
+    
+    def get_actions(self, obs, map_func):
+        "Overrides the superclass methods"   
+        actions = {aid: self.action_plan.loc[self.env.tstep][aid] for aid in self.env.agents_id}
+    
+        return actions
+    
+    
+    def get_optimal_actions(self):
+        "scans the folder self.actions_folder and retrives the optimal actions for all agents"
+        
+        file=self.actions_folder / 'optimal_solutions.csv'
+        data=pd.read_csv(file, index_col='tstep')
+        cols = [col for col in data if 'action' in col]
+        actions=data[cols]
+        actions=actions.round(2).replace(-0.0, 0.0)
+        actions.columns = actions.columns.str.replace('action_', '')
+        
+        # the data in the environment have been filtered for invalid days. 
+        #There are missing indexes because there are missing days.
+        #the allowed inits must be inside the index of the actions
+        assert set(self.env.allowed_inits).issubset(set(list(actions.index)))
+
+        return actions
+        
+    
         
     
