@@ -152,13 +152,14 @@ test_env_config={'community': test_com,
 
 tenvi=FlexEnv(test_env_config)
 dummy_tester=DummyTester(tenvi)
-opti_actions_folder=resultsfolder / 'optimal_test031'
+opti_actions_folder=resultsfolder / YAMLParser().load_yaml(test_config_file)['actions_from_folder']
 
 optitest=TestEnvOpti(tenvi, dummy_tester, file_experiment, test_config_file, opti_actions_folder)
+full_state, env_state_conc, episode_metrics, filename = optitest.test(results_path=resultsfolder)
 
 # baselinefixedtest= BaselineFixedTest(tenvi, dummy_tester,file_experiment,test_config_file)
 # full_state, env_state_conc, episode_metrics, filename = baselinefixedtest.test(results_path=resultsfolder)
 
 #%%
-full_state, env_state_conc, episode_metrics, filename = optitest.test(results_path=resultsfolder)
+
 
