@@ -124,8 +124,6 @@ class DPEnergyData:
         """
         data=self.data.copy()
         
-        # Suppose df is the DataFrame and index represents 15-min intervals.
-        # Set the starting date (e.g. '2023-01-01 00:00')
         start_date = '2023-01-01 00:00'
         data['datetime'] = pd.to_datetime(start_date) + pd.to_timedelta(data.index * 15, unit='m')
         data.set_index('datetime', inplace=True)
@@ -182,12 +180,6 @@ class DPEnergyData:
         mean=laplace_config.get('mean')
         
         scale=sensitivity/epsilon
-        
-        # df=self.data[self.data.columns[~self.data.columns.str.contains('minutes')]]
-        # size=df.shape
-        
-        # cols_load = self.data.columns[self.data.columns.str.contains('ag')]  # select columns with 'ag' in their name
-        
         
         size=self.data.shape
         noise=np.random.laplace(mean,scale,size)
@@ -260,11 +252,7 @@ class DPEnergyData:
         
         cols=data.columns
         cols=cols.drop('minutes')
-        # cols=cols.drop('day')
-        
-        
-        # import pdb
-        # pdb.pdb.set_trace()
+
         for day in stats.index:
             t_init=w*day
             t_end=t_init+w
@@ -288,15 +276,14 @@ class DPEnergyData:
     def apply_dp_noise(self) -> pd.DataFrame:
         """
         Applies differential privacy noise to the dataset based on configuration parameters.
+        - PV data is not affected
 
         Returns
         -------
         pd.DataFrame
             Perturbed dataset after applying differential privacy noise.
-        """
-
-        # import pdb
-        # pdb.pdb.set_trace()   
+            
+        """ 
 
         noise_func=self.mechanism_map.get(self.mech_to_use)
         noise=noise_func()
@@ -309,8 +296,7 @@ class DPEnergyData:
         self.noisy_data = noisy_data
         
         pv_cols=[cols for cols in self.data.columns if 'PV' in cols]
-        
-        noisy_data[pv_cols]=self.data[pv_cols]
+        noisy_data[pv_cols]=self.data[pv_cols] # PV not affected
         
         assert noisy_data.shape == self.data.shape, "Noisy data is not the same shape as original data"
 
@@ -326,9 +312,6 @@ class DPEnergyData:
         noisy_data=self.apply_dp_noise().loc[t_init:t_end-1][var]
 
         epsilon=self.config.get(self.mech_to_use)['epsilon']
-        # # Filter the dataframes
-        # df1_slice = df1[(df1['minutes'] >= t_min) & (df1['minutes'] <= t_max)]
-        # df2_slice = df2[(df2['minutes'] >= t_min) & (df2['minutes'] <= t_max)]
         
         # Plot
         plt.figure(figsize=(10, 6))
@@ -343,7 +326,15 @@ class DPEnergyData:
         noisy_data=self.apply_dp_noise()
         config=self.config.get(self.mech_to_use)
         
-        filename=self.file.stem + '_' + self.mech_to_use + '_' + 'sens' + '_' + str(config.get('sensitivity'))+'_'+'eps' +'_' + str(config.get('epsilon'))
+        filename = (
+                    self.file.stem + '_'
+                    + self.mech_to_use + '_'
+                    + 'sens' + '_' + str(config.get('sensitivity')) + '_'
+                    + 'eps' + '_' + str(config.get('epsilon'))
+                    + '.csv'
+                )
+
+        
         name=self.file.parent /  filename
         
         noisy_data.to_csv(name)
