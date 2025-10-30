@@ -16,8 +16,10 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import random
+import re
 
 from utils.dataprocessor import GecadDataProcessor, YAMLParser
+from utils.utilities import utilities
 
 from dp.tests import DPTests
 
@@ -118,7 +120,7 @@ class DPEnergyData:
         """
         Returns a dataframe  with daily values for consumption, peak, +++
         
-        cr
+        Assumes the following sensiitivity computing expressions:
         
         
         """
@@ -131,12 +133,25 @@ class DPEnergyData:
         # Daily aggregations:
         daily_stats = data.resample('D').agg(['sum', 'mean', 'min', 'max'])
         
-
+        # import pdb
+        # pdb.pdb.set_trace()
+        
         daily_stats=daily_stats.copy()
         for col in daily_stats.columns.levels[0]:
-            daily_stats.loc[:, (col, 's_max')] = daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')]
-            daily_stats.loc[:, (col, 's_mean')] = daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'mean')]
+            # daily_stats.loc[:, (col, 's_max')] = daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')]
+            # daily_stats.loc[:, (col, 's_mean')] = daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'mean')]
        
+        
+            # new_cols = {(col, 's_max'): daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')]}
+            new_cols = {(col, 's_max'): daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')],
+                        (col, 's_mean'): (daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'mean')])}
+
+
+            daily_stats = pd.concat([daily_stats, pd.DataFrame(new_cols)], axis=1)
+        
+        
+        daily_stats = daily_stats.sort_index(axis=1)
+        
         #roundings
         daily_stats = daily_stats.mask(daily_stats.abs() < 1e-12, 0.0)
         daily_stats = daily_stats.round(decimals=3)
@@ -273,6 +288,47 @@ class DPEnergyData:
         return noise
         
     
+    def laplace_mechanism_trunc_day(self):
+        """"
+        Truncated laplace mechanism with sensitivity given by different methods 
+        
+        - Sensitivity is different every day
+        
+        - The output must be the noise to add in function self.apply_noise()
+        
+        - The output of this mechanism must have the same shape as the original data
+        
+        - Adds noise to PV also
+        """
+        data=self.data
+        
+        laplace_config=self.config.get('laplace_day')
+        epsilon=laplace_config.get('epsilon')
+        mean=laplace_config.get('mean')
+        s_def=laplace_config.get('sensitivity')
+        
+        stats=self.get_daily_data(data)
+        self.stats_daily=stats
+        
+        w=96
+        noise=data.copy()
+        
+        cols=data.columns
+        cols=cols.drop('minutes')
+
+        for day in stats.index:
+            t_init=w*day
+            t_end=t_init+w
+            for col in cols:
+                sensitivity=stats.loc[day,(col,s_def)]
+                scale=sensitivity/epsilon
+                noise.loc[t_init:t_end-1,col]=np.random.laplace(mean,scale,w)
+        
+        
+
+        self.tests.test_structure_equal(noise,data)
+        return noise
+    
     def apply_dp_noise(self) -> pd.DataFrame:
         """
         Applies differential privacy noise to the dataset based on configuration parameters.
@@ -288,9 +344,9 @@ class DPEnergyData:
         noise_func=self.mechanism_map.get(self.mech_to_use)
         noise=noise_func()
             
-
+        
         noisy_data = self.data.copy()+noise
-        noisy_data['minutes']=self.data['minutes'] # remake again the timslot column
+        noisy_data['minutes']=self.data['minutes'] # remake again the timeslot column
         noisy_data=noisy_data.clip(lower=0) #There are no negative values in load or generation
 
         self.noisy_data = noisy_data
@@ -320,6 +376,33 @@ class DPEnergyData:
         plt.ylabel('kW')
         plt.legend()
         plt.title(f'epsilon={epsilon} | day: {day_num} | dp mech: {self.mech_to_use} ')
+        plt.show()
+    
+    def plots_multi_compare(self,day_num,var, file_list):
+        """
+        Plots several gecad datasets together 
+        (different epsilon variations of the same dataset)
+        """
+        w=96
+        t_init=w*day_num
+        t_end=t_init+w
+        
+        # Plot
+        plt.figure(figsize=(10, 6))
+        
+        for file in file_list:
+            file=self.file.parent / file
+            data=pd.read_csv(file, index_col=0)
+            
+            label=utilities().get_num_from_str(file.stem)
+            # import pdb
+            # pdb.pdb.set_trace()
+            plt.plot(data.loc[t_init:t_end-1][var], label=str(label))
+        
+        # plt.plot(noisy_data, label='noisy')
+        plt.ylabel('kW')
+        plt.legend()
+        # plt.title(f'epsilon={epsilon} | day: {day_num} | dp mech: {self.mech_to_use} ')
         plt.show()
     
     def save_data(self):
