@@ -1,0 +1,21 @@
+# config for Differential Privacy
+
+# mech_to_use: 'laplace'
+# mech_to_use: 'laplace_year'
+mech_to_use: 'laplace_day'
+
+laplace:
+    mean: 0.0
+    sensitivity: 0.01
+    epsilon: 0.2
+
+laplace_year:
+    sensitivity: 's_max' #'s_mean' 'mean'
+    mean: 0.0
+    epsilon: 40.0
+
+laplace_day:
+    # sensitivity_def: 's_max' #'s_mean' 'mean'
+    sensitivity: 's_max' #'s_mean' #'mean' # 's_max'
+    mean: 0.0
+    epsilon: 10.0
