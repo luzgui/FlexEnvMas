@@ -61,7 +61,7 @@ class DPEnergyData:
         self.config = self.parser.load_yaml(config)
         
         self.noisy_data = None
-        self.stats=None
+        self.stats=self.get_stats()
         self.stats_daily=None
         
         self.mech_to_use=self.config['mech_to_use']
@@ -114,6 +114,41 @@ class DPEnergyData:
         
         
         
+    def get_stats(self):
+        """
+        Returns a dataframe with global variables for agents
+         
+        - yearlly andglobal statistics
+        - contracted powers
+        
+        """
+        
+        def round_to_nearest_greater(num, values):
+            values = np.array(values)
+            if num > np.max(values):
+                return np.max(values)
+            else:
+                candidates = values[values >= num]
+                if len(candidates) == 0:
+                    return None  # or handle no greater item found
+                return np.min(candidates)
+            
+        
+        
+        stats=self.data.describe()
+        #contracted powers levels in kVA
+        cont_powers=[1.15, 2.30, 3.45, 4.60, 5.75, 6.90, 10.35, 13.80, 17.25,
+                     20.70, 27.60, 34.50, 41.40]
+        cont_powers_kwh=[v*0.25 for v in cont_powers]
+        
+        P_c_kwh=[round_to_nearest_greater(v, cont_powers_kwh) for v in stats.loc['max'].values]
+        # P_c_kw=[round_to_nearest_greater(v, cont_powers) for v in stats.loc['max'].values]
+            
+        stats.loc['P_c_kwh']=P_c_kwh
+        stats.loc['P_c_kw']=stats.loc['P_c_kwh']/0.25
+        
+        
+        return stats
         
     
     def get_daily_data(self,data):
@@ -136,15 +171,20 @@ class DPEnergyData:
         # import pdb
         # pdb.pdb.set_trace()
         
+
+        
+        
         daily_stats=daily_stats.copy()
         for col in daily_stats.columns.levels[0]:
             # daily_stats.loc[:, (col, 's_max')] = daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')]
             # daily_stats.loc[:, (col, 's_mean')] = daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'mean')]
-       
-        
+            
+            
             # new_cols = {(col, 's_max'): daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')]}
             new_cols = {(col, 's_max'): daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'min')],
-                        (col, 's_mean'): (daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'mean')])}
+                        (col, 's_mean'): (daily_stats.loc[:, (col, 'max')] - daily_stats.loc[:, (col, 'mean')]),
+                        (col, 'up'): (self.stats.loc['max'][col] - daily_stats.loc[:, (col, 'max')])
+                        }
 
 
             daily_stats = pd.concat([daily_stats, pd.DataFrame(new_cols)], axis=1)
@@ -215,17 +255,19 @@ class DPEnergyData:
         
         - Adds noise to PV also
         """
+        
         data=self.data
         
         laplace_config=self.config.get('laplace_year')
         epsilon=laplace_config.get('epsilon')
         mean=laplace_config.get('mean')
         s_def=laplace_config.get('sensitivity')
+        print(f'Generating Laplace noise from Laplace Year with epsilon={epsilon}')
         
-        stats=data.describe()
+        stats=self.stats
         stats.loc['s_max']=stats.loc['max']-stats.loc['min']
         stats.loc['s_mean']=stats.loc['mean']-stats.loc['max']
-        self.stats=stats
+        # self.stats=stats
         
         sensitivity=stats.loc[s_def]
                 
@@ -259,8 +301,10 @@ class DPEnergyData:
         mean=laplace_config.get('mean')
         s_def=laplace_config.get('sensitivity')
         
-        stats=self.get_daily_data(data)
-        self.stats_daily=stats
+        print(f'Generating Laplace noise from Laplace Day with epsilon={epsilon}')
+        
+        stats_daily=self.get_daily_data(data)
+        self.stats_daily=stats_daily
         
         w=96
         noise=data.copy()
@@ -268,13 +312,13 @@ class DPEnergyData:
         cols=data.columns
         cols=cols.drop('minutes')
 
-        for day in stats.index:
+        for day in stats_daily.index:
             t_init=w*day
             t_end=t_init+w
             for col in cols:
                 # import pdb
                 # pdb.pdb.set_trace()
-                sensitivity=stats.loc[day,(col,s_def)]
+                sensitivity=stats_daily.loc[day,(col,s_def)]
                 scale=sensitivity/epsilon
                 # print('col',col)
                 # print('sensitivity', sensitivity)
@@ -300,6 +344,10 @@ class DPEnergyData:
         
         - Adds noise to PV also
         """
+        
+        # def trunc_laplace(up, low):
+            
+        
         data=self.data
         
         laplace_config=self.config.get('laplace_day')
@@ -307,22 +355,34 @@ class DPEnergyData:
         mean=laplace_config.get('mean')
         s_def=laplace_config.get('sensitivity')
         
-        stats=self.get_daily_data(data)
-        self.stats_daily=stats
+        stats_daily=self.get_daily_data(data)
+        self.stats_daily=stats_daily
+        
         
         w=96
         noise=data.copy()
-        
         cols=data.columns
         cols=cols.drop('minutes')
 
-        for day in stats.index:
+        for day in stats_daily.index:
             t_init=w*day
             t_end=t_init+w
             for col in cols:
-                sensitivity=stats.loc[day,(col,s_def)]
+                sensitivity=stats_daily.loc[day,(col,s_def)]
                 scale=sensitivity/epsilon
-                noise.loc[t_init:t_end-1,col]=np.random.laplace(mean,scale,w)
+                
+                U=stats_daily.loc[day,(col,'up')]
+                L=stats_daily.loc[day,(col,'min')]
+                M=0.5*(1-np.exp(-(epsilon*U)/sensitivity))
+                
+                # if U==0 or L==0 or M==0:
+                if M==0:
+                    import pdb
+                    pdb.pdb.set_trace()
+                # print('M',M)
+                # print('L',L)
+                # print('U',U)
+                noise.loc[t_init:t_end-1,col]=np.random.laplace(mean,scale,w)/M
         
         
 
@@ -343,11 +403,16 @@ class DPEnergyData:
 
         noise_func=self.mechanism_map.get(self.mech_to_use)
         noise=noise_func()
+        stats=self.get_stats()
             
         
         noisy_data = self.data.copy()+noise
         noisy_data['minutes']=self.data['minutes'] # remake again the timeslot column
+        
         noisy_data=noisy_data.clip(lower=0) #There are no negative values in load or generation
+        for col in noisy_data.columns:
+            if 'ag' in col:
+                noisy_data[col]=noisy_data[col].clip(upper=stats.loc['P_c_kwh'][col])
 
         self.noisy_data = noisy_data
         
@@ -359,12 +424,17 @@ class DPEnergyData:
         return noisy_data
     
     def plots_compare(self,day_num,var):
+        """
+        PLots one specific day (day_num) for a specific var in dataset
+        """
         
         
         w=96
         t_init=w*day_num
         t_end=t_init+w
-        data=self.data.loc[t_init:t_end-1][var]
+        # data=self.data.loc[t_init:t_end-1][var]
+        
+        data=self.get_one_day(day_num, var)
         noisy_data=self.apply_dp_noise().loc[t_init:t_end-1][var]
 
         epsilon=self.config.get(self.mech_to_use)['epsilon']
@@ -392,40 +462,62 @@ class DPEnergyData:
         
         for file in file_list:
             file=self.file.parent / file
-            data=pd.read_csv(file, index_col=0)
             
+            data=pd.read_csv(file, index_col=0)
             label=utilities().get_num_from_str(file.stem)
-            # import pdb
-            # pdb.pdb.set_trace()
-            plt.plot(data.loc[t_init:t_end-1][var], label=str(label))
+
+            if file.stem!='dataset_gecad_clean':
+                plt.plot(data.loc[t_init:t_end-1][var], label=str(label),linewidth=1,alpha=0.9)
+            elif file.stem=='dataset_gecad_clean':
+                plt.plot(data.loc[t_init:t_end-1][var], label=str(label),linewidth=2)
+
         
         # plt.plot(noisy_data, label='noisy')
-        plt.ylabel('kW')
+        plt.ylabel('kWh')
         plt.legend()
         # plt.title(f'epsilon={epsilon} | day: {day_num} | dp mech: {self.mech_to_use} ')
         plt.show()
     
-    def save_data(self):
-        noisy_data=self.apply_dp_noise()
+    def save_data(self, num_files=1):
+        """
+        num_file: number of files to save
+        """
+        
+        
         config=self.config.get(self.mech_to_use)
         
-        filename = (
-                    self.file.stem + '_'
-                    + self.mech_to_use + '_'
-                    + 'sens' + '_' + str(config.get('sensitivity')) + '_'
-                    + 'eps' + '_' + str(config.get('epsilon'))
-                    + '.csv'
-                )
+
+        for i in range(num_files):
+            noisy_data=self.apply_dp_noise()
+            filename = (
+                            self.file.stem + '_'
+                            + self.mech_to_use + '_'
+                            + 'sens' + '_' + str(config.get('sensitivity')) + '_'
+                            + 'eps' + '_' + str(config.get('epsilon')) + '_'
+                            + 'clip'+'_'
+                            + f'{i}'
+                            + '.csv'
+                        )
 
         
-        name=self.file.parent /  filename
+            name=self.file.parent /  filename
+            
+            noisy_data.to_csv(name)
+            print('saved file:', name)
+
+    
+    def get_one_day(self,day_num,var):
+        w=96
+        t_init=w*day_num
+        t_end=t_init+w
+        data=self.data.loc[t_init:t_end-1][var]
         
-        noisy_data.to_csv(name)
-        print('saved file:', name)
-        pass
+        return data
         
         
         
+
+
 
 
 
