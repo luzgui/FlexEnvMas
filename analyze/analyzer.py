@@ -408,10 +408,11 @@ class Analyzer():
 
 class AnalyzerMulti():
     "Class to compare experiments"
-    def __init__(self,objs,name):
+    def __init__(self,objs,name,info):
         """gets a list of analyzer experiment objects and performs comparison between experiments"""
-        self.results_folder=Path.cwd() / 'Results'
+        self.results_folder=Path.cwd().parent / 'Results'
         self.name=name
+        self.info=info
         # self.config=YAMLParser().load_yaml(results_config)[self.name]
         # self.descript=self.config['description']
         # self.baseline=self.results_folder / self.config['baseline_name']
@@ -455,7 +456,7 @@ class AnalyzerMulti():
         return data
       
         
-    def get_multi_year_data_eq(self):
+    def get_multi_year_data_eq(self, filt=False):
         """
         To when optimal solution is the same for all experiments under the 
         the same experiment group
@@ -463,9 +464,12 @@ class AnalyzerMulti():
         returns data for the wholle year for every experiment in the AnalyzerMulti 
         object when optimal values and base\line values are differente for each experiment 
         
+        filt=True : filter out the non-critical days
+        
         """
+        
         # data=self.get_multi_cost_compare()
-        data=self.get_multi_all_compare()
+        data=self.get_multi_all_compare(filt=filt)
         exp_indexes=data.index.get_level_values('experiment').unique()
         df=pd.DataFrame(index=exp_indexes,columns=['cost_mean','cost_total'])
         
@@ -509,7 +513,7 @@ class AnalyzerMulti():
         return df
     
     
-    def get_multi_all_compare(self):
+    def get_multi_all_compare(self, filt=False):
         """
         - returns a dataframe (derived from get_multi_cost_compare()) with 
         indexes experiment, day, tstep_init
@@ -520,6 +524,8 @@ class AnalyzerMulti():
         
         - If opti values and base values are the same ir creates new indexes 
         opti and base and treats them as experiments
+        
+        filt=True : filter out the non-critical days with hardcoded value of x_ratio
         
         """
         
@@ -561,9 +567,48 @@ class AnalyzerMulti():
         #Concatenate the filtered DataFrames
         result = pd.concat(dfs_filtered)
         
+        
+        
+        if filt:
+            result=result[result['x_ratio']<=4]
+            utilities().print_info('hardcoded critical days for x_ratio<4')
         return result
 
     
+    def get_multi_exp_data(self):
+        """
+        Computes several metrics for each experiment 
+        (may or may not have same test env or optimal solution)
+        and returns a dataframe with those metrics suitable for ploting
+        
+        !! only works when experiments in results_config have different envs and opti_sols
+        
+        
+        """
+        
+        utilities().print_info('only works when experiments in results_config have different envs and opti_sols')
+        data={}
+        # for obj in self.analyser_objs:
+        #     data[obj]={'excess_year': self.analyser_objs[obj].env.data.loc['ag1']['excess'].sum(),
+        #                 }
+        
+        # df=pd.DataFrame.from_dict(data, orient='index')
+        
+        # data = {}
+
+        for obj in self.analyser_objs:
+            for ag in self.analyser_objs[obj].env.agents_id:
+                data[(obj, ag)] = {
+                    'excess_year': self.analyser_objs[obj].env.data.loc[ag]['excess'].sum(),
+                    'load_year': self.analyser_objs[obj].env.data.loc[ag]['load'].sum()
+                }
+
+        df = pd.DataFrame.from_dict(data, orient='index')
+        df.index = pd.MultiIndex.from_tuples(df.index, names=['object', 'agents'])
+        
+        return df
+        
+
 
     def get_exp_stats(self):
         data=self.get_multi_all_compare()
@@ -580,23 +625,13 @@ class AnalyzerMulti():
         
         return stats
         
-
+    
     def check_equals(self):
-        """
-        Check the several dataframes in the experiment and checks if they have the same optimal solution and 
-        baseline
-        """
-        data=self.get_multi_cost_compare()
+        "Checks if all 'opti_folder' values in the 'experiments' dictionary in config are equal."
+        experiments = self.info.get('experiments', {})
+        opti_folders = [v.get('opti_folder') for v in experiments.values() if 'opti_folder' in v]
+        return all(folder == opti_folders[0] for folder in opti_folders) if opti_folders else False
         
-        
-        data=self.get_multi_cost_compare()
-        columns=['objective','cost_mean_base']
-        for key, df in data.items():
-            dfs = []
-            for col in columns:
-                dfs.append(df[col])
-                final_data=pd.concat(dfs,axis=1)
-            print(final_data)
         
         
 
@@ -656,6 +691,50 @@ class AnalyzerMulti():
         infos['hue']='experiment'
         infos['var']=variable
         self.plot.plot_barplot(df,file_name,infos)
+        
+    def plot_year_mean_cost_per_model_dp(self,save=False, filt=False):
+        """
+        Plots the DP models against the optimal solutions and the RL solutions
+        
+        filt=True : filter out the non-critical days
+        
+        """
+        df=self.get_multi_year_data_eq(filt=filt)
+        
+        variable='cost_mean'
+        df=df[variable]
+        # import pdb
+        # pdb.pdb.set_trace()
+        
+        # df=df.drop('base')
+        
+        #get values of parameters
+        # param_dict=self.info['experiments']
+        df1=pd.DataFrame(self.info['experiments']).T
+        df1=df1['data'].apply(pd.Series)
+        df=df.to_frame()
+        merged_df = df.join(df1, how='outer')
+        merged_df.index.name=df.index.name
+        file_name=None
+        if save:
+            file_name=str(self.compare_results_folder / '_costs_epsilon.png')
+        
+        
+        
+        infos={}
+        
+        if filt:
+            title='Daily Mean Cost for running apps (crit)' + '_' + self.name
+        else:
+            title='Daily Mean Cost for running apps' + '_' + self.name
+            
+        
+        infos['title']=title
+        infos['x_label']='epsilon'
+        infos['y_label']='€/day' 
+        infos['hue']='eps'
+        infos['var']=variable
+        self.plot.plot_scatterplot(merged_df,file_name,infos)
         
     def plot_year_mean_cost_per_model_opti(self,save=False):
         """
