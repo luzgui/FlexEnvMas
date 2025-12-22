@@ -67,8 +67,11 @@ class Trainable():
                      'agent_timesteps_total',
                      'training_iteration'}
             
-            logs={k: train_results[k] for k in metrics}
-                        
+            
+            logs={k: train_results[k] for k in metrics}            
+            logs['eval_ep_reward_mean']=train_results['evaluation']['episode_reward_mean']
+
+            
             results={**logs}
             # print(colored('Reporting...','green'))
             # train.report(results)

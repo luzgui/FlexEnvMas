@@ -193,11 +193,20 @@ class Experiment():
                            action_space=self.env.action_space,
                            env_config=self.env.env_config)
         
+        
+        #For now env config is defined as the train config. This should be the testing environment
+        config_algo.evaluation(evaluation_config=self.env.env_config,
+                               evaluation_interval=self.config['evaluation']['evaluation_interval'],
+                               evaluation_duration_unit=self.config['evaluation']['evaluation_duration_unit'],
+                               evaluation_duration=self.config['evaluation']['evaluation_duration'],
+                               )
+        
         #multiagent
         policies, policy_function = self.get_policies()
         
         config_algo.multi_agent(policies=policies,
                       policy_mapping_fn=policy_function)
+        
         
         return config_algo
     

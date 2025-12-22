@@ -5,8 +5,8 @@ train: True
 resume: False
 
 
-pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
-# pol_type: shared_pol
+#pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
+pol_type: shared_pol
 
 
 
@@ -25,7 +25,7 @@ metric: episode_reward_mean
 # hpo_algo: 'asha' #'pbt'
 hpo_algo: 'grid_search'
 asha_params:
-  n_samples: 2
+  n_samples: 1
   time_attribute: 'training_iteration'
   max_time: 5
   grace: 2
@@ -47,5 +47,15 @@ num_cpu_node: 2.0
 num_gpu_node: 0.0
 
 n_factor: 3
+
+
+evaluation:
+  evaluation_interval: 1
+  evaluation_duration: 5
+  evaluation_duration_unit: 'episodes'
+  evaluation_sample_timeout_s: 180.0
+  evaluation_parallel_to_training: False
+
+
 
 spill_dir: /home/omega/Documents/FCUL/Projects/FlexEnvMas/raylog/spill1
