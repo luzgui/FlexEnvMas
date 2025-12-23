@@ -68,8 +68,10 @@ class Trainable():
                      'training_iteration'}
             
             
-            logs={k: train_results[k] for k in metrics}            
-            logs['eval_ep_reward_mean']=train_results['evaluation']['episode_reward_mean']
+            logs={k: train_results[k] for k in metrics}
+
+            if 'evaluation' in train_results.keys():
+                logs['eval_ep_reward_mean']=train_results['evaluation']['episode_reward_mean']
 
             
             results={**logs}
