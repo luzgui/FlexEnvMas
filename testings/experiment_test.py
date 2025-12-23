@@ -173,7 +173,7 @@ class ExperimentTest():
             tester=self.tester(config, env=config["env"])
             tester.restore(checkpoint)
         else:
-            print('restoring the checkpoint defined in test_config.yaml')
+            print('restoring the checkpoint defined in exp_name.yaml')
             checkpoint=Checkpoint(os.path.join(self.dir, self.exp_name,self.cp))
             
             experiment=ExperimentAnalysis(os.path.join(self.dir, self.exp_name),

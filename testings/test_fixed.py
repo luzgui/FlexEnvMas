@@ -115,7 +115,8 @@ configs=ConfigsParser(configs_folder, exp_name)
 _, file_apps_conf, file_scene_conf, _ ,file_vars,file_experiment, ppo_config=configs.get_configs()
 
 #%% get configs for testing environment
-test_config_file=configs_folder / 'test_config.yaml'
+# test_config_file=configs_folder / 'test_config.yaml'
+test_config_file=configs_folder / 'exp_name.yaml'
 test_name=YAMLParser().load_yaml(test_config_file)['test_name']
 test_configs=ConfigsParser(configs_folder, test_name)
 # between training and testing the difference is the agents config and the problem config
