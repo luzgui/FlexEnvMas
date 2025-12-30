@@ -560,6 +560,7 @@ class FlexEnv(MultiAgentEnv):
             print('w1',np.round(self.reward_obj.w1,2),'|','w2',np.round(self.reward_obj.w2,2))
             ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
             print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
+            print('ENV INFO:', self.com.problem_conf['env_info'])
             self.n_episodes+=1
             self.done.loc[self.agents_id] = True #update done for all agents
             self.env_done=self.get_env_done()
