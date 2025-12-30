@@ -102,12 +102,52 @@ def env_creator(env_config):
 
 register_env("flexenv", env_creator)
 
+#%% Evaluation environment
+eval_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['test_name']
+eval_configs=ConfigsParser(configs_folder, eval_name)
+
+eval_ag_conf, eval_apps_conf, eval_scene_conf, eval_prob_conf,file_eval_vars,_, _=eval_configs.get_configs()
+# import dataset file
+eval_file=YAMLParser().load_yaml(eval_prob_conf)['dataset_file']
+eval_dataset=datafolder / eval_file
+
+eval_com=Community(eval_ag_conf,
+              eval_apps_conf,
+              eval_scene_conf,
+              eval_prob_conf,
+              eval_dataset)
+
+
+eval_vars=StateVars(file_eval_vars)
+
+# Make environment   
+eval_env_config={'community': eval_com,
+            'com_vars': eval_vars,
+            'num_agents': eval_com.num_agents}
+   
+eval_env=FlexEnv(eval_env_config)
+
+eval_envi=MultiAgentEnvCompatibility(eval_env)
+eval_envi._agent_ids=eval_envi._agent_ids
+
+def eval_env_creator(eval_env_config):
+    # return NormalizeObs(menv_base)  # return an env instance
+    # new_env=FlexEnv(eval_env_config)
+    new_env=MultiAgentEnvCompatibility(eval_envi)
+    new_env._agents_ids=eval_envi._agent_ids
+    return new_env.env
+    # return MultiAgentEnvCompatibility(envi)
+    # return menv_base
+
+register_env("flexenv-eval", eval_env_creator)
+
+
 #%% Train experiment
 if train:
     print('trainning')
     time.sleep(3)
 
-    experiment=Experiment(envi, file_experiment)
+    experiment=Experiment(envi,eval_env, file_experiment)
     config=experiment.make_algo_config(ppo_config)
     config_tune=experiment.make_tune_config()
     config_run=experiment.make_run_config(raylog.as_posix())

@@ -61,8 +61,9 @@ from termcolor import colored
 #%%
 
 class Experiment():
-    def __init__(self,env,config):
+    def __init__(self,env,eval_env,config):
         self.env=env
+        self.eval_env=eval_env
         self.parser=YAMLParser()
         self.config=self.parser.load_yaml(config)
         
@@ -195,11 +196,14 @@ class Experiment():
         
         
         #For now env config is defined as the train config. This should be the testing environment
-        config_algo.evaluation(evaluation_config=self.env.env_config,
-                               evaluation_interval=self.config['evaluation']['evaluation_interval'],
-                               evaluation_duration_unit=self.config['evaluation']['evaluation_duration_unit'],
-                               evaluation_duration=self.config['evaluation']['evaluation_duration'],
-                               )
+        
+        config_algo.evaluation(evaluation_config={'env': 'flexenv-eval',
+                                                  'config': self.eval_env.env_config},
+                                evaluation_interval=self.config['evaluation']['evaluation_interval'],
+                                evaluation_duration_unit=self.config['evaluation']['evaluation_duration_unit'],
+                                evaluation_duration=self.config['evaluation']['evaluation_duration'],
+                                evaluation_num_workers = self.config['evaluation']['evaluation_num_workers']
+                                )
         
         #multiagent
         policies, policy_function = self.get_policies()
