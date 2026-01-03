@@ -15,11 +15,12 @@ class Reward:
               'weight_reward':self.weight_reward,
               'comp_weight_reward':self.comp_weight_reward,
               'weight_reward_var_w':self.weight_reward_var_w,
-              'reward_unique':self.reward_unique}
+              'reward_unique':self.reward_unique,
+              'simple_reward_indiv': self.simple_reward_indiv}
     
         self.reward_func=self.reward_func_list[self.self_env.com.scenarios_conf['reward_func']]
-
     def get_penalty(self,agent):
+
             # if self.self_env.minutes == self.self_env.min_max-self.self_env.agents_params.loc[agent]['T_prof']*self.self_env.tstep_size and self.self_env.state.loc[agent]['y_s']  !=self.self_env.agents_params.loc[agent]['T_prof']:
                 
             minutes_deliver , tstep_deliver=self.self_env.processor.hours_to_minutes(self.self_env.agents_params.loc[agent]['t_deliver'],
@@ -247,7 +248,35 @@ class Reward:
         self.w1=0
         self.w2=0   
         R=df['r'].sum()
+
         return {aid: R for aid in self.self_env.agents_id} 
+    
+    def simple_reward_indiv(self):
+        
+        df=self.self_env.action.copy()
+
+        AgentTotalLoads=sum([self.self_env.action.loc[agent]['action']*self.self_env.com.agents[agent].apps[0].base_load*(self.self_env.tstep_size/60) for agent in self.self_env.agents_id])
+        
+        
+        for ag in self.self_env.agents_id:
+            action=self.self_env.action.loc[ag, 'action']
+            base_load=self.self_env.com.agents[ag].apps[0].base_load
+            
+            if AgentTotalLoads != 0:
+                df.loc[ag, 'alpha'] = (action*base_load*(self.self_env.tstep_size / 60) / AgentTotalLoads)
+            else:
+                df.loc[ag, 'alpha'] = 0  # or handle it in another appropriate way
+
+            df.loc[ag,'alpha_cost']=self.get_agent_cost_alpha(ag, df.loc[ag,'alpha'])
+            
+            df.loc[ag,'r']=(df.loc[ag,'alpha_cost'])
+            
+        self.w1=0
+        self.w2=0   
+        # R=df['r'].sum()
+
+        # return {aid: R for aid in self.self_env.agents_id} 
+        return {aid: df.loc[aid]['r'] for aid in self.self_env.agents_id}    
     
     def simple_reward_v2(self):
         
