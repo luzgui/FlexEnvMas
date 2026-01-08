@@ -152,6 +152,12 @@ if train:
     config_tune=experiment.make_tune_config()
     config_run=experiment.make_run_config(raylog.as_posix())
     
+    # analyse the trainer
+    # from ray.rllib.algorithms.ppo import PPO #trainer
+    # from ray.rllib.algorithms.ppo import PPOConfig #config
+    
+    # trainer=PPO(config, env=config["env"])
+    
     resources=experiment.get_resources()
     trainable_obj=Trainable(file_experiment)
     trainable_func=trainable_obj.trainable
@@ -201,8 +207,8 @@ else:
     # Simple agent test
     import matplotlib.pyplot as plt
     import numpy as np
-    from experiment_test import SimpleTests
-    from testenv import SimpleTestEnv, DummyTester, BaselineTest, SimpleTestCycle
+    from testings.experiment_test import SimpleTests
+    from testings.testenv import SimpleTestEnv, DummyTester, BaselineTest, SimpleTestCycle
     dummy_tester=DummyTester(envi)
     import pandas as pd
     
