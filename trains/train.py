@@ -152,26 +152,30 @@ if train:
     config_tune=experiment.make_tune_config()
     config_run=experiment.make_run_config(raylog.as_posix())
     
-    # analyse the trainer
-    # from ray.rllib.algorithms.ppo import PPO #trainer
-    # from ray.rllib.algorithms.ppo import PPOConfig #config
-    
-    # trainer=PPO(config, env=config["env"])
+
     
     resources=experiment.get_resources()
     trainable_obj=Trainable(file_experiment)
     trainable_func=trainable_obj.trainable
     trainable_resources = tune.with_resources(trainable_func, resources)
         
-    temp_dir= raylog / 'tmp'
+    # temp_dir= raylog / 'tmp'
+    temp_dir=experiment.config['spill_dir'] + '/ray_session'
     
     os.environ['TUNE_MAX_PENDING_TRIALS_PG']='1'
     
     ray.init(_system_config={"local_fs_capacity_threshold": 0.99,
-                             "object_spilling_config": json.dumps({"type": "filesystem",
-                                                                   "params": {"directory_path":[experiment.config['spill_dir']],}},)},)
+                              "object_spilling_config": json.dumps({"type": "filesystem",
+                                                                    "params": {"directory_path":[experiment.config['spill_dir']],}},)},)
+
     
+    #%% analyse the trainer
+    # from ray.rllib.algorithms.ppo import PPO #trainer
+    # from ray.rllib.algorithms.ppo import PPOConfig #config
+    # trainer=PPO(config, env=config["env"])
     
+    # sys.exit("Inspection point reached")
+    #%%
     
     if resume:
         experiment_dir=raylog / experiment.exp_name
