@@ -52,7 +52,8 @@ from obs_wrapper import *
 
 # from shiftenvRLlib_mas import ShiftEnvMas
 
-from auxfunctions_CC import *
+# from auxfunctions_CC import *
+from rl.algos.central_critic import *
 
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)

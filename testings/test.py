@@ -52,7 +52,8 @@ from trains.trainable import *
 
 # from shiftenvRLlib_mas import ShiftEnvMas
 
-from rl.algos.auxfunctions_CC import *
+# from rl.algos.auxfunctions_CC import *
+from rl.algos.central_critic import *
 
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)

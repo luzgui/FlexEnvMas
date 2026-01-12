@@ -22,7 +22,8 @@ from ray.tune import analysis, ExperimentAnalysis, TuneConfig
 from ray.tune.experiment import trial
 
 #PPO algorithm
-from rl.algos.auxfunctions_CC import CentralizedCritic
+# from rl.algos.auxfunctions_CC import CentralizedCritic
+from rl.algos.central_critic import CentralizedCritic
 from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
 from ray.rllib.env.env_context import EnvContext
 #models
@@ -64,7 +65,7 @@ import random
 
 # from shiftenvRLlib_mas import ShiftEnvMas
 
-from rl.algos.auxfunctions_CC import *
+
 
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)

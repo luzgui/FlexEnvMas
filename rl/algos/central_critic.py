@@ -1,24 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Mar 17 16:33:31 2023
+Created on Fri Jan  9 12:57:24 2026
 
 @author: omega
-"""
 
-"""An example of customizing PPO to leverage a centralized critic.
 
-Here the model and policy are hard-coded to implement a centralized critic
-for TwoStepGame, but you can adapt this for your own use cases.
-
-Compared to simply running `rllib/examples/two_step_game.py --run=PPO`,
-this centralized critic version reaches vf_explained_variance=1.0 more stably
-since it takes into account the opponent actions as well as the policy's.
-Note that this is also using two independent policies instead of weight-sharing
-with one.
-
-See also: centralized_critic_2.py for a simpler approach that instead
-modifies the environment.
 """
 
 import argparse
@@ -35,11 +22,7 @@ from ray.rllib.algorithms.ppo.ppo_tf_policy import (
 )
 from ray.rllib.algorithms.ppo.ppo_torch_policy import PPOTorchPolicy
 from ray.rllib.evaluation.postprocessing import compute_advantages, Postprocessing
-# from ray.rllib.examples.env.two_step_game import TwoStepGame
-from ray.rllib.examples.models.centralized_critic_models import (
-    CentralizedCriticModel,
-    TorchCentralizedCriticModel,
-)
+
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.sample_batch import SampleBatch
 from ray.rllib.utils.annotations import override
@@ -50,7 +33,7 @@ from ray.rllib.utils.tf_utils import explained_variance, make_tf_callable
 from ray.rllib.utils.torch_utils import convert_to_torch_tensor
 from termcolor import colored
 
-from models2 import *
+from rl.models.models2 import *
 #debug
 from icecream import ic
 import pdb
@@ -61,25 +44,29 @@ torch, nn = try_import_torch()
 OPPONENT_OBS = "opponent_obs"
 OPPONENT_ACTION = "opponent_action"
 
-#%%Aux Functions
+
+
 def cc_postprocessing(policy, 
                       sample_batch, 
                       other_agent_batches=None, 
                       episode=None):
-    """Grabs the opponent obs/act and includes it in the experience train_batch,
-    and computes GAE using the central vf predictions."""
+
     
     n_agents=policy.config['env_config']['num_agents']
     n_agents_other=n_agents-1 #NUmber of other agents
+    
+    # the observation dimension that is input to the policy model is the sum of the 'action_mask' and 'observation' (49+2=51). 
+    # This is a trick to get that value that we cannot get from the config dictionary
     
     obs_space=policy.config['observation_space']
     obs_dim=0
     for key in obs_space.keys():
         obs_dim+=obs_space[key].shape[0]
         
-    
-    if policy.loss_initialized():
         
+    if policy.loss_initialized():
+
+
         assert other_agent_batches is not None
         opponent_batch_list = list(other_agent_batches.values())
         
@@ -91,25 +78,36 @@ def cc_postprocessing(policy,
         
 
         ##
-        try:
-            global_action_batch = np.stack(
-            [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
+        # try:
+        #     global_action_batch = np.stack(
+        #     [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
 
-        except Exception as e:
-            print("An error occurred:", e)
-            from ray.util import pdb
-            pdb.set_trace() 
+        # except Exception as e:
+        #     print("An error occurred:", e)
+        #     from ray.util import pdb
+        #     pdb.set_trace() 
     
         
+        # global_action_batch = np.stack(
+        # [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
+        # from ray.util import pdb
+        # pdb.set_trace() 
+    
         sample_batch["opponent_obs"] = global_obs_batch
-        sample_batch["opponent_action"] = global_action_batch
+        # sample_batch["opponent_action"] = global_action_batch
         
+
+        # sample_batch['vf_preds'] = convert_to_numpy(
+        #     policy.compute_central_vf(
+        #         sample_batch['obs'],
+        #         sample_batch['opponent_obs'],
+        #         sample_batch['opponent_action'],))
         sample_batch['vf_preds'] = convert_to_numpy(
             policy.compute_central_vf(
                 sample_batch['obs'],
-                sample_batch['opponent_obs'],
-                sample_batch['opponent_action'],))
-        # print('finished computing central value function')
+                sample_batch['opponent_obs'],))
+
+
         
     else:
         # Policy hasn't been initialized yet, use zeros.
@@ -117,17 +115,16 @@ def cc_postprocessing(policy,
         len_batch=len(sample_batch)
         zero_obs=np.zeros((len_batch,obs_dim))
         zero_opp_obs=np.zeros((len_batch,obs_dim*n_agents_other))
-        zero_opp_actions=np.zeros((len_batch,n_agents_other))
+        # zero_opp_actions=np.zeros((len_batch,n_agents_other))
         zero_vf_preds=np.zeros((len_batch,))
         
 
         
         sample_batch[OPPONENT_OBS] = zero_opp_obs
-        sample_batch[OPPONENT_ACTION] = zero_opp_actions
+        # sample_batch[OPPONENT_ACTION] = zero_opp_actions
         sample_batch[SampleBatch.VF_PREDS] = np.zeros((len_batch,))
         
-        # import pdb
-        # pdb.pdb.set_trace()
+
         
         # sample_batch[OPPONENT_OBS] = np.zeros_like(sample_batch[SampleBatch.CUR_OBS])
         # sample_batch[OPPONENT_ACTION] = np.zeros_like(sample_batch[SampleBatch.ACTIONS])
@@ -154,22 +151,20 @@ def cc_postprocessing(policy,
     )
     # print(colored('Finished postprocess...','green'))
    
+    # from ray.util import pdb
+    # pdb.set_trace() 
     return train_batch
 
 
-
 def loss_with_central_critic(policy, base_policy, model, dist_class, train_batch):
-    """Copied from PPO but optimizing the central value function."""
     # Save original value function.
-
+            
     vf_saved = model.value_function
     
     # Calculate loss with a custom value function.
     model.value_function = lambda: policy.model.central_value_function(
         train_batch[SampleBatch.CUR_OBS],
-        train_batch[OPPONENT_OBS],
-        train_batch[OPPONENT_ACTION],
-    )
+        train_batch[OPPONENT_OBS],)
     policy._central_value_out = model.value_function()
     loss = base_policy.loss(model, dist_class, train_batch)
 
@@ -179,9 +174,8 @@ def loss_with_central_critic(policy, base_policy, model, dist_class, train_batch
     return loss
 
 
-
 def central_vf_stats(policy, train_batch):
-    """Report the explained variance of the central value function.""" 
+    # Report the explained variance of the central value function.
     return {
         "vf_explained_var": explained_variance(
             train_batch[Postprocessing.VALUE_TARGETS], policy._central_value_out
@@ -194,13 +188,14 @@ class CentralizedValueMixin:
     def __init__(self):
             self.compute_central_vf = self.model.central_value_function
 
-#%% get_ccppo_policy
+
+
 def get_ccppo_policy(base):
     class CCPPOTFPolicy(CentralizedValueMixin, base):
         def __init__(self, observation_space, action_space, config):
             base.__init__(self, observation_space, action_space, config)
             CentralizedValueMixin.__init__(self)
-    
+
         
         @override(base)
         def loss(self, model, dist_class, train_batch):
@@ -209,7 +204,10 @@ def get_ccppo_policy(base):
             # value function defined on self, and the loss function
             # defined on PPO policies.
 
-            return loss_with_central_critic(self, super(), model, dist_class, train_batch)
+
+            return loss_with_central_critic(
+                self, super(), model, dist_class, train_batch
+            )
         
         @override(base)
         def postprocess_trajectory(
@@ -227,16 +225,27 @@ def get_ccppo_policy(base):
 
     return CCPPOTFPolicy
 
-#%% CC Class
+
+
+
+#------
+CCPPOStaticGraphTFPolicy = get_ccppo_policy(PPOTF1Policy)
+CCPPOEagerTFPolicy = get_ccppo_policy(PPOTF2Policy)
+
+#------
+
+
 
 class CentralizedCritic(PPO):
     @classmethod
     @override(PPO)
     def get_default_policy_class(cls, config):
+        # if config["framework"] == "torch":
+        #     return CCPPOTorchPolicy
         if config["framework"] == "tf":
-            return get_ccppo_policy(PPOTF1Policy)
+            return CCPPOStaticGraphTFPolicy
         else:
-            return get_ccppo_policy(PPOTF2Policy)
+            return CCPPOEagerTFPolicy
 
 
 
