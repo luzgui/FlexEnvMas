@@ -618,7 +618,7 @@ class FlexEnv(MultiAgentEnv):
                         self.state_norm.loc[aid,key]=0
                     else:
                         # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
-                        self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.pv_sum_max
+                        self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
                         # print(self.state_norm.loc[aid,key])
 
                 # Normalize all tariffs by the maximum tariff
