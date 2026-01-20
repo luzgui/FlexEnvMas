@@ -89,7 +89,7 @@ from env.environment import FlexEnv
 from analyze.plots import Plots
 
 from opti.optimize import CommunityOptiModel
-
+from utils.utilities import utilities
 
 #paths
 
@@ -159,6 +159,11 @@ def env_creator(env_config):
     # return menv_base
 
 register_env("flexenv", env_creator)
+
+utilities.print_info("""In test.py flexenv-eval is registered with the same testenv because the 
+trainning config that is imported from experiment folder has a flexenv-eval defined for evaluation""")
+
+register_env("flexenv-eval", env_creator)
 
 print('number of days for testing:', len(tenvi.allowed_inits))
 #%% Test
