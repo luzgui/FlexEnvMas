@@ -68,22 +68,15 @@ class CCActionMaskModel(TFModelV2):
         self.no_masking = model_config["custom_model_config"].get("no_masking", False)
         
         
-        # import pdb
-        # pdb.pdb.set_trace()
         # n_agents=model_config['env_config']['num_agents']
         # n_agents_other=n_agents-1 #NUmber of other agents
-        
-        
-            
-        
         
         # n_opp_agents=2
         # Central VF maps (obs, opp_obs, opp_act) -> vf_pred
         # obs = tf.keras.layers.Input(shape=obs_space.shape, name="obs")
         # opp_obs = tf.keras.layers.Input(shape=obs_space.shape, name="opp_obs")
         # opp_act = tf.keras.layers.Input(shape=(2,), name="opp_act") #twostep game hs the same action space as flexenv mas environment
-        # import pdb
-        # pdb.pdb.set_trace()
+
         
         #%% Need to hardcode n_opp_agents everytime we change the number of agents
         n_opp_agents=2
@@ -93,11 +86,8 @@ class CCActionMaskModel(TFModelV2):
         obs = tf.keras.layers.Input(shape=obs_space.shape, name="obs")
         opp_obs = tf.keras.layers.Input(shape=(obs_space.shape[0]*n_opp_agents,), name="opp_obs")
         # opp_act = tf.keras.layers.Input(shape=(n_opp_agents,), name="opp_act") #twostep game hs the same action space as flexenv mas environment
-        
-
         # opp_act = tf.keras.layers.Input(shape=action_space.shape, name="opp_act") #twostep game hs the same action space as flexenv mas environment
-        # import pdb
-        # pdb.pdb.set_trace()
+
         # concat_obs = tf.keras.layers.Concatenate(axis=1)([obs, opp_obs, opp_act])
         concat_obs = tf.keras.layers.Concatenate(axis=1)([obs, opp_obs])
         
@@ -109,9 +99,7 @@ class CCActionMaskModel(TFModelV2):
         hidden_layer3 = tf.keras.layers.Dense(256, activation=tf.nn.tanh)(hidden_layer2)
         central_vf_out = tf.keras.layers.Dense(1, activation=None, name="c_vf_out")(hidden_layer3)
         
-        # self.central_vf = tf.keras.Model(
-        #     inputs=[obs, opp_obs, opp_act], outputs=central_vf_out,
-        # name='c_vf_model')
+
         
         # self.central_vf = tf.keras.Model(
         #     inputs=[obs, opp_obs, opp_act], outputs=central_vf_out,
@@ -144,29 +132,11 @@ class CCActionMaskModel(TFModelV2):
 
     # def central_value_function(self, obs, opponent_obs, opponent_actions):
     def central_value_function(self, obs, opponent_obs):
-        # print('XXobs', obs)
-        # print('XXop_obs', opponent_obs)
-        # print('XXops_act',opponent_actions)
-        
-        
 
-        # return tf.reshape(self.central_vf([obs, 
-        #                                    opponent_obs, 
-        #                                    tf.one_hot(tf.cast(opponent_actions,tf.int32), 4)]),[-1],)
-        
-        # input_tensor=[obs,opponent_obs,tf.one_hot(tf.cast(opponent_actions,tf.int32), 2)]
-        # input_tensor=[obs,opponent_obs,opponent_actions]
         input_tensor=[obs,opponent_obs]
         
-        
-        # input_tensor=tf.keras.layers.Concatenate(axis=1)([obs, opponent_obs, tf.one_hot(tf.cast(opponent_actions,tf.int32), 4)])
-            # print('XXobs', obs)])
-            
- 
         val=self.central_vf(input_tensor)
-        
-        # import pdb
-        # pdb.pdb.set_trace() 
+
         return tf.reshape(val,[-1],)
 
     @override(ModelV2)
