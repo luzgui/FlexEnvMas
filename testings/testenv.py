@@ -52,7 +52,9 @@ class TestEnv():
         #test configs
         self.n_episodes=self.test_config['test_configs']['n_episodes']
         self.shouldPlot=self.test_config['test_configs']['shouldPlot']
-        
+    
+    
+    
     def test(self,results_path):
         """save_metrics=True will make Results from testing (plots and metrics) to be saved in the trainable folder (results_path) alongside the checkpoints"""
         
@@ -186,7 +188,7 @@ class SimpleTestEnv(TestEnv):
         # super().__init__(env, tester)
         #debugging
         self.n_episodes=1
-        self.shouldPlot=True
+        self.shouldPlot=False
      
         
 
@@ -342,7 +344,7 @@ class BaselineFixedTest(TestEnv):
     
     def get_action_plan(self):
         actions={}
-        starts=dict(zip(self.env.agents_id, [81,75,49,32,36,45,50][0:len(self.env.agents_id)]))
+        starts=dict(zip(self.env.agents_id, [75,75,75,32,36,45,50][0:len(self.env.agents_id)]))
         
         for ag in self.env.agents_id:
             agent=self.env.com.get_agent_obj(ag)
@@ -420,6 +422,10 @@ class TestEnvOpti(TestEnv):
     
     
     def get_folder_name(self):
+        """
+        produces the results folder name for when actions are taken from optimization
+        solutions
+        """
         actions_env=self.actions_folder.name.split('_', 1)[1]
         print('Actions are taken from -->', self.actions_folder.name)
         return 'Train_'+actions_env + '_' + 'Test_'+self.test_name + '_' + 'actions'
