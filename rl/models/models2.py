@@ -77,9 +77,7 @@ class CCActionMaskModel(TFModelV2):
         # opp_obs = tf.keras.layers.Input(shape=obs_space.shape, name="opp_obs")
         # opp_act = tf.keras.layers.Input(shape=(2,), name="opp_act") #twostep game hs the same action space as flexenv mas environment
 
-        
-        #%% Need to hardcode n_opp_agents everytime we change the number of agents
-        n_opp_agents=2
+        n_opp_agents=model_config["custom_model_config"]['n_agents']-1
         
         
         # h_size=95
