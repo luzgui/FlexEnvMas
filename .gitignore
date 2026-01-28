@@ -5,7 +5,7 @@ __pycache__/
 
 #config folders
 configs/
-!configs/local-debug
+
 
 # C extensions
 *.so
