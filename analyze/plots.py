@@ -18,6 +18,7 @@ from icecream import ic
 import seaborn as sns
 from utils.utilities import utilities
 import re
+from matplotlib.ticker import AutoMinorLocator
 
 class Plots():
     plt.rcParams['figure.dpi'] = 300
@@ -324,6 +325,7 @@ class Plots():
                     dodge=dodge, 
                     alpha=1, 
                     edgecolor=edgecolor)
+
         sns.lineplot(x=time, y=key, data=excess, color='orange', ax=ax1, alpha=0.5)
         
         # grey_palette = sns.light_palette("grey", n_colors=6)
@@ -898,7 +900,8 @@ class Plots():
     def plot_barplot(df,filename_save,infos):
         # palette = sns.color_palette("RdYlGn_r", 4)
 
-        
+        variable=infos['var']
+        x_variable=infos['hue']
         df=pd.DataFrame(df)
         df = df.rename(index={'il': 'PPO'})
         # plt.figure(figsize=(3, 4))  # Adjust as needed
@@ -906,10 +909,10 @@ class Plots():
 
         # sns.barplot(x='Metric', y='Value', hue='index', data=df_melted)
         # sns.barplot(x='variable', y='value', hue='experiment', data=df_melted,width=0.3,dodge=True)
-        df_sorted = df.sort_values(by='cost_mean', ascending=False)
+        df_sorted = df.sort_values(by=variable, ascending=False)
         # import pdb
         # pdb.pdb.set_trace()
-        sns.barplot(x='experiment', y='cost_mean', data=pd.DataFrame(df),width=0.6,dodge=False,
+        sns.barplot(x=x_variable, y=variable, data=pd.DataFrame(df),width=0.6,dodge=False,
                     order=df_sorted.index.to_list())
         # sns.barplot(data=df,width=0.3,dodge=True)
         # Customize the plot
@@ -932,7 +935,61 @@ class Plots():
             plt.savefig(filename_save, dpi=300,bbox_inches='tight', pad_inches=0.1)
         
         plt.show()
-            
+    
+    @staticmethod   
+    def plot_scatterplot(df,filename_save,infos):
+        # palette = sns.color_palette("RdYlGn_r", 4)
+
+        variable=infos['var']
+        x_variable=infos['hue']
+        df=pd.DataFrame(df)
+        # import pdb
+        # pdb.pdb.set_trace()
+        df = df.rename(index={'il': 'PPO'})
+        # plt.figure(figsize=(3, 4))  # Adjust as needed
+        plt.figure(figsize=(10, 6))
+        # plt.figure()
+
+        # sns.barplot(x='Metric', y='Value', hue='index', data=df_melted)
+        # sns.barplot(x='variable', y='value', hue='experiment', data=df_melted,width=0.3,dodge=True)
+        df_sorted = df.sort_values(by=variable, ascending=False)
+
+        # import pdb
+        # pdb.pdb.set_trace()
+        sns.scatterplot(data=df, x='eps', y='cost_mean')
+        plt.xscale('log')
+        plt.axhline(y= df.loc['opti'][variable], color='red', linestyle='--', linewidth=1, label='optimal')
+        plt.axhline(y= df.loc['IL'][variable], color='blue', linestyle='--', linewidth=1, label='IL')
+        plt.axhline(y= df.loc['CC'][variable], color='violet', linestyle='--', linewidth=1, label='CC')
+        plt.axhline(y= df.loc['base'][variable], color='green', linestyle='--', linewidth=1, label='Rand')
+
+# Show legend with both scatter and horizontal line labels
+        plt.legend(title='Legend')
+        # sns.barplot(data=df,width=0.3,dodge=True)
+        # Customize the plot
+        plt.xlabel(infos['x_label'])
+        plt.ylabel(infos['y_label'])
+        plt.title(infos['title'])
+        
+        # if infos['legend'] == True:
+        #     plt.legend(title='Experiment')
+        # plt.xticks(rotation=45)
+        plt.grid(axis='both', linestyle='--', alpha=0.7)  # Add horizontal grid lines
+        # ax = plt.gca()
+        # ax.xaxis.set_minor_locator(AutoMinorLocator())
+        # ax.yaxis.set_minor_locator(AutoMinorLocator())
+        plt.ylim(bottom=0.05, top=df['cost_mean'].max()+0.1)
+        # Show the plot
+        # plt.tight_layout()
+        
+        
+        
+        # Show the plot
+        if filename_save:
+            plt.savefig(filename_save, dpi=300,bbox_inches='tight', pad_inches=0.1)
+        
+        plt.show()    
+    
     @staticmethod
     def plot_boxplot(df,filename_save,infos):
         # palette = sns.color_palette("RdYlGn_r", 4)       
