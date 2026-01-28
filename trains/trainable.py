@@ -2,7 +2,6 @@
 
 
 from ray.rllib.algorithms.ppo import PPO #trainer
-# from rl.algos.auxfunctions_CC import CentralizedCritic
 from rl.algos.central_critic import CentralizedCritic
 
 from ray.rllib.algorithms.ppo import PPOConfig #config
