@@ -102,7 +102,8 @@ class Analyzer():
         """
     
         self.exp_info=utilities.get_exp_from_results_name(self.folder.name)
-
+        # import pdb 
+        # pdb.pdb.set_trace()
         self.config=ConfigsParser(configs_folder, self.exp_info['train_exp'])
         
         _,_,_,_,_,exp_config,algo_config=self.config.get_configs()
@@ -346,8 +347,6 @@ class Analyzer():
     def plot_one_day(self,day_num,source,plot_type,exp,save=False):
         data=self.get_one_day_data(day_num, source)
         
-        # import pdb
-        # pdb.pdb.set_trace()
         
         model = 'opti' if source == 'opti' else self.exp_info['model']
         
@@ -467,6 +466,7 @@ class AnalyzerMulti():
         filt=True : filter out the non-critical days
         
         """
+        assert self.check_equals(), 'optimal folders are different'
         
         # data=self.get_multi_cost_compare()
         data=self.get_multi_all_compare(filt=filt)
@@ -476,6 +476,7 @@ class AnalyzerMulti():
         for key in exp_indexes:
             df.loc[key,'cost_mean']=data.loc[key]['cost'].mean()
             df.loc[key,'cost_total']=data.loc[key]['cost'].sum()
+            
         
         return df
             
@@ -489,6 +490,8 @@ class AnalyzerMulti():
         object when optimal values and baseline values are differente for each experiment 
         
         """
+        assert self.check_equals()==False, 'optimal folders are equal'
+        
         # data=self.get_multi_cost_compare()
         data=self.get_multi_all_compare()
         exp_indexes=data.index.get_level_values('experiment').unique()
@@ -586,7 +589,7 @@ class AnalyzerMulti():
         
         """
         
-        utilities().print_info('only works when experiments in results_config have different envs and opti_sols')
+        utilities().print_info('only works when experiments in results_config have different envs (test_env key) and opti_sols')
         data={}
         # for obj in self.analyser_objs:
         #     data[obj]={'excess_year': self.analyser_objs[obj].env.data.loc['ag1']['excess'].sum(),
@@ -697,6 +700,8 @@ class AnalyzerMulti():
         Plots the DP models against the optimal solutions and the RL solutions
         
         filt=True : filter out the non-critical days
+        
+        dp configs must have a data field
         
         """
         df=self.get_multi_year_data_eq(filt=filt)
@@ -1059,8 +1064,88 @@ class AnalyzerMulti():
         
         
         
-            
+class AnalyzerMultiMulti():
+    "Class to compare groups of experiments"
+    def __init__(self,name,objs=None):
+        """gets a list of AnalyzerMulti objects objects and performs comparison between them"""
+        self.results_folder=Path.cwd().parent / 'Results'
+        self.name=name
+        self.analyser_objs=objs
+        self.plot=Plots()
+        self.compare_results_folder=self.results_folder / self.name
+        FolderUtils().make_folder(self.compare_results_folder)
         
+    def get_compare_table(self):
+        """
+        returns a df with a row per experiment group
+        index is the experiment group name (taken from AnalyzerMulti objectss) 
+        """
+        dict_multi={}
+        for exp in self.analyser_objs:
+            exp_obj=self.analyser_objs[exp]
+            df=exp_obj.get_multi_year_data_eq(filt=False)
+            df['eps']=exp_obj.info['data_global']['eps']
+            dict_multi[exp]=df
+  
+        df_multi=pd.concat(dict_multi, axis=1)
+        df.index=df.index.set_names('exp')
+        df_multi.to_csv(self.compare_results_folder / 'df_compare.csv')
+        return df_multi
+    
+    def get_compare_df_from_file(self,file):
+        df=pd.read_csv(self.compare_results_folder / file,
+                       header=[0,1],
+                       index_col=[0])
+        df.index=df.index.set_names('exp')        
+        return df
+        
+    
+    def plot_boxplot(self):
+        # df=self.get_compare_table()
+        # df=self.get_compare_df_from_file(self.compare_results_folder / 'df_compare_crit.csv')
+        df=self.get_compare_df_from_file(self.compare_results_folder / 'df_compare.csv')
+        df=df.stack(level=0)
+        df.index = df.index.set_names(['exp','group'])
+        
+        ref_vals=df.loc[['opti','base']]
+        df=df.drop(['opti','base'])
+        rl_vals=df[df.index.get_level_values(1).isin(['IL','CC'])]
+        # df=df.drop(['IL','CC'])
+        
+        mask = ~df.index.get_level_values('group').isin(['CC', 'IL'])  # keep only rows not in ['CC','IL']
+        df = df[mask]
+
+        
+        plt.figure(figsize=(8, 5))
+        
+        ax=sns.boxplot(data=df,x='eps', y='cost_mean')
+        # plt.xscale('logit')
+        
+        
+        
+        ax.axhline(y=ref_vals.loc['opti']['cost_mean'].mean(), linestyle='dashed', color='red', linewidth=1.5, label='opti')
+        ax.axhline(y=rl_vals[rl_vals.index.get_level_values(1).isin(['IL'])]['cost_mean'].mean(), linestyle='dashed', color='blue', linewidth=1.5, label='IL')
+        ax.axhline(y=rl_vals[rl_vals.index.get_level_values(1).isin(['CC'])]['cost_mean'].mean(), linestyle='dashed', color='purple', linewidth=1.5, label='CC')
+        # ax.axhline(y=0.7, linestyle='dashed', color='purple', linewidth=1.5, label='base')
+        # ax.axhline(y=ref_vals.loc['base'].unique()[0], linestyle='dashed', color='blue', linewidth=1.5, label='opti')
+        
+        # plt.title("Daily mean cost for running appliances (critical days)")
+        plt.title("Daily mean cost for running appliances")
+        plt.xlabel("ε")
+        plt.ylabel("€/kwh")
+        plt.xticks(rotation=45, ha="right")
+        ax.yaxis.grid(True, linestyle="--", linewidth=0.5, alpha=0.7)
+        ax.xaxis.grid(True, linestyle="--", linewidth=0.5, alpha=0.7)
+        ax.set_axisbelow(True)   # ensure grid is behind the boxes
+        plt.legend()
+        # plt.tight_layout()
+        plt.savefig(self.compare_results_folder / 'df_compare_box.png',
+                    dpi=600)
+        plt.show()
+        
+        
+        
+
         
                 
         
