@@ -9,6 +9,7 @@ import os
 import inspect
 from pathlib import Path
 from termcolor import colored
+import re
 
 
 
@@ -22,12 +23,39 @@ class utilities:
         print(colored(message,'red'))
         print(colored(f"@ '{function_name}' at line {line_number}",'green'))
         
-    @staticmethod    
+    @staticmethod 
     def get_exp_from_results_name(folder_name: str) -> dict:
+        """
+        - Extracts the names of the train experience and the test experience from the name of the folder of results
+        - Returns a dictionary in the format {'train_exp': 'name1', 'test_exp': 'name2'} 
+        regardless of the characters in name1 and name2 if elements are separated by '_'
+        """
         parts = folder_name.split('_')
-        result={'train_exp': parts[1],
-                'test_exp':parts[3]}
         
+        # Find the index of 'Train' and 'Test' keywords (case sensitive)
+        try:
+            train_index = parts.index('Train')
+            test_index = parts.index('Test')
+        except ValueError:
+            # fallback: expected fixed positions
+            train_index = 0
+            test_index = 2
+    
+        # train_exp is the parts between Train and Test
+        train_exp = '_'.join(parts[train_index + 1:test_index])
+        # test_exp is parts after Test
+        test_exp = '_'.join(parts[test_index + 1:])
+        
+        return {'train_exp': train_exp, 'test_exp': test_exp}
+
+    
+    @staticmethod
+    def get_num_from_str(text):
+        # This regex matches integers and floats (e.g., 123, 45.67)
+        pattern = r'\d+\.\d+|\d+'
+        numbers = re.findall(pattern, text)
+        # Convert matched strings to float if they contain a dot, else int
+        result = [float(num) if '.' in num else int(num) for num in numbers]
         return result
         
         
