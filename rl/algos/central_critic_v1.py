@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jan  9 12:57:24 2026
+Created on Thu Jan 29 11:13:28 2026
 
 @author: omega
-
-
 """
 
 import argparse
@@ -45,6 +43,39 @@ OPPONENT_OBS = "opponent_obs"
 OPPONENT_ACTION = "opponent_action"
 
 
+def obs_process(policy, agent_obs_batch):
+    """
+    Process each agent obseravtion and pop out the common observation
+    """
+    
+    vars_to_cc={
+    'load0': True,
+    'gen0': False,
+    'excess0': False,
+    'tar_buy': False,
+    'E_prof_rem': True,
+    'y_s': True,
+    'pv_sum': False,
+    'tar1': False,
+    'tar2': False,
+    'tar_d': False,
+    'tar_mean': False,
+    'tar_stdev': False,
+    'tar_var': False}
+    
+    names=list(vars_to_cc.keys())
+    
+    vals=agent_obs_batch
+    filtered_values=[]
+    
+    for vec in vals:
+        sample=[v for v, name in zip(vec[2:], names) if vars_to_cc[name]]
+        sample=list(vec[0:2])+sample # adding the action mask
+        filtered_values.append(sample)
+    
+    
+    return tuple(filtered_values)
+
 
 def cc_postprocessing(policy, 
                       sample_batch, 
@@ -59,11 +90,12 @@ def cc_postprocessing(policy,
     # This is a trick to get that value that we cannot get from the config dictionary
     
     obs_space=policy.config['observation_space']
-    obs_dim=0
-    for key in obs_space.keys():
-        obs_dim+=obs_space[key].shape[0]
+    # obs_dim=0
+    # for key in obs_space.keys():
+    #     obs_dim+=obs_space[key].shape[0]
         
-        
+     
+    obs_dim=5
     if policy.loss_initialized():
 
 
@@ -72,34 +104,27 @@ def cc_postprocessing(policy,
         
         other_agents_id=list(other_agent_batches.keys())
         
+        # global_obs_batch = np.stack(
+        # [other_agent_batches[aid][2]["obs"] for aid in other_agents_id],axis=1)
+        # global_obs_batch=global_obs_batch.reshape((len(global_obs_batch),n_agents_other*obs_dim))
+        
         global_obs_batch = np.stack(
-        [other_agent_batches[aid][2]["obs"] for aid in other_agents_id],axis=1)
+        [obs_process(policy, other_agent_batches[aid][2]["obs"]) for aid in other_agents_id],axis=1)
         global_obs_batch=global_obs_batch.reshape((len(global_obs_batch),n_agents_other*obs_dim))
         
-
-        ##
-        # try:
-        #     global_action_batch = np.stack(
-        #     [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
-
-        # except Exception as e:
-        #     print("An error occurred:", e)
-        #     from ray.util import pdb
-        #     pdb.set_trace() 
-    
-        
-        # global_action_batch = np.stack(
-        # [other_agent_batches[aid][2]['actions'] for aid in other_agents_id],axis=1)
-
+        #get the list of vars in the environment
+        # var_list=policy.config['env_config']['com_vars'].get_state_vars()
     
         sample_batch["opponent_obs"] = global_obs_batch
         # sample_batch["opponent_action"] = global_action_batch
         
+        # breakpoint()
         # sample_batch['vf_preds'] = convert_to_numpy(
         #     policy.compute_central_vf(
         #         sample_batch['obs'],
         #         sample_batch['opponent_obs'],
         #         sample_batch['opponent_action'],))
+        # breakpoint()
         sample_batch['vf_preds'] = convert_to_numpy(
             policy.compute_central_vf(
                 sample_batch['obs'],
@@ -234,7 +259,7 @@ CCPPOEagerTFPolicy = get_ccppo_policy(PPOTF2Policy)
 
 
 
-class CentralizedCritic(PPO):
+class CentralizedCriticV1(PPO):
     @classmethod
     @override(PPO)
     def get_default_policy_class(cls, config):
