@@ -3,6 +3,7 @@
 
 from ray.rllib.algorithms.ppo import PPO #trainer
 from rl.algos.central_critic import CentralizedCritic
+from rl.algos.central_critic_v1 import CentralizedCriticV1
 
 from ray.rllib.algorithms.ppo import PPOConfig #config
 import pandas as pd
@@ -44,6 +45,9 @@ class Trainable():
         
         elif algo_name == 'CentralizedCritic':
             self.trainer=CentralizedCritic(config)
+            
+        elif algo_name == 'CentralizedCriticV1':
+            self.trainer=CentralizedCriticV1(config)
         
         print(colored(f'{algo_name} Trainer created.','red'))
                 

@@ -42,10 +42,11 @@ from ray import tune
 from ray.rllib.models import ModelCatalog
 
 # Custom Model
-from rl.models.models2 import ActionMaskModel, CCActionMaskModel
+from rl.models.models2 import ActionMaskModel, CCActionMaskModel,CCActionMaskModelV1
 from rl.models.models_rnn import LSTMActionMaskModel
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
+ModelCatalog.register_custom_model("cc_shift_mask_v1", CCActionMaskModelV1)
 ModelCatalog.register_custom_model("lstm_model", LSTMActionMaskModel)
 
 #Custom functions
@@ -172,9 +173,14 @@ if train:
     #%% analyse the trainer
     # from ray.rllib.algorithms.ppo import PPO #trainer
     # from ray.rllib.algorithms.ppo import PPOConfig #config
-    # trainer=PPO(config, env=config["env"])
+    # from rl.algos.central_critic import CentralizedCritic
+    # from rl.algos.central_critic_v1 import CentralizedCriticV1
     
+    # # trainer=PPO(config, env=config["env"])
+    # trainer=CentralizedCriticV1(config)
+    # trainer.get_policy('pol_ag1').model.central_vf.summary()
     # sys.exit("Inspection point reached")
+    
     #%%
     
     if resume:
