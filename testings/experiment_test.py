@@ -24,6 +24,7 @@ from ray.tune.experiment import trial
 #PPO algorithm
 # from rl.algos.auxfunctions_CC import CentralizedCritic
 from rl.algos.central_critic import CentralizedCritic
+from rl.algos.central_critic_v1 import CentralizedCriticV1
 from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
 from ray.rllib.env.env_context import EnvContext
 #models
@@ -54,7 +55,7 @@ from datetime import datetime
 # from shiftenvRLlib import ShiftEnv
 # from auxfunctions_shiftenv import *
 # from plotutils import *
-from rl.models.models2 import ActionMaskModel, CCActionMaskModel
+from rl.models.models2 import ActionMaskModel, CCActionMaskModel, CCActionMaskModelV1
 
 
 
@@ -70,6 +71,7 @@ import random
 # Custom Model
 ModelCatalog.register_custom_model('shift_mask', ActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
+ModelCatalog.register_custom_model("cc_shift_mask_v1", CCActionMaskModelV1)
 
 from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
 
@@ -135,7 +137,9 @@ class ExperimentTest():
         elif self.algo_name == 'CentralizedCritic':
             self.tester=CentralizedCritic
         
-        # self.tester=tester
+        elif self.algo_name == 'CentralizedCriticV1':
+            self.tester=CentralizedCriticV1
+            
         
     def simple_transition(env):
         pass
@@ -165,7 +169,7 @@ class ExperimentTest():
             best_res=result_grid.get_best_result(metric=self.train_experiment_config['metric'],
                                                  mode=self.train_experiment_config['mode'])
             config=best_res.config
-            
+
             utilities.print_info('num_workers changed sue to resource scarcicity')
             config['num_workers']=1
             config['num_gpus']=0
