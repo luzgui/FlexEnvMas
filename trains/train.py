@@ -26,6 +26,9 @@ import os
 
 from env.community import Community
 from env.environment import FlexEnv
+from env.environment_v1 import FlexEnvV1
+
+
 from env.state import StateVars
 from testings.experiment import Experiment
 from testings.experiment_test import SimpleTests
@@ -52,7 +55,8 @@ ModelCatalog.register_custom_model("lstm_model", LSTMActionMaskModel)
 #Custom functions
 start_time = time.time()
 
-
+import numpy as np
+np.seterr(all="raise")
 #%% exp_name + get configs
 exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
 configs=ConfigsParser(configs_folder, exp_name)
@@ -82,8 +86,10 @@ com_vars=StateVars(file_vars)
 env_config={'community': com,
             'com_vars': com_vars,
             'num_agents': com.num_agents}
+
    
-envi=FlexEnv(env_config)
+# envi=FlexEnv(env_config)
+envi=FlexEnvV1(env_config)
 
 df_list=envi.env_processor.get_daily_stats()
 # merged=envi.env_processor.merge_df_list_on_agents(df_list)
@@ -126,7 +132,8 @@ eval_env_config={'community': eval_com,
             'com_vars': eval_vars,
             'num_agents': eval_com.num_agents}
    
-eval_env=FlexEnv(eval_env_config)
+# eval_env=FlexEnv(eval_env_config)
+eval_env=FlexEnvV1(eval_env_config)
 
 eval_envi=MultiAgentEnvCompatibility(eval_env)
 eval_envi._agent_ids=eval_envi._agent_ids
@@ -171,15 +178,15 @@ if train:
 
     
     #%% analyse the trainer
-    # from ray.rllib.algorithms.ppo import PPO #trainer
-    # from ray.rllib.algorithms.ppo import PPOConfig #config
-    # from rl.algos.central_critic import CentralizedCritic
-    # from rl.algos.central_critic_v1 import CentralizedCriticV1
+    from ray.rllib.algorithms.ppo import PPO #trainer
+    from ray.rllib.algorithms.ppo import PPOConfig #config
+    from rl.algos.central_critic import CentralizedCritic
+    from rl.algos.central_critic_v1 import CentralizedCriticV1
     
-    # # trainer=PPO(config, env=config["env"])
+    trainer=PPO(config, env=config["env"])
     # trainer=CentralizedCriticV1(config)
     # trainer.get_policy('pol_ag1').model.central_vf.summary()
-    # sys.exit("Inspection point reached")
+    sys.exit("Inspection point reached")
     
     #%%
     
@@ -224,9 +231,10 @@ else:
     
     simpletest=SimpleTestEnv(envi, dummy_tester)
     
-    folder=resultsfolder / 'BaselineSimple'
+    # folder=resultsfolder / 'BaselineSimple'
+    folder=resultsfolder
     
-    full_state, env_state_conc, episode_metrics, filename = simpletest.test([])
+    full_state, env_state_conc, episode_metrics, filename = simpletest.test(folder)
     
     
     # baselinetest=BaselineTest(envi, dummy_tester,[])

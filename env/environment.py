@@ -193,12 +193,8 @@ class FlexEnv(MultiAgentEnv):
         # self.state_aux=pd.DataFrame(index = self.agents_id)
         
         
-        
-        print(f'Created an multiagent environment with {self.com.num_agents} agents')
-        print(colored('Envrironment configurations:','green'))
-        print('Reward Function:', colored(self.com.scenarios_conf['reward_func'],'red'))
-        # print('Multiagent setup for reward:', colored(self.com.scenarios_conf['game_setup'],'red'))
-        print('Environment purpose:', colored(self.com.problem_conf['env_info'],'red'))
+        self.print_env_info()
+
         
     
         self._spaces_in_preferred_format = True
@@ -557,7 +553,7 @@ class FlexEnv(MultiAgentEnv):
             # print('ts_init:',self.tstep_init)
             print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
             print('rewards:',self.R)
-            print('w1',np.round(self.reward_obj.w1,2),'|','w2',np.round(self.reward_obj.w2,2))
+            # print('w1',np.round(self.reward_obj.w1,2),'|','w2',np.round(self.reward_obj.w2,2))
             ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
             print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
             print('ENV INFO:', self.com.problem_conf['env_info'])
@@ -791,6 +787,16 @@ class FlexEnv(MultiAgentEnv):
             pv_sums.loc[t]=excess_data.loc[t:t+self.Tw].sum()
         
         self.pv_sum_max=np.round(pv_sums['pv_sum'].max(),3)
+        
+        
+    def print_env_info(self):
+        print(f'Created an multiagent environment with {self.com.num_agents} agents')
+        print(colored('Envrironment configurations:','green'))
+        print('Reward Function:', colored(self.com.scenarios_conf['reward_func'],'red'))
+        # print('Multiagent setup for reward:', colored(self.com.scenarios_conf['game_setup'],'red'))
+        print('Environment purpose:', colored(self.com.problem_conf['env_info'],'red'))
+        print('Environment class:', colored(self.__class__.__name__,'red'))
+        
         
         
         
