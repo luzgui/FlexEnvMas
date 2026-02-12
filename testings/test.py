@@ -86,6 +86,7 @@ from utils.utilities import ConfigsParser
 from env.community import Community
 from env.state import StateVars
 from env.environment import FlexEnv
+from env.environment_v1 import FlexEnvV1
 from analyze.plots import Plots
 
 from opti.optimize import CommunityOptiModel
@@ -144,7 +145,8 @@ test_env_config={'community': test_com,
             'com_vars': com_vars,
             'num_agents': test_com.num_agents}
    
-tenvi=FlexEnv(test_env_config)
+# tenvi=FlexEnv(test_env_config)
+tenvi=FlexEnvV1(test_env_config)
 
 
 menvi=MultiAgentEnvCompatibility(tenvi)

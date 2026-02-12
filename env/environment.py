@@ -550,13 +550,7 @@ class FlexEnv(MultiAgentEnv):
         if self.tstep>=self.get_term_cond():
             
             self.R_Total.append(self.R)
-            # print('ts_init:',self.tstep_init)
-            print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
-            print('rewards:',self.R)
-            # print('w1',np.round(self.reward_obj.w1,2),'|','w2',np.round(self.reward_obj.w2,2))
-            ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
-            print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
-            print('ENV INFO:', self.com.problem_conf['env_info'])
+            self.print_term_info()
             self.n_episodes+=1
             self.done.loc[self.agents_id] = True #update done for all agents
             self.env_done=self.get_env_done()
@@ -796,6 +790,20 @@ class FlexEnv(MultiAgentEnv):
         # print('Multiagent setup for reward:', colored(self.com.scenarios_conf['game_setup'],'red'))
         print('Environment purpose:', colored(self.com.problem_conf['env_info'],'red'))
         print('Environment class:', colored(self.__class__.__name__,'red'))
+        
+        
+    def print_term_info(self):
+        """Print terminal episode info on the CLI 
+        Important for debugging the environment during trainning
+        """
+        
+        # print('ts_init:',self.tstep_init)
+        print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
+        print('rewards:',self.R)
+        # print('w1',np.round(self.reward_obj.w1,2),'|','w2',np.round(self.reward_obj.w2,2))
+        ts_start = {aid: self.get_start_ts(self.action_hist.loc[aid].values) for aid in self.agents_id}
+        print('actions:',ts_start,'|','action len', len(self.action_hist.loc['ag1']))
+        print('ENV INFO:', self.com.problem_conf['env_info'])
         
         
         

@@ -178,15 +178,15 @@ if train:
 
     
     #%% analyse the trainer
-    from ray.rllib.algorithms.ppo import PPO #trainer
-    from ray.rllib.algorithms.ppo import PPOConfig #config
-    from rl.algos.central_critic import CentralizedCritic
-    from rl.algos.central_critic_v1 import CentralizedCriticV1
+    # from ray.rllib.algorithms.ppo import PPO #trainer
+    # from ray.rllib.algorithms.ppo import PPOConfig #config
+    # from rl.algos.central_critic import CentralizedCritic
+    # from rl.algos.central_critic_v1 import CentralizedCriticV1
     
-    trainer=PPO(config, env=config["env"])
-    # trainer=CentralizedCriticV1(config)
-    # trainer.get_policy('pol_ag1').model.central_vf.summary()
-    sys.exit("Inspection point reached")
+    # trainer=PPO(config, env=config["env"])
+    # # trainer=CentralizedCriticV1(config)
+    # # trainer.get_policy('pol_ag1').model.central_vf.summary()
+    # sys.exit("Inspection point reached")
     
     #%%
     

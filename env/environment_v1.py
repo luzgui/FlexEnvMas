@@ -54,6 +54,18 @@ class FlexEnvV1(FlexEnv):
             
         
         return self.mask
+    
+    def print_term_info(self):
+        # print('ts_init:',self.tstep_init)
+        print(f"ts_init: {self.tstep_init} | pv_sum: {np.round(self.state_hist.loc['ag1','pv_sum'].iloc[0],2)}")
+        print('rewards:',self.R)
+
+        for aid in self.agents_id:
+            act_indices = [i for i, v in enumerate(self.action_hist.loc[aid]['action'].tolist()) if v == 1]
+            print('act ' + aid + ':', act_indices)
+        
+        print('ENV INFO:', self.com.problem_conf['env_info'])
+        
         
     
     
