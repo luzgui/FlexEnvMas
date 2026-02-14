@@ -89,7 +89,8 @@ from env.environment import FlexEnv
 from env.environment_v1 import FlexEnvV1
 from analyze.plots import Plots
 
-from opti.optimize import CommunityOptiModel
+from opti.optimize import CommunityOptiModel 
+from opti.optimize_v1 import CommunityOptiModelV1
 from utils.utilities import utilities
 
 #paths
@@ -195,7 +196,8 @@ if shouldOpti:
     time.sleep(3)
 
     folder=os.path.join(resultsfolder,'optimal_'+test_name)
-    model=CommunityOptiModel(tenvi,folder)
+    # model=CommunityOptiModel(tenvi,folder)
+    model=CommunityOptiModelV1(tenvi,folder)
     objectives, solutions=model.solve_model_yearly(save=True)
 
 
