@@ -185,27 +185,8 @@ class ExperimentTest():
             
             checkpoint_dir=Path(os.path.join(self.dir, self.exp_name,self.cp))
             trial_dir=checkpoint_dir.parent
-            
             checkpoint=Checkpoint(checkpoint_dir)
-            
-            # with open(f"{trial_dir}/params.json") as f:
-            #     cfg_dict = json.load(f)
-            
-            # import pdb
-            # pdb.pdb.set_trace()
-            # experiment=ExperimentAnalysis(os.path.join(self.dir, self.exp_name),
-            #                               default_metric=self.train_experiment_config['metric'], 
-            #                               default_mode=self.train_experiment_config['mode'])
-            
-            # all_configs=experiment.get_all_configs()
-            # config = next((all_configs[k] for k in all_configs if k in checkpoint.path), None)
-            
-            # config['num_workers']=1
-            # config['num_gpus']=0
-            # config['seed']=666
             tester = Algorithm.from_checkpoint(checkpoint)
-            # tester=self.tester(config, env=config["env"])
-            # tester.restore(checkpoint)
             
 
         print('restored the following checkpoint',checkpoint)
