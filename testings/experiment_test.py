@@ -26,6 +26,7 @@ from ray.tune.experiment import trial
 from rl.algos.central_critic import CentralizedCritic
 from rl.algos.central_critic_v1 import CentralizedCriticV1
 from ray.rllib.algorithms.ppo import PPO, PPOConfig #trainer and config
+from ray.rllib.algorithms.algorithm import Algorithm
 from ray.rllib.env.env_context import EnvContext
 #models
 from ray.rllib.models import ModelCatalog
@@ -74,6 +75,8 @@ ModelCatalog.register_custom_model("cc_shift_mask", CCActionMaskModel)
 ModelCatalog.register_custom_model("cc_shift_mask_v1", CCActionMaskModelV1)
 
 from ray.rllib.env.wrappers.multi_agent_env_compatibility import MultiAgentEnvCompatibility
+import tensorflow as tf
+tf.compat.v1.enable_eager_execution()
 
 #profiling
 import cProfile
@@ -179,21 +182,30 @@ class ExperimentTest():
             tester.restore(checkpoint)
         else:
             print('restoring the checkpoint defined in exp_name.yaml')
-            checkpoint=Checkpoint(os.path.join(self.dir, self.exp_name,self.cp))
             
-            experiment=ExperimentAnalysis(os.path.join(self.dir, self.exp_name),
-                                          default_metric=self.train_experiment_config['metric'], 
-                                          default_mode=self.train_experiment_config['mode'])
+            checkpoint_dir=Path(os.path.join(self.dir, self.exp_name,self.cp))
+            trial_dir=checkpoint_dir.parent
             
-            all_configs=experiment.get_all_configs()
-            config = next((all_configs[k] for k in all_configs if k in checkpoint.path), None)
+            checkpoint=Checkpoint(checkpoint_dir)
             
-            config['num_workers']=1
-            config['num_gpus']=0
-            config['seed']=666
+            # with open(f"{trial_dir}/params.json") as f:
+            #     cfg_dict = json.load(f)
             
-            tester=self.tester(config, env=config["env"])
-            tester.restore(checkpoint)
+            # import pdb
+            # pdb.pdb.set_trace()
+            # experiment=ExperimentAnalysis(os.path.join(self.dir, self.exp_name),
+            #                               default_metric=self.train_experiment_config['metric'], 
+            #                               default_mode=self.train_experiment_config['mode'])
+            
+            # all_configs=experiment.get_all_configs()
+            # config = next((all_configs[k] for k in all_configs if k in checkpoint.path), None)
+            
+            # config['num_workers']=1
+            # config['num_gpus']=0
+            # config['seed']=666
+            tester = Algorithm.from_checkpoint(checkpoint)
+            # tester=self.tester(config, env=config["env"])
+            # tester.restore(checkpoint)
             
 
         print('restored the following checkpoint',checkpoint)
