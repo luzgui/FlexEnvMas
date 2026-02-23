@@ -56,7 +56,9 @@ class StateUpdate():
               'tar_d':self.update_tard,
               'tar_mean':self.update_tar_mean,
               'tar_stdev': self.update_tar_stdev,
-              'tar_var': self.update_tar_var
+              'tar_var': self.update_tar_var,
+              'pv_sum_init': self.update_pv_sum_init
+              
         }
         
     def update_features(self):
@@ -113,6 +115,13 @@ class StateUpdate():
         for ag in self.env.agents_id:
             excess_data=self.env.data.loc[ag,'excess']
             self.env.state.loc[ag,'pv_sum']=excess_data.loc[self.env.tstep:self.env.tstep_init+self.env.Tw].sum()
+    
+    def update_pv_sum_init(self):
+        """This a context variable that indicates if this is a good or bad day in terms of PV resource 
+        - In normalization it uses the maximum for al the dataset so it compares with the other year days"""
+        for ag in self.env.agents_id:
+            excess_data=self.env.data.loc[ag,'excess']
+            self.env.state.loc[ag,'pv_sum_init']=excess_data.loc[self.env.tstep_init:self.env.tstep_init+self.env.Tw].sum()
             
                 
     def update_tard(self):

@@ -32,6 +32,9 @@ from env.environment import FlexEnv
 
 
 class FlexEnvV1(FlexEnv):
+    """
+    interruptable shiftable devices environment
+    """
     def __init__(self,env_config):
         super().__init__(env_config)
         
@@ -69,6 +72,20 @@ class FlexEnvV1(FlexEnv):
         print('ENV INFO:', self.com.problem_conf['env_info'])
         
         
+    
+class FlexEnvV2(FlexEnvV1):
+    """
+    - interruptable shiftable devices environment
+    -  Optimal informed learning: Optimal actions used as reward guiding signals
+    """
+    
+    def __init__(self,env_config):
+        super().__init__(env_config)
+        
+        self.opti_actions=None
+    
+    
+    
     
     
     

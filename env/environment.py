@@ -51,6 +51,7 @@ class FlexEnv(MultiAgentEnv):
         
         self.com=self.env_config['community']
         self.com_vars=self.env_config['com_vars']
+        # self.opti_actions=self.env_config['opti_actions']
               
         self.reward_obj=Reward(self)
         #COMMUNITY /COMMON parameters
@@ -603,13 +604,19 @@ class FlexEnv(MultiAgentEnv):
                     
                 
                 if key == 'pv_sum':
-                    pv_sum_day=self.state_hist[key][aid].max()
+                    # pv_sum_day=self.state_hist[key][aid].max()
+                    pv_sum_day=self.state_hist['pv_sum_init'][aid].max()
                     if pv_sum_day == 0:
                         self.state_norm.loc[aid,key]=0
                     else:
-                        # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
-                        self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+                        # at each timestep the sum of remaining pv excess is normalized by the pv_sum of the day (at t=0)
+                        self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
+                        # self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
                         # print(self.state_norm.loc[aid,key])
+                
+                if key == 'pv_sum_init':
+                    # Normalized by the maximum sum of pv excess among all days in the dataset 
+                    self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
 
                 # Normalize all tariffs by the maximum tariff
                 tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
