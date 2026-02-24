@@ -33,7 +33,7 @@ from env.state import StateVars
 from testings.experiment import Experiment
 from testings.experiment_test import SimpleTests
 from trains.trainable import Trainable
-from utils.dataprocessor import YAMLParser
+from utils.dataprocessor import YAMLParser, DataProcessor
 from utils.utilities import ConfigsParser
 
 #ray + gym
@@ -67,6 +67,8 @@ file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars,file_exp
 file=YAMLParser().load_yaml(file_prob_conf)['dataset_file']
 gecad_dataset=datafolder / file
 
+
+
 #%% Trainning or debugging
 train=YAMLParser().load_yaml(file_experiment)['train']
 resume=YAMLParser().load_yaml(file_experiment)['resume']
@@ -81,15 +83,21 @@ com=Community(file_ag_conf,
 
 com_vars=StateVars(file_vars)
 
+#%% opti actions imported from folder defined connfigs
+opti_sol=resultsfolder / YAMLParser().load_yaml(file_scene_conf)['actions_folder']
+opti_actions=DataProcessor().get_optimal_actions(opti_sol)
 
 #%%  Make environment   
 env_config={'community': com,
             'com_vars': com_vars,
-            'num_agents': com.num_agents}
+            'num_agents': com.num_agents,
+            'opti_actions': opti_actions}
 
-   
-# envi=FlexEnv(env_config)
-envi=FlexEnvV1(env_config)
+
+env_cls_name=YAMLParser().load_yaml(file_prob_conf)['env_cls']
+envi=globals().get(env_cls_name)(env_config)
+
+# envi=configs.get_env_class(env_cls,env_config)
 
 df_list=envi.env_processor.get_daily_stats()
 # merged=envi.env_processor.merge_df_list_on_agents(df_list)
@@ -183,9 +191,9 @@ if train:
     # from rl.algos.central_critic import CentralizedCritic
     # from rl.algos.central_critic_v1 import CentralizedCriticV1
     
-    # trainer=PPO(config, env=config["env"])
-    # # trainer=CentralizedCriticV1(config)
-    # # trainer.get_policy('pol_ag1').model.central_vf.summary()
+    # # trainer=PPO(config, env=config["env"])
+    # trainer=CentralizedCriticV1(config)
+    # trainer.get_policy('pol_ag1').model.central_vf.summary()
     # sys.exit("Inspection point reached")
     
     #%%

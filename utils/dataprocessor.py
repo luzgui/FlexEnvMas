@@ -182,6 +182,36 @@ class DataProcessor():
 
         """
         return data.loc[(slice(None), timeslot), :]
+    
+    @staticmethod
+    def get_optimal_actions(opti_folder):
+        """scans opti_folder and retrives the optimal actions for all agents obtained from 
+        optimal solution (generated from MILP)
+        """
+        
+        file=opti_folder / 'optimal_solutions.csv'
+        
+        data=pd.read_csv(file, index_col='tstep')
+        cols = [col for col in data if 'action' in col]
+        actions=data[cols]
+        actions=actions.round(2).replace(-0.0, 0.0)
+        actions.columns = actions.columns.str.replace('action_', '')
+        
+        # the data in the environment have been filtered for invalid days. 
+        #There are missing indexes because there are missing days.
+        #the allowed inits must be inside the index of the actions
+        # assert set(self.env.allowed_inits).issubset(set(list(actions.index)))
+        
+        actions=actions.reset_index().melt(
+            id_vars="tstep",
+            var_name="agent",
+            value_name="action",
+        )
+        
+        actions=actions.set_index(["agent","tstep"]).sort_index()
+
+        
+        return actions
 
 
 

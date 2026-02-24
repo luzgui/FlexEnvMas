@@ -187,6 +187,8 @@ class CCActionMaskModelV1(TFModelV2):
         # h_size=95
         obs = tf.keras.layers.Input(shape=obs_space.shape, name="obs")
         # opp_obs = tf.keras.layers.Input(shape=(obs_space.shape[0]*n_opp_agents,), name="opp_obs")
+        
+        # 5 stands for the size of the opponent observation after remaking the CC input central_critic_v1
         opp_obs = tf.keras.layers.Input(shape=(5*n_opp_agents,), name="opp_obs")
         # opp_act = tf.keras.layers.Input(shape=(n_opp_agents,), name="opp_act") #twostep game hs the same action space as flexenv mas environment
         # opp_act = tf.keras.layers.Input(shape=action_space.shape, name="opp_act") #twostep game hs the same action space as flexenv mas environment

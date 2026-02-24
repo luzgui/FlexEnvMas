@@ -45,7 +45,7 @@ OPPONENT_ACTION = "opponent_action"
 
 def obs_process(policy, agent_obs_batch):
     """
-    Process each agent obseravtion and pop out the common observation
+    Process each agent observation and pop out the common observation
     """
     
     vars_to_cc={
@@ -61,7 +61,8 @@ def obs_process(policy, agent_obs_batch):
     'tar_d': False,
     'tar_mean': False,
     'tar_stdev': False,
-    'tar_var': False}
+    'tar_var': False,
+    'pv_sum_init': False}
     
     names=list(vars_to_cc.keys())
     
@@ -73,7 +74,7 @@ def obs_process(policy, agent_obs_batch):
         sample=list(vec[0:2])+sample # adding the action mask
         filtered_values.append(sample)
     
-    
+    # breakpoint()
     return tuple(filtered_values)
 
 
@@ -114,7 +115,7 @@ def cc_postprocessing(policy,
         
         #get the list of vars in the environment
         # var_list=policy.config['env_config']['com_vars'].get_state_vars()
-    
+        # breakpoint()
         sample_batch["opponent_obs"] = global_obs_batch
         # sample_batch["opponent_action"] = global_action_batch
         
