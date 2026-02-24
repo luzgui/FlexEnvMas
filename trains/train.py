@@ -87,6 +87,7 @@ com_vars=StateVars(file_vars)
 opti_sol=resultsfolder / YAMLParser().load_yaml(file_scene_conf)['actions_folder']
 opti_actions=DataProcessor().get_optimal_actions(opti_sol)
 
+
 #%%  Make environment   
 env_config={'community': com,
             'com_vars': com_vars,
@@ -140,8 +141,8 @@ eval_env_config={'community': eval_com,
             'com_vars': eval_vars,
             'num_agents': eval_com.num_agents}
    
-# eval_env=FlexEnv(eval_env_config)
-eval_env=FlexEnvV1(eval_env_config)
+env_cls_name=YAMLParser().load_yaml(eval_prob_conf)['env_cls']
+eval_env=globals().get(env_cls_name)(eval_env_config)
 
 eval_envi=MultiAgentEnvCompatibility(eval_env)
 eval_envi._agent_ids=eval_envi._agent_ids
