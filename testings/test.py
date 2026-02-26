@@ -146,8 +146,8 @@ test_env_config={'community': test_com,
             'com_vars': com_vars,
             'num_agents': test_com.num_agents}
    
-# tenvi=FlexEnv(test_env_config)
-tenvi=FlexEnvV1(test_env_config)
+env_cls_name=YAMLParser().load_yaml(file_prob_conf)['env_cls']
+tenvi=globals().get(env_cls_name)(test_env_config)
 
 
 menvi=MultiAgentEnvCompatibility(tenvi)
