@@ -604,8 +604,8 @@ class FlexEnv(MultiAgentEnv):
                     
                 
                 if key == 'pv_sum':
-                    # pv_sum_day=self.state_hist[key][aid].max()
-                    pv_sum_day=self.state_hist['pv_sum_init'][aid].max()
+                    pv_sum_day=self.state_hist[key][aid].max()
+                    # pv_sum_day=self.state_hist['pv_sum_init'][aid].max()
                     if pv_sum_day == 0:
                         self.state_norm.loc[aid,key]=0
                     else:
