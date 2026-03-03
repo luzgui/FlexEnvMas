@@ -610,8 +610,9 @@ class FlexEnv(MultiAgentEnv):
                         self.state_norm.loc[aid,key]=0
                     else:
                         # at each timestep the sum of remaining pv excess is normalized by the pv_sum of the day (at t=0)
-                        self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
-                        # self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+                        # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
+                        self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+                        
                         # print(self.state_norm.loc[aid,key])
                 
                 if key == 'pv_sum_init':
