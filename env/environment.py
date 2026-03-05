@@ -641,8 +641,11 @@ class FlexEnv(MultiAgentEnv):
                     if var in key:
                         
                         #mean normalization using statistics from the training dataset
-                        self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
-                               
+                        # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
+                             
+                        #standartization max-min
+                        self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['min'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
+                        
                         #standartization
                         # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/self.stats[aid].loc['mean'][var]
                         
