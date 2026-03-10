@@ -57,8 +57,9 @@ class StateUpdate():
               'tar_mean':self.update_tar_mean,
               'tar_stdev': self.update_tar_stdev,
               'tar_var': self.update_tar_var,
-              'pv_sum_init': self.update_pv_sum_init
-              
+              'pv_sum_init': self.update_pv_sum_init,
+              'E_opp_mean': self.update_E_opp_mean,
+              'E_opp_std': self.update_E_opp_std
         }
         
     def update_features(self):
@@ -180,7 +181,16 @@ class StateUpdate():
             else:
                 self.env.state.loc[ag,'tar_var']=future_vals.var()
          
-         
+    def update_E_opp_mean(self):
+        for ag in self.env.agents_id:
+            opp_ags=[opp_ag for opp_ag in self.env.agents_id if opp_ag != ag]
+            self.env.state.loc[ag,'E_opp_mean']=self.env.state.loc[opp_ags,'E_prof_rem'].sum()
+            
+
+    
+    def update_E_opp_std(self):
+        pass
+
 
     def update_tar1(self):
         return self.update_tar(1,'tar1')

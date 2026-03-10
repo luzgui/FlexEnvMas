@@ -602,6 +602,10 @@ class FlexEnv(MultiAgentEnv):
                 if key=='E_prof_rem':
                     self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['E_prof']
                     
+                if key=='E_opp_mean':
+                    opp_ags=[opp_ag for opp_ag in self.agents_id if opp_ag != aid]
+                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[opp_ags]['E_prof'].sum()
+                    
                 
                 if key == 'pv_sum':
                     pv_sum_day=self.state_hist[key][aid].max()
