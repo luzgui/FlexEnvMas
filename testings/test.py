@@ -189,7 +189,9 @@ if shouldTest:
     env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
     env_tester.n_episodes=len(tenvi.allowed_inits)-1
     full_state, env_state, metrics, results_filename_path=env_tester.test(results_path=resultsfolder)
-
+    
+    test.write_cp(os.path.join(resultsfolder,env_tester.folder_name))
+    
     #%% Optimal Solution
 if shouldOpti:
     print('Optimize...')

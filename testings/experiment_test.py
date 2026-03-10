@@ -190,8 +190,23 @@ class ExperimentTest():
             
 
         print('restored the following checkpoint',checkpoint)
-        
+        self.checkpoint=checkpoint
         return tester
+    
+    def write_cp(self, folder):
+        """registers the checkpoint path for future reproducibility of experiments
+        writes to a textfile inside folder
+        
+        folder: the results folder where test results are
+        """
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        with open(os.path.join(folder, "checkpoint.txt"), "a") as f:
+            f.write(f"date: {now}\n")
+            f.write(self.checkpoint.path)
+            f.write("\n")
+            
+        
 
     
 
