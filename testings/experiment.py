@@ -160,12 +160,14 @@ class Experiment():
                 # If the value is a dictionary, recursively check it
                 elif isinstance(value, dict):
                     keys_with_lists.extend(find_keys_with_lists(value, exclude_keys))
-            
+                
             return keys_with_lists
                 
         
         new_configs=self.parser.load_yaml(config_file)
-        keys=find_keys_with_lists(new_configs, exclude_keys=['model'])
+        keys=find_keys_with_lists(new_configs, exclude_keys=['model','entropy_coeff_schedule' ])
+
+    
         
         config_algo = PPOConfig().update_from_dict(new_configs)
 
