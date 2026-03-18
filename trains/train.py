@@ -5,6 +5,10 @@ Created on Thu Mar  7 15:01:52 2024
 
 @author: omega
 """
+
+import warnings
+warnings.filterwarnings('error', category=RuntimeWarning)
+
 import sys
 
 
