@@ -62,7 +62,9 @@ def obs_process(policy, agent_obs_batch):
     'tar_mean': False,
     'tar_stdev': False,
     'tar_var': False,
-    'pv_sum_init': False}
+    'pv_sum_init': False,
+    'E_opp_mean': False,
+    'E_opp_std': False}
     
     names=list(vars_to_cc.keys())
     
@@ -111,11 +113,12 @@ def cc_postprocessing(policy,
         
         global_obs_batch = np.stack(
         [obs_process(policy, other_agent_batches[aid][2]["obs"]) for aid in other_agents_id],axis=1)
+        
         global_obs_batch=global_obs_batch.reshape((len(global_obs_batch),n_agents_other*obs_dim))
         
         #get the list of vars in the environment
         # var_list=policy.config['env_config']['com_vars'].get_state_vars()
-        # breakpoint()
+        breakpoint()
         sample_batch["opponent_obs"] = global_obs_batch
         # sample_batch["opponent_action"] = global_action_batch
         
