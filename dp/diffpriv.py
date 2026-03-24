@@ -17,11 +17,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import re
+from os import path
+from pathlib import Path
 
 from utils.dataprocessor import GecadDataProcessor, YAMLParser
 from utils.utilities import utilities
 
 from dp.tests import DPTests
+
+cwd=Path.cwd()
+datafolder=cwd.parent / 'Data'
+configs_folder=cwd.parent / 'configs'
+resultsfolder=cwd.parent / 'Results'
 
 
 class DPEnergyData:
@@ -72,6 +79,7 @@ class DPEnergyData:
         }
         
         self.tests=DPTests
+        self.results_folder=Path.cwd().parent / 'Results'
 
     def get_clean_data(self) -> pd.DataFrame:
         """
@@ -453,6 +461,7 @@ class DPEnergyData:
         Plots several gecad datasets together 
         (different epsilon variations of the same dataset)
         """
+        
         w=96
         t_init=w*day_num
         t_end=t_init+w
@@ -475,7 +484,52 @@ class DPEnergyData:
         # plt.plot(noisy_data, label='noisy')
         plt.ylabel('kWh')
         plt.legend()
-        # plt.title(f'epsilon={epsilon} | day: {day_num} | dp mech: {self.mech_to_use} ')
+       
+        
+        plt.show()
+    
+    
+    def subplots_multi_compare(self, day_num,var, file_list):
+        
+        w=96
+        t_init=w*day_num
+        t_end=t_init+w
+                
+        fig, axes = plt.subplots(2, 2, figsize=(20, 10))
+        
+        axes = axes.flatten()  # makes iteration easier
+                
+        for ax, sub_list in zip(axes,file_list):
+            for file in sub_list:
+                file=self.file.parent / file
+                
+                data=pd.read_csv(file, index_col=0)
+                eps=utilities().get_num_from_str(file.stem)
+                # import pdb
+                # pdb.pdb.set_trace()
+                if eps==[]:
+                    label='original data'
+                    
+                else:
+                    label=f'ε={eps[0]}'
+                
+                if file.stem!='dataset_gecad_clean':
+                    ax.plot(range(96),data.loc[t_init:t_end-1][var], label=str(label),linewidth=1,alpha=0.9,color='red')
+                    # ax.set_xticks(np.arange(0, 24, 4))
+                elif file.stem=='dataset_gecad_clean':
+                    ax.plot(range(96), data.loc[t_init:t_end-1][var], label=str(label),linewidth=2)
+                    ax.set_xticks(np.arange(0, 96, 8))
+                    ax.set_xticklabels(np.arange(0, 24, 2))  # optional
+                
+                ax.legend(loc='upper left')
+                ax.set_ylabel('kWh')
+
+
+        # plt.set_title(title)
+        fig.suptitle('Noise added to load profile with Daily Laplace Mechanism', fontsize=26)
+
+        fig.tight_layout()
+        plt.savefig(self.results_folder / 'dp_compare' / 'noise_load_profiles.png',dpi=300)
         plt.show()
     
     def save_data(self, num_files=1):

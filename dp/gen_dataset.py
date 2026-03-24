@@ -24,7 +24,10 @@ file=datafolder / 'dataset_gecad_clean.csv'
 
 
 dp=DPEnergyData(file, config)
-dp.save_data(num_files=20)
+# dp.save_data(num_files=20)
+
+
+
 #%% 
 
 # dp.laplace_mechanism_trunc_day()
@@ -80,34 +83,68 @@ dp.save_data(num_files=20)
 #        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.2.csv']
 
 
-# files=['dataset_gecad_clean.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_10.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_5.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_4.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_3.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_2.0_clip.csv']
+# files1=['dataset_gecad_clean.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_20.0_clip_0.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_10.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_8.0_clip.csv']
+
+# files2=['dataset_gecad_clean.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_5.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_4.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_2.0_clip.csv']
+
+# files3=['dataset_gecad_clean.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_1.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.8_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.4_clip.csv']
+
+# files4=['dataset_gecad_clean.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.06_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.08_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.1_clip.csv']
+
+
+
+files1=['dataset_gecad_clean.csv',
+        'dataset_gecad_clean_laplace_day_sens_s_max_eps_10.0_clip.csv']
+
+files2=['dataset_gecad_clean.csv',
+        'dataset_gecad_clean_laplace_day_sens_s_max_eps_1.0_clip.csv']
+
+files3=['dataset_gecad_clean.csv',
+        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.1_clip.csv']
+
+files4=['dataset_gecad_clean.csv',
+        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.02_clip.csv']
+
+files=[files1,files2,files3,files4]
 
 # files=['dataset_gecad_clean.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_10.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_5.0_clip.csv']
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_5.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_1.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.2_clip.csv']
+
+
+
+
+
 
 # files=['dataset_gecad_clean.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_5.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_1.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.2_clip.csv']
-
-
-# files=['dataset_gecad_clean.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_1.0_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.8_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.6_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.4_clip.csv',
-#        'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.2_clip.csv']
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_1.0_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.8_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.6_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.4_clip.csv',
+#         'dataset_gecad_clean_laplace_day_sens_s_max_eps_0.2_clip.csv']
 
 
 # dp.plots_multi_compare(0, 'ag1', files)
 
 
+# for k in range(0,200):
+    # dp.plots_multi_compare(10, 'ag5', files)
+
+# dp.plots_multi_compare(10, 'ag5', files)
+dp.subplots_multi_compare(10, 'ag5', files)
 
 
 # day_d_a=dp.get_daily_data(dp.get_adjancent_data())
