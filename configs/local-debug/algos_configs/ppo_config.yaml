@@ -5,6 +5,7 @@ train_batch_size: 128 #choice
 # sgd_minibatch_size: [128,256] #integer sample
 
 # entropy_coeff: [0.01,0.3] #uniform sample
+entropy_coeff_schedule: [ [0, 0.2], [500, 0.1], [1500, 0.02], [3000, 0.005] ]
 lambda_: 1.0
 
 kl_coeff: 0.2
@@ -12,19 +13,24 @@ kl_target: 0.01
 
 vf_loss_coeff: 1.0
 
-# vf_clip_param: [10.0,20.0] #choice
+vf_clip_param: 0.5
 clip_param: 0.3
 
 
 _enable_learner_api: False
 model:
-  #custom_model: cc_shift_mask
-  custom_model: shift_mask
+  # custom_model: cc_shift_mask
+  custom_model: cc_shift_mask_v1
+  # custom_model: shift_mask
   #custom_model: lstm_model
   fcnet_hiddens: [256,256,256]
   fcnet_activation: relu
+  use_lstm: False
+  use_attention: False
+  # lstm_cell_size: 32
   custom_model_config:
     fcnet_hiddens: [128,128]
+    n_agents: 3
 
 
 #environment
@@ -33,7 +39,7 @@ disable_env_checking: True
 
 #debugging
 # seed: [42, 123, 256, 789, 1024] #grid search
-seed: [1, 2]
+seed: 1
 log_level: DEBUG
 
 #rollouts

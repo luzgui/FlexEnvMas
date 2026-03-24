@@ -5,20 +5,22 @@ train: True
 resume: False
 
 
-#pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
-pol_type: shared_pol
+pol_type: agent_pol #shared_pol shared policy or each agent will have its own policy
+# pol_type: shared_pol
 
 
 
 algorithm:
-  name: PPO
+  # name: PPO
   # name: CentralizedCritic
+  name: CentralizedCriticV1
   config: 'ppo_config.yaml'
-environment_cls: 'FlexEnv'
+# environment_cls: 'FlexEnvV1'
 
 #tune config
 mode: min
 metric: episode_reward_mean
+# metric: eval_ep_reward_mean
 # metric: /info/learner/pol_ag1/learner_stats/policy_loss
 
 # HPO
@@ -36,7 +38,7 @@ asha_params:
 verbose: 0
 
 #trainable config
-n_iters: 2
+n_iters: 1
 checkpoint_freq: 1
 
 #resources
@@ -50,12 +52,15 @@ n_factor: 3
 
 
 evaluation:
-  evaluation_interval: 1
-  evaluation_duration: 5
+  evaluation_interval: 2
+  evaluation_duration: 2
   evaluation_duration_unit: 'episodes'
   evaluation_sample_timeout_s: 180.0
-  evaluation_parallel_to_training: False
+  evaluation_parallel_to_training: True
+  evaluation_num_workers: 1
+
 
 
 
 spill_dir: /home/omega/Documents/FCUL/Projects/FlexEnvMas/raylog/spill1
+# spill_dir: /media/omega/RAYSPILL/SPILL1
