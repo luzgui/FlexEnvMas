@@ -91,7 +91,7 @@ from analyze.plots import Plots
 
 from opti.optimize import CommunityOptiModel 
 from opti.optimize_v1 import CommunityOptiModelV1
-from utils.utilities import utilities
+from utils.utilities import utilities, FolderUtils
 
 #paths
 
@@ -105,25 +105,31 @@ storage_path='/home/omega/Downloads/ShareIST'
 configs_folder=cwd.parent  / 'configs'
 
 #%% exp_name + get configs for experiment
-exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
-configs=ConfigsParser(configs_folder, exp_name)
 
-_, file_apps_conf, file_scene_conf, _ ,file_vars,file_experiment, ppo_config=configs.get_configs()
+# During test the trainign experinent is used to generate a tester that is an instationation of a
+# training algorithm that is used for testing.
+# The testing experiment is used only for defining the testing environment 
+# (the experiment files inside are ununsed)
+
+run_file=configs_folder / 'exp_name.yaml'
+run_params=YAMLParser().load_yaml(run_file)
+
+#Train experiment
+exp_name=run_params['exp_name']
+file_experiment, ppo_config=ConfigsParser(configs_folder, exp_name).get_configs()
+#Train environment
+train_env_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['train_env']
+#training results folder
+train_results_name=FolderUtils().get_subfolders_containing(raylog, [exp_name,train_env_name])
+
 
 #%% get configs for testing environment
-# test_config_file=configs_folder / 'test_config.yaml'
-
-test_config_file=configs_folder / 'exp_name.yaml'
-
-test_params=YAMLParser().load_yaml(test_config_file)
-test_name=test_params['test_name']
+test_name=run_params['test_env']
 #control vars
-shouldTest=test_params['shouldTest']
-shouldOpti=test_params['shouldOpti']
+shouldTest=run_params['shouldTest']
+shouldOpti=run_params['shouldOpti']
 
-test_configs=ConfigsParser(configs_folder, test_name)
-# between training and testing the difference is the agents config and the problem config
-file_ag_conf,_,_,file_prob_conf,_,_,_=test_configs.get_configs()
+file_ag_conf,file_apps_conf, file_scene_conf,file_prob_conf,file_vars=ConfigsParser(configs_folder, test_name).get_configs() # only a testing environment
 
 #%%Make test env
 #dataset
@@ -142,9 +148,10 @@ com_vars=StateVars(file_vars)
 
 
 #%%  Make environment   
-test_env_config={'community': test_com,
-            'com_vars': com_vars,
-            'num_agents': test_com.num_agents}
+test_env_config={'name':test_name,
+                 'community': test_com,
+                 'com_vars': com_vars,
+                 'num_agents': test_com.num_agents}
    
 env_cls_name=YAMLParser().load_yaml(file_prob_conf)['env_cls']
 tenvi=globals().get(env_cls_name)(test_env_config)
@@ -176,17 +183,24 @@ if shouldTest:
     #Trainable
     trainable_func=Trainable(file_experiment)._trainable
     #get checkpoint and create tester
+    # test=ExperimentTest(tenvi,
+    #           exp_name, 
+    #           raylog,
+    #           file_experiment,
+    #           trainable_func,
+    #           run_params['checkpoint'])
+    
     test=ExperimentTest(tenvi,
-              exp_name, 
+              train_results_name, 
               raylog,
               file_experiment,
               trainable_func,
-              test_params['checkpoint'])
+              run_params['checkpoint'])
     
     tester=test.get_tester(trainable_func)
     
     #Test environment
-    env_tester=TestEnv(tenvi, tester, file_experiment,test_config_file)
+    env_tester=TestEnv(tenvi, tester, train_results_name ,run_file)
     env_tester.n_episodes=len(tenvi.allowed_inits)-1
     full_state, env_state, metrics, results_filename_path=env_tester.test(results_path=resultsfolder)
     

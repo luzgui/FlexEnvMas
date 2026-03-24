@@ -63,14 +63,15 @@ import numpy as np
 np.seterr(all="raise")
 #%% exp_name + get configs
 exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
-configs=ConfigsParser(configs_folder, exp_name)
+file_experiment, ppo_config=ConfigsParser(configs_folder, exp_name).get_configs()
 
-file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars,file_experiment, ppo_config=configs.get_configs()
+#%% environment
+train_env_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['train_env']
+file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf,file_vars=ConfigsParser(configs_folder, train_env_name).get_configs()
 
 #%% import dataset file
 file=YAMLParser().load_yaml(file_prob_conf)['dataset_file']
 gecad_dataset=datafolder / file
-
 
 
 #%% Trainning or debugging
@@ -93,7 +94,8 @@ opti_actions=DataProcessor().get_optimal_actions(opti_sol)
 
 
 #%%  Make environment   
-env_config={'community': com,
+env_config={'name':train_env_name,
+            'community': com,
             'com_vars': com_vars,
             'num_agents': com.num_agents,
             'opti_actions': opti_actions}
@@ -123,10 +125,8 @@ def env_creator(env_config):
 register_env("flexenv", env_creator)
 
 #%% Evaluation environment
-eval_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['test_name']
-eval_configs=ConfigsParser(configs_folder, eval_name)
-
-eval_ag_conf, eval_apps_conf, eval_scene_conf, eval_prob_conf,file_eval_vars,_, _=eval_configs.get_configs()
+eval_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['eval_env']
+eval_ag_conf, eval_apps_conf, eval_scene_conf, eval_prob_conf,file_eval_vars=ConfigsParser(configs_folder, eval_name).get_configs()
 # import dataset file
 eval_file=YAMLParser().load_yaml(eval_prob_conf)['dataset_file']
 eval_dataset=datafolder / eval_file
@@ -141,9 +141,10 @@ eval_com=Community(eval_ag_conf,
 eval_vars=StateVars(file_eval_vars)
 
 # Make environment   
-eval_env_config={'community': eval_com,
-            'com_vars': eval_vars,
-            'num_agents': eval_com.num_agents}
+eval_env_config={'name':eval_name,
+                 'community': eval_com,
+                 'com_vars': eval_vars,
+                 'num_agents': eval_com.num_agents}
    
 env_cls_name=YAMLParser().load_yaml(eval_prob_conf)['env_cls']
 eval_env=globals().get(env_cls_name)(eval_env_config)
@@ -227,9 +228,7 @@ if train:
     
         results=tuner.fit()
         print(results.errors)
-    # # 
-
-
+ 
 #%% Debbug
 else:
     print('Debugging Mode')
@@ -253,35 +252,7 @@ else:
     # baselinetest=BaselineTest(envi, dummy_tester,[])
     # full_state, env_state_conc, episode_metrics, filename = baselinetest.test([])
     
-    
-    # # %%
-    # t=96
-    # m=pd.DataFrame()
-    # for k in range(0,t):
-    #     start=[k,0]
-    #     simpletestcycle=SimpleTestCycle(envi, dummy_testenvier, start)
-    #     full_state, env_state_conc, episode_metrics, filename = simpletestcycle.test([])
-    #     m=pd.concat([m, episode_metrics])
-    
-    
-    # m_com=m.loc['com']
-    # x = np.arange(t)
-    # fig, ax1 = plt.subplots(figsize=(8, 5))
-    # ax1.plot(x, m_com['cost'], color='blue', label='Cost')
-    # ax1.set_xlabel('Time step')
-    # ax1.set_ylabel('Cost', color='blue')
-    # ax1.tick_params(axis='y', labelcolor='blue')
-    # ax2 = ax1.twinx()
-    # ax2.plot(x, m_com['reward_episode'], color='orange', label='Reward')
-    # ax2.set_ylabel('Reward Episode', color='orange')
-    # ax2.tick_params(axis='y', labelcolor='orange')
-    # plt.title('Cost and Reward Episode Over Time')
-    # plt.show()
-
-
-
-
-
+        
 #%% Time
 end_time = time.time()
 elapsed_time = end_time - start_time
