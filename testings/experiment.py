@@ -67,12 +67,15 @@ class Experiment():
         self.parser=YAMLParser()
         self.config=self.parser.load_yaml(config)
         
-        self.exp_name=self.config['exp_name']
+        self.exp_name=self.make_name()
         self.parser=YAMLParser()
         
 
 
-
+    def make_name(self):
+        return self.config['exp_name'] + '_' + self.env.name
+        # return self.config['exp_name'] + self.env.name  
+        
     def get_policies(self):
         
         """
