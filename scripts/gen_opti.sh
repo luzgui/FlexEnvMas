@@ -25,6 +25,8 @@ for new_name in "${names[@]}"; do
 
   echo "Updating 'test_name' key to: $new_name"
   yq eval ".test_name = \"$new_name\"" -i "$test_config"
+  # yq -i -y ".test_name = \"$new_name\"" "$test_conf"
+
   # batcat $test_config
 
   ray210
