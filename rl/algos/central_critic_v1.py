@@ -118,7 +118,7 @@ def cc_postprocessing(policy,
         
         #get the list of vars in the environment
         # var_list=policy.config['env_config']['com_vars'].get_state_vars()
-        breakpoint()
+
         sample_batch["opponent_obs"] = global_obs_batch
         # sample_batch["opponent_action"] = global_action_batch
         
