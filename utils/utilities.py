@@ -29,27 +29,35 @@ class utilities:
     @staticmethod 
     def get_exp_from_results_name(folder_name: str) -> dict:
         """
-        - Extracts the names of the train experience and the test experience from the name of the folder of results
-        - Returns a dictionary in the format {'train_exp': 'name1', 'test_exp': 'name2'} 
-        regardless of the characters in name1 and name2 if elements are separated by '_'
+        Extracts train_exp, train_env and test_exp from a folder name.
+        Structure: Train_{exp-name}_{env-name}_Test_{test-name}
+        Assumes env names follow the pattern 'env' followed by digits e.g. env000.
+        
+        Returns a dictionary with keys: 'train_exp', 'train_env', 'test_exp'
         """
         parts = folder_name.split('_')
-        
-        # Find the index of 'Train' and 'Test' keywords (case sensitive)
+
         try:
             train_index = parts.index('Train')
-            test_index = parts.index('Test')
+            test_index  = parts.index('Test')
         except ValueError:
-            # fallback: expected fixed positions
             train_index = 0
-            test_index = 2
-    
-        # train_exp is the parts between Train and Test
-        train_exp = '_'.join(parts[train_index + 1:test_index])
-        # test_exp is parts after Test
-        test_exp = '_'.join(parts[test_index + 1:])
+            test_index  = 2
+
+        train_parts = parts[train_index + 1:test_index]
+
+        # Find the env segment by matching the 'env' + digits pattern
+        env_index = next((i for i, p in enumerate(train_parts) if 'env' in p), None)
+        # import pdb
+        # pdb.pdb.set_trace()
+        if env_index is None:
+            raise ValueError(f"No env name found in '{folder_name}'. Expected pattern: envXXX")
         
-        return {'train_exp': train_exp, 'test_exp': test_exp}
+        train_exp = '_'.join(train_parts[:env_index])
+        train_env = train_parts[env_index]
+        test_exp  = '_'.join(parts[test_index + 1:])
+
+        return {'train_exp': train_exp, 'train_env': train_env, 'test_exp': test_exp}
 
     
     @staticmethod
@@ -65,11 +73,22 @@ class utilities:
         
 
 class ConfigsParser():
+    
+    ENV_CONFIG_FILES = {'agents_config', 
+                        'apps_config', 
+                        'scenario_config', 
+                        'problem_config', 
+                        'state_vars'}
+    
+    EXP_CONFIG_FILES = {'experiment_config'}
+    
     def __init__(self,configs_folder, exp_name):
         self.folder=configs_folder
         self.exp_name=exp_name
+        self._check_exp_exists()
+        self.type=self._folder_type()
         self.make_configs()
-        print(colored(f'Experiment Name ---> {self.exp_name}','red'))
+        
         
     def traverse_folder(self):
         result = {}
@@ -86,6 +105,28 @@ class ConfigsParser():
                 current_dict[file_name] = file
         return result
      
+        
+     
+        
+    def _folder_type(self):
+        """
+        Identify whether a folder is an 'environment', 'experiment', or 'unknown'
+        config folder by checking which expected config files are present.
+        """
+        
+        if 'env' in self.exp_name:
+            return 'environment'
+        if 'eval' in self.exp_name:
+            return 'environment'
+        else:
+            return 'experiment'
+
+    def _check_exp_exists(self):
+        """Locate a named subfolder within the experiment folder."""
+        path = self.folder / self.exp_name
+        if not path.exists():
+            raise FileNotFoundError(
+                f"Expected '{self.exp_name}' subfolder not found in '{self.folder}'.")
     
     def make_configs(self):
         """
@@ -104,24 +145,39 @@ class ConfigsParser():
         # import pdb
         # pdb.pdb.set_trace()
         files=self.traverse_folder()
+        
         files=files[self.exp_name]
         self.exp_folder=Path(self.folder) / self.exp_name
         
-        self.experiment_config=self.exp_folder / files['experiment_config']
-        algo_config_file=YAMLParser().load_yaml(self.experiment_config)['algorithm']['config']
-        self.algo_config_file=self.exp_folder /'algos_configs' / algo_config_file
-        self.agents_config=self.exp_folder / files['agents_config']
-        self.apps_config=self.exp_folder / files['apps_config']
-        self.scene_config=self.exp_folder / files['scenario_config']
-        self.problem_config=self.exp_folder / files['problem_config']
-        self.state_vars=self.exp_folder / files['state_vars']
+        
+        
+        if self.type=='experiment':
+            self.experiment_config=self.exp_folder / files['experiment_config']
+            algo_config_file=YAMLParser().load_yaml(self.experiment_config)['algorithm']['config']
+            self.algo_config_file=self.exp_folder /'algos_configs' / algo_config_file
+            print(colored(f'Experiment Name ---> {self.exp_name}','red'))
+            
+        elif self.type=='environment':
+            self.agents_config=self.exp_folder / files['agents_config']
+            self.apps_config=self.exp_folder / files['apps_config']
+            self.scene_config=self.exp_folder / files['scenario_config']
+            self.problem_config=self.exp_folder / files['problem_config']
+            self.state_vars=self.exp_folder / files['state_vars']
+            print(colored(f'Environment Name ---> {self.exp_name}','red'))
         
         
     def get_configs(self):
         """
         Returns the config files existing in the config folder of the experiment
         """
-        return self.agents_config, self.apps_config, self.scene_config, self.problem_config, self.state_vars, self.experiment_config,self.algo_config_file
+        
+        if self.type=='experiment':
+            return self.experiment_config,self.algo_config_file
+            
+        elif self.type=='environment':
+            return self.agents_config, self.apps_config, self.scene_config, self.problem_config, self.state_vars
+        
+        
     
     def print_experiment_info(self):
         from dataprocessor import YAMLParser #import here due to circular error
@@ -207,6 +263,32 @@ class FolderUtils():
                 subfolders.append(full_path)
     
         return subfolders
+    
+    @staticmethod
+    def get_subfolders_containing(folder_path: str, keywords: list[str]) -> list[str]:
+        """
+        Scan subfolders and return those whose names contain all the given keywords.
+    
+        Args:
+        - folder_path (str): The path to the folder to scan.
+        - keywords (list[str]): A list of strings to look for in subfolder names.
+    
+        Returns:
+        - matches (list[str]): A list of subfolder paths whose names contain all keywords.
+        """
+        matches = []
+        for entry in os.listdir(folder_path):
+            full_path = os.path.join(folder_path, entry)
+            if os.path.isdir(full_path):
+                if all(keyword in entry for keyword in keywords):
+                    matches.append(entry)
+                    
+        if len(matches) == 0:
+            raise FileNotFoundError(f"No subfolder containing {keywords} found in '{folder_path}'.")
+        if len(matches) > 1:
+            raise ValueError(f"Expected a unique match for {keywords} but found {len(matches)}: {matches}")
+
+        return matches[0]
 
 
 # parser=YAMLParser()
