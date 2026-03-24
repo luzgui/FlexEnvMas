@@ -45,6 +45,7 @@ class FlexEnv(MultiAgentEnv):
         super().__init__()
         
         self.env_config=env_config
+        self.name=self.env_config['name']
         
         self.processor=DataProcessor()
         
@@ -800,6 +801,7 @@ class FlexEnv(MultiAgentEnv):
         
     def print_env_info(self):
         print(f'Created an multiagent environment with {self.com.num_agents} agents')
+        print('Name:', colored(self.name,'red'))
         print(colored('Envrironment configurations:','green'))
         print('Reward Function:', colored(self.com.scenarios_conf['reward_func'],'red'))
         # print('Multiagent setup for reward:', colored(self.com.scenarios_conf['game_setup'],'red'))
