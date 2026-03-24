@@ -37,23 +37,18 @@ class TestEnv():
     Implements the testing RL loop
     """
     
-    def __init__(self,env, tester, file_experiment,test_config_file):
+    def __init__(self,env, tester, train_results_name,test_config_file):
         self.env=env
         self.tester=tester
         self.processor=DataPostProcessor(env)
         self.plot=Plots()
-        self.experiment_config=YAMLParser().load_yaml(file_experiment)
         self.test_config=YAMLParser().load_yaml(test_config_file)
-        self.exp_name=self.experiment_config['exp_name']
-        # self.exp_name=YAMLParser().load_yaml(file_experiment)['exp_name']
-        # self.test_name= self.test_config['test_name']
-        self.test_name= YAMLParser().load_yaml(test_config_file)['test_name']
-        self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.test_name
+        self.exp_name=train_results_name
+        self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.env.name
         #test configs
         self.n_episodes=self.test_config['test_configs']['n_episodes']
         self.shouldPlot=self.test_config['test_configs']['shouldPlot']
-    
-    
+
     
     def test(self,results_path):
         """save_metrics=True will make Results from testing (plots and metrics) to be saved in the trainable folder (results_path) alongside the checkpoints"""
@@ -77,8 +72,6 @@ class TestEnv():
         k=0
         
         while k < self.n_episodes:
-        
-            mask_track=[]
         
             T=self.env.Tw*1
 
@@ -106,8 +99,9 @@ class TestEnv():
                                      axis=0).reset_index(drop=True)
             
                     
-            if self.shouldPlot: 
-                self.plot.makeplot_bar_simple(env_state, None)
+            if self.shouldPlot:
+                infos={'day_num': 12, 'source': 'rl', 'model': 'IL'}
+                self.plot.makeplot_bar_simple(env_state, infos, None)
                 # self.plot.plot_tarifs_lines(env_state_conc)
                 
                 
@@ -189,6 +183,7 @@ class SimpleTestEnv(TestEnv):
         #debugging
         self.n_episodes=1
         self.shouldPlot=False
+        self.folder_name='debug'
      
         
 
@@ -209,8 +204,8 @@ class SimpleTestEnv(TestEnv):
     def get_action_plan(self):
         "fixed action plan"
         actions={}
-        # starts=dict(zip(self.env.agents_id, [43,49,49,32,36,45,50][0:len(self.env.agents_id)]))
-        starts=dict(zip(self.env.agents_id, [81,43,49,32,36,45,50][0:len(self.env.agents_id)]))
+        starts=dict(zip(self.env.agents_id, [46,50,44,32,36,45,50][0:len(self.env.agents_id)]))
+        # starts=dict(zip(self.env.agents_id, [81,43,49,32,36,45,50][0:len(self.env.agents_id)]))
         # starts=dict(zip(self.env.agents_id, [44,0,49,32,36,45,50][0:len(self.env.agents_id)]))
         # starts=dict(zip(self.env.agents_id, [78,78,85,36,45,50][0:len(self.env.agents_id)]))
         
@@ -257,17 +252,23 @@ class SimpleTestEnv(TestEnv):
             return obs1
         
     def episode_test(self):
+        """performs a test episode
+        
+        --> edit the fuction return to observe other stuff
+        
+        """
         
         obs=self.env.reset()
         action_plan=self.get_action_plan()
         actions={}
-        
+        state_norm=pd.DataFrame()
         for i in range(self.env.Tw):
             actions = {aid: action_plan[aid][i] for aid in self.env.agents_id}  
             print('iteration', i)
+            state_norm=pd.concat([state_norm,self.env.state_norm])
             obs, reward, done, info = self.env.step(actions)
         
-        return self.env
+        return state_norm
     
     def test_full_state(self,df):
         for aid in self.env.agents_id:

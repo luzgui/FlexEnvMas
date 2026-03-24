@@ -172,7 +172,7 @@ class ExperimentTest():
             best_res=result_grid.get_best_result(metric=self.train_experiment_config['metric'],
                                                  mode=self.train_experiment_config['mode'])
             config=best_res.config
-
+ 
             utilities.print_info('num_workers changed sue to resource scarcicity')
             config['num_workers']=1
             config['num_gpus']=0
