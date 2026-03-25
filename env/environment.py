@@ -588,60 +588,69 @@ class FlexEnv(MultiAgentEnv):
         
         This normalization uses statistics from the dataset 
         to normalize the state before entering the NN'''
-        self.state_norm=self.state.copy()
-        # self.state=self.state.astype('object')
-        self.state_norm=self.state_norm.astype('object') #casting as differente datatype solves the new pandas warning 
+        self.state_norm=self.state.copy().astype('object')#casting as differente datatype solves the new pandas warning
+
+        
         for aid in self.agents_id:
+            state_norm={}
             for key in self.state.columns:
                 # print(key)
                 if key=='tstep': #convert timestep to sin
-                    self.state_norm.loc[aid,key]=np.sin(2*np.pi*(self.state.loc[aid,key])/self.T)
+                    # self.state_norm.loc[aid,key]=np.sin(2*np.pi*(self.state.loc[aid,key])/self.T)
+                    state_norm[key]=np.sin(2*np.pi*(self.state.loc[aid,key])/self.T)
                 
                 if key=='minutes': #convert minutes to cos with a phase
-                    self.state_norm.loc[aid,key]=np.cos(2*np.pi*(self.state.loc[aid,key]/self.T)+np.pi)
+                    state_norm[key]=np.cos(2*np.pi*(self.state.loc[aid,key]/self.T)+np.pi)
                 
                 if key=='y_s': #normalize by the app profile timeslots
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['T_prof']
+                    state_norm[key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['T_prof']
                 
                 if key=='E_prof_rem':
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['E_prof']
+                    state_norm[key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['E_prof']
                     
                 if key=='E_opp_mean':
                     opp_ags=[opp_ag for opp_ag in self.agents_id if opp_ag != aid]
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[opp_ags]['E_prof'].sum()
+                    state_norm[key]=self.state.loc[aid,key]/self.agents_params.loc[opp_ags]['E_prof'].sum()
                     
                 
                 if key == 'pv_sum':
                     pv_sum_day=self.state_hist[key][aid].max()
                     # pv_sum_day=self.state_hist['pv_sum_init'][aid].max()
                     if pv_sum_day == 0:
-                        self.state_norm.loc[aid,key]=0
+                        state_norm[key]=0
                     else:
                         # at each timestep the sum of remaining pv excess is normalized by the pv_sum of the day (at t=0)
                         # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
-                        self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+                        state_norm[key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
                         
                         # print(self.state_norm.loc[aid,key])
                 
                 if key == 'pv_sum_init':
                     # Normalized by the maximum sum of pv excess among all days in the dataset 
-                    self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+                    state_norm[key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
 
                 # Normalize all tariffs by the maximum tariff
-                # tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
+
+                if key == 'tar1':
+                    state_norm[key]=self.state.loc[aid, key]/self.com.agents[aid].tar_max
+                    
+                if key == 'tar2':
+                    state_norm[key]=self.state.loc[aid, key]/self.com.agents[aid].tar_max
+                    
+                if key == 'tar_d':
+                    state_norm[key]=self.state.loc[aid, key]/self.com.agents[aid].tar_max
+                if key == 'tar_buy':
+                    state_norm[key]=self.state.loc[aid, key]/self.com.agents[aid].tar_max
                 
-                # self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=(self.state.loc[aid, self.state.columns.str.contains('tar')]-tar_stats['mean'])/(tar_stats['max']-tar_stats['min'])
-                
-                self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=self.state.loc[aid, self.state.columns.str.contains('tar')]/self.com.agents[aid].tar_max
-                
+               
                 if key == 'tar_mean':
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                    state_norm[key]=self.state.loc[aid,key]
                     
                 if key == 'tar_stdev':
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                    state_norm[key]=self.state.loc[aid,key]
                         
                 if key == 'tar_var':
-                    self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                    state_norm[key]=self.state.loc[aid,key]
             
 
 
@@ -652,16 +661,95 @@ class FlexEnv(MultiAgentEnv):
                         # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
                              
                         #standartization max-min
-                        self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['min'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
+                        state_norm[key]=(self.state.loc[aid,key]-self.stats[aid].loc['min'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
                         
                         #standartization
                         # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/self.stats[aid].loc['mean'][var]
                         
                         # maxnormalization
                         # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.stats[aid].loc['max'][var]
-        # print('time_step',self.tstep)        
-        # print(self.state_norm)
+
+            self.state_norm.loc[aid]=state_norm
+            
+    
+    # def make_state_norm(self):
+    #     '''
+    #     Creates the attribute self.state_norm
+        
+    #     This normalization uses statistics from the dataset 
+    #     to normalize the state before entering the NN'''
+    #     self.state_norm=self.state.copy()
+    #     # self.state=self.state.astype('object')
+    #     self.state_norm=self.state_norm.astype('object') #casting as differente datatype solves the new pandas warning 
+    #     for aid in self.agents_id:
+    #         for key in self.state.columns:
+    #             # print(key)
+    #             if key=='tstep': #convert timestep to sin
+    #                 self.state_norm.loc[aid,key]=np.sin(2*np.pi*(self.state.loc[aid,key])/self.T)
                 
+    #             if key=='minutes': #convert minutes to cos with a phase
+    #                 self.state_norm.loc[aid,key]=np.cos(2*np.pi*(self.state.loc[aid,key]/self.T)+np.pi)
+                
+    #             if key=='y_s': #normalize by the app profile timeslots
+    #                 self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['T_prof']
+                
+    #             if key=='E_prof_rem':
+    #                 self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[aid]['E_prof']
+                    
+    #             if key=='E_opp_mean':
+    #                 opp_ags=[opp_ag for opp_ag in self.agents_id if opp_ag != aid]
+    #                 self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.agents_params.loc[opp_ags]['E_prof'].sum()
+                    
+                
+    #             if key == 'pv_sum':
+    #                 pv_sum_day=self.state_hist[key][aid].max()
+    #                 # pv_sum_day=self.state_hist['pv_sum_init'][aid].max()
+    #                 if pv_sum_day == 0:
+    #                     self.state_norm.loc[aid,key]=0
+    #                 else:
+    #                     # at each timestep the sum of remaining pv excess is normalized by the pv_sum of the day (at t=0)
+    #                     # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/pv_sum_day
+    #                     self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+                        
+    #                     # print(self.state_norm.loc[aid,key])
+                
+    #             if key == 'pv_sum_init':
+    #                 # Normalized by the maximum sum of pv excess among all days in the dataset 
+    #                 self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
+
+    #             # Normalize all tariffs by the maximum tariff
+    #             # tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
+                
+    #             # self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=(self.state.loc[aid, self.state.columns.str.contains('tar')]-tar_stats['mean'])/(tar_stats['max']-tar_stats['min'])
+                
+    #             self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=self.state.loc[aid, self.state.columns.str.contains('tar')]/self.com.agents[aid].tar_max
+                
+    #             if key == 'tar_mean':
+    #                 self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                    
+    #             if key == 'tar_stdev':
+    #                 self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+                        
+    #             if key == 'tar_var':
+    #                 self.state_norm.loc[aid,key]=self.state.loc[aid,key]
+            
+
+
+    #             for var in self.var_class:
+    #                 if var in key:
+                        
+    #                     #mean normalization using statistics from the training dataset
+    #                     # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
+                             
+    #                     #standartization max-min
+    #                     self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['min'][var])/(self.stats[aid].loc['max'][var]-self.stats[aid].loc['min'][var])
+                        
+    #                     #standartization
+    #                     # self.state_norm.loc[aid,key]=(self.state.loc[aid,key]-self.stats[aid].loc['mean'][var])/self.stats[aid].loc['mean'][var]
+                        
+    #                     # maxnormalization
+    #                     # self.state_norm.loc[aid,key]=self.state.loc[aid,key]/self.stats[aid].loc['max'][var]
+
                     
                 
     
