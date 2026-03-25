@@ -61,6 +61,8 @@ class FlexEnv(MultiAgentEnv):
         self._agent_ids=self.agents_id
         
         self.info = self.com.problem_conf['env_info']
+        self.debug=self.com.problem_conf['debug']
+        
         self.Tw=self.com.problem_conf["window_size"] #window horizon
         
         
@@ -356,7 +358,8 @@ class FlexEnv(MultiAgentEnv):
         self.state_update()
         
         #uncomment to check variables limits in each timestep
-        self.check_obs_within_lims()
+        if self.debug:
+            self.check_obs_within_lims()
         
         #update all masks
         self.update_all_masks() 
@@ -625,7 +628,7 @@ class FlexEnv(MultiAgentEnv):
                     self.state_norm.loc[aid,key]=round(self.state.loc[aid,key]/self.pv_sum_max,3)
 
                 # Normalize all tariffs by the maximum tariff
-                tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
+                # tar_stats=self.get_episode_data().loc[aid]['tar_buy'].describe()
                 
                 # self.state_norm.loc[aid, self.state_norm.columns.str.contains('tar')]=(self.state.loc[aid, self.state.columns.str.contains('tar')]-tar_stats['mean'])/(tar_stats['max']-tar_stats['min'])
                 
