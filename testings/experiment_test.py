@@ -191,6 +191,7 @@ class ExperimentTest():
 
         print('restored the following checkpoint',checkpoint)
         self.checkpoint=checkpoint
+        tester.used_checkpoint=checkpoint
         return tester
     
     def write_cp(self, folder):

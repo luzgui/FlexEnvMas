@@ -44,12 +44,46 @@ class TestEnv():
         self.plot=Plots()
         self.test_config=YAMLParser().load_yaml(test_config_file)
         self.exp_name=train_results_name
-        self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.env.name
+        # self.folder_name='Train_'+self.exp_name + '_'+'Test_'+self.env.name
+        self.folder_name=self._make_folder_name()
         #test configs
         self.n_episodes=self.test_config['test_configs']['n_episodes']
         self.shouldPlot=self.test_config['test_configs']['shouldPlot']
 
     
+    def _make_folder_name(self):
+        base_name='Train_'+self.exp_name + '_'+'Test_'+self.env.name
+        
+        
+        
+        # checkpoint_path=Path(self.tester.used_checkpoint.path)
+        
+        # Assume checkpoint is your Checkpoint object
+        checkpoint_path = self.tester.used_checkpoint.path # e.g., '_trainable_flexenv_893b3_00000_0_2026-04-07_16-14-56/checkpoint_000000'
+        
+        # Get the directory and checkpoint folder name
+        trial_id = os.path.basename(os.path.dirname(checkpoint_path))
+        checkpoint_dir = os.path.basename(checkpoint_path)
+        
+        # Extract checkpoint number
+        checkpoint_number = checkpoint_dir.split("_")[-1]
+        
+        
+        
+        parts=trial_id.split('_')
+        trial_id = f"{parts[3]}_{parts[5]}"
+        
+        
+        trial_info=f"id_{trial_id}_cp_{checkpoint_number[-2:]}"
+        
+        # import pdb
+        # pdb.pdb.set_trace()
+        
+        full_name=base_name + '_' + trial_info
+        
+        return full_name
+        
+
     def test(self,results_path):
         """save_metrics=True will make Results from testing (plots and metrics) to be saved in the trainable folder (results_path) alongside the checkpoints"""
         

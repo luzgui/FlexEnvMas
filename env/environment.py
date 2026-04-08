@@ -129,7 +129,7 @@ class FlexEnv(MultiAgentEnv):
         # self.max_load=100.0
         self.max_load=round(self.processor.get_limits(self.data, 'max', 'load'),2)
         self.max_gen=round(self.processor.get_limits(self.data, 'max', 'gen'),2)
-        self.get_max_pv_sum()
+        self.daily_pv=self.get_max_pv_sum()
         print(self.pv_sum_max)
         # #update missing variables HERE
         # self.com_vars.update_var_list(['gen','load', 'excess'], 'max', self.max_gen)
@@ -888,6 +888,8 @@ class FlexEnv(MultiAgentEnv):
             pv_sums.loc[t]=excess_data.loc[t:t+self.Tw].sum()
         
         self.pv_sum_max=np.round(pv_sums['pv_sum'].max(),3)
+        
+        return pv_sums
         
         
     def print_env_info(self):
