@@ -1,19 +1,23 @@
 #!/bin/bash
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-echo $SCRIPT_DIR
-names="exp_names_data_files_test.csv"
-base_test_env="test011"
+# Uses a base environment and updates all the config variables needed
+# The file env_names.csv has the names and the datafiles needed
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/global_config.sh"
+echo $SCRIPT_DIR
+
+##
+# new_name and data_file comes from the file env_names.csv
 while IFS=, read -r new_name data_file; do
   echo "Base test environment is $base_test_env"
   echo "exp_name: $new_name"
   echo "data file: $data_file"
-  sleep 2
+  # sleep 5
 
   cd "$SCRIPT_DIR"/../configs || exit
 
-  sudo cp -r $base_test_env "$new_name"
+  sudo cp -r "$base_test_env" "$new_name"
 
   if [ -d "$new_name" ]; then
     echo "generated config folder"
@@ -23,21 +27,21 @@ while IFS=, read -r new_name data_file; do
   fi
 
   cd "$new_name" || exit
-  echo "we are at"
-  pwd
-  sleep 2
-  chmod -R 777
-  echo "Updating 'exp_name' key to: $new_name"
-  # yq eval ".exp_name = \"$new_name\"" -i "experiment_config.yaml"
-  yq -i -y ".exp_name = \"$new_name\"" "experiment_config.yaml"
+  #echo "we are at"
+  #pwd
+  #sleep 5
+  #chmod -R 777
+  # echo "Updating 'exp_name' key to: $new_name"
+  # yq eval ".exp_name = \"$new_name\"" -i "exp_name.yaml"
+  # #yq -i -y ".exp_name = \"$new_name\"" "experiment_config.yaml"
 
 
   echo "Updating 'datase_file' key to: $data_file"
-  # yq eval ".dataset_file = \"$data_file\"" -i "problem_config.yaml"
-  yq -i -y ".dataset_file = \"$data_file\"" "problem_config.yaml"
-done < "$names"
+  yq eval ".dataset_file = \"$data_file\"" -i "problem_config.yaml"
+  #yq -i -y ".dataset_file = \"$data_file\"" "problem_config.yaml"
+done < "$names_file"
 
-#
+
 # while IFS= read -r new_name; do
 #   echo "Processing $new_name"
 #   echo "Updating 'exp_name' key to: $new_name"
