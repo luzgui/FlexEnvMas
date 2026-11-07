@@ -119,8 +119,7 @@ exp_name=run_params['exp_name']
 file_experiment, ppo_config=ConfigsParser(configs_folder, exp_name).get_configs()
 #Train environment
 train_env_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['train_env']
-#training results folder
-train_results_name=FolderUtils().get_subfolders_containing(raylog, [exp_name,train_env_name])
+
 
 
 #%% get configs for testing environment
@@ -180,6 +179,8 @@ print('number of days for testing:', len(tenvi.allowed_inits))
 if shouldTest:
     print('Testing...')
     time.sleep(3)
+    #training results folder
+    train_results_name=FolderUtils().get_subfolders_containing(raylog, [exp_name,train_env_name])
     #Trainable
     trainable_func=Trainable(file_experiment)._trainable
     #get checkpoint and create tester
