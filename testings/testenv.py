@@ -447,23 +447,26 @@ class TestEnvOpti(TestEnv):
     """
     
     def __init__(self,env, tester, file_experiment,test_config_file, opti_actions_folder):
-        super().__init__(env, tester, file_experiment,test_config_file)
+        
+        self.actions_folder=opti_actions_folder
+        self.env=env
         self.counter=0
         # self.action_plan=self.get_action_plan()
-        self.actions_folder=opti_actions_folder
         
-        self.folder_name=self.get_folder_name()
+        super().__init__(env, tester, file_experiment,test_config_file)
+        # self.folder_name=self._make_folder_name()
         self.action_plan=self.get_optimal_actions()
+        
+        
     
-    
-    def get_folder_name(self):
+    def _make_folder_name(self):
         """
         produces the results folder name for when actions are taken from optimization
         solutions
         """
         actions_env=self.actions_folder.name.split('_', 1)[1]
         print('Actions are taken from -->', self.actions_folder.name)
-        return 'Train_'+actions_env + '_' + 'Test_'+self.test_name + '_' + 'actions'
+        return 'Train_'+actions_env + '_' + 'Test_'+self.env.name + '_' + 'actions'
     
     def get_actions(self, obs, map_func):
         "Overrides the superclass methods"   

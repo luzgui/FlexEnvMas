@@ -90,6 +90,7 @@ from utils.utilities import ConfigsParser
 from env.community import Community
 from env.state import StateVars
 from env.environment import FlexEnv
+from env.environment_v1 import FlexEnvV1
 from analyze.plots import Plots
 
 from opti.optimize import CommunityOptiModel
@@ -111,17 +112,12 @@ configs_folder=cwd.parent  / 'configs'
 
 #%% exp_name + get configs for experiment
 exp_name=YAMLParser().load_yaml(configs_folder / 'exp_name.yaml')['exp_name']
-configs=ConfigsParser(configs_folder, exp_name)
-
-_, file_apps_conf, file_scene_conf, _ ,file_vars,file_experiment, ppo_config=configs.get_configs()
+file_experiment, algo_config=ConfigsParser(configs_folder, exp_name).get_configs() # only a testing environment
 
 #%% get configs for testing environment
-# test_config_file=configs_folder / 'test_config.yaml'
 test_config_file=configs_folder / 'exp_name.yaml'
-test_name=YAMLParser().load_yaml(test_config_file)['test_name']
-test_configs=ConfigsParser(configs_folder, test_name)
-# between training and testing the difference is the agents config and the problem config
-file_ag_conf,_,_,file_prob_conf,_,_,_=test_configs.get_configs()
+test_name=YAMLParser().load_yaml(test_config_file)['test_env']
+file_ag_conf, file_apps_conf, file_scene_conf, file_prob_conf ,file_vars=ConfigsParser(configs_folder, test_name).get_configs()
 
 #%%Make test env
 #dataset
@@ -140,23 +136,23 @@ test_com=Community(file_ag_conf,
 
 com_vars=StateVars(file_vars)
 
-
-
-test_env_config={'community': test_com,
-            'com_vars': com_vars,
-            'num_agents': test_com.num_agents}
+test_env_config={'name': test_name,
+                 'community': test_com,
+                 'com_vars': com_vars,
+                 'num_agents': test_com.num_agents}
    
-
-
 
 # folder_name='baseline_fixed_' + test_name
 # folder_name='Train'
+env_cls_name=YAMLParser().load_yaml(file_prob_conf)['env_cls']
+tenvi=globals().get(env_cls_name)(test_env_config)
 
-tenvi=FlexEnv(test_env_config)
+# tenvi=FlexEnv(test_env_config)
 dummy_tester=DummyTester(tenvi)
 opti_actions_folder=resultsfolder / YAMLParser().load_yaml(test_config_file)['actions_from_folder']
 
 optitest=TestEnvOpti(tenvi, dummy_tester, file_experiment, test_config_file, opti_actions_folder)
+# optitest=TestEnvOpti(tenvi, dummy_tester, exp_name, test_config_file, opti_actions_folder)
 full_state, env_state_conc, episode_metrics, filename = optitest.test(results_path=resultsfolder)
 
 # baselinefixedtest= BaselineFixedTest(tenvi, dummy_tester,file_experiment,test_config_file)
