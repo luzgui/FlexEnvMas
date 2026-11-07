@@ -2,7 +2,8 @@
 
 # mech_to_use: 'laplace'
 # mech_to_use: 'laplace_year'
-mech_to_use: 'laplace_day'
+# mech_to_use: 'laplace_day'
+mech_to_use: 'optstream'
 
 laplace:
     mean: 0.0
@@ -18,4 +19,21 @@ laplace_day:
     # sensitivity_def: 's_max' #'s_mean' 'mean'
     sensitivity: 's_max' #'s_mean' #'mean' # 's_max'
     mean: 0.0
-    epsilon: 10.0
+    epsilon: 0.2
+
+optstream:
+    w: 96
+    # Sampling
+    sampling: 'equal' #equal spaced points sampling
+    k: 48
+
+    # Perturbation
+    perturb: True
+    sensitivity: 'app' #'s_max' #'s_mean' #'mean' # 's_max'
+    mean: 0.0
+    epsilon: 500.0
+    # Reconstruction
+    reconstruct: True
+    method: 'linear'
+    # post process
+    post_process: True
