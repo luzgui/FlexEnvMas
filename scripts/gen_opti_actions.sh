@@ -45,7 +45,7 @@ gen_opti() {
 gen_opti_from_actions() {
   echo "Performing tests with the optimal actions"
   echo "Updating 'test_name' key to: $base_test_env"
-  yq eval ".test_env = \"$base_test_env\"" "$exp_conf"
+  yq eval ".test_env = \"$base_test_env\"" -i "$exp_conf"
 
 
   while IFS=, read -r new_name dataset_files ; do
@@ -54,7 +54,7 @@ gen_opti_from_actions() {
     sleep 2
 
     echo "Updating 'actions_from_folder' key to: $actions_source"
-    yq eval ".actions_from_folder = \"$actions_source\"" "$exp_conf"
+    yq eval ".actions_from_folder = \"$actions_source\"" -i "$exp_conf"
 
     sleep 2
 
@@ -63,7 +63,7 @@ gen_opti_from_actions() {
     sleep 2
     python "$test_fixed"
 
-  done < "#$names"
+  done < "$names_file"
 }
 
 
